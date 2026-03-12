@@ -42,8 +42,8 @@ export async function sendOtpEmail(opts: {
   console.log(`[emailService] queueing OTP email for ${opts.recipientEmail} purpose=${opts.purpose}`);
   return queueEmailJob({
     recipientEmail: opts.recipientEmail,
-    senderEmail: senders.otp,
-    subject: `${opts.code} is your VendorCenter ${label} code`,
+    senderEmail: senders.noreply,
+    subject: `Your VendorCenter ${label} code is ${opts.code}`,
     bodyHtml: otpEmailHtml({
       code: opts.code,
       purposeLabel: label,
