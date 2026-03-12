@@ -8,9 +8,14 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env"), override: true }
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Strip sslmode from DATABASE_URL — we handle SSL explicitly below
+function cleanConnectionString(url: string): string {
+  return url.replace(/[?&]sslmode=[^&]*/g, "").replace(/\?$/, "");
+}
+
 export const pool = process.env.DATABASE_URL
   ? new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: cleanConnectionString(process.env.DATABASE_URL),
       ssl: { rejectUnauthorized: false },
     })
   : new Pool({
