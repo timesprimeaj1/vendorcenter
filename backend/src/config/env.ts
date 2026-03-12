@@ -24,7 +24,7 @@ export const env = {
   otpLength: Number(process.env.OTP_LENGTH ?? 6),
   otpExpiryMinutes: Number(process.env.OTP_EXPIRY_MINUTES ?? 5),
   otpMaxAttempts: Number(process.env.OTP_MAX_ATTEMPTS ?? 5),
-  corsOrigins: process.env.CORS_ORIGINS? (process.env.CORS_ORIGINS as string).split(",") : ["*"],
+  corsOrigins: process.env.CORS_ORIGINS?process.env.CORS_ORIGINS.split(","): ["*"],
   emailFromDomain: process.env.EMAIL_FROM_DOMAIN ?? "vendorcenter.in",
   supabaseUrl: process.env.SUPABASE_URL ?? "",
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? "",
