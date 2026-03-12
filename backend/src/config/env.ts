@@ -9,6 +9,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
   appName: process.env.APP_NAME ?? "VendorCenter",
+  appUrl: process.env.APP_URL ?? "http://localhost:3000",
+  apiUrl: process.env.API_URL ?? "http://localhost:4000",
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET ?? "change_me_access",
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET ?? "change_me_refresh",
   jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES ?? "15m",
@@ -22,5 +24,9 @@ export const env = {
   otpLength: Number(process.env.OTP_LENGTH ?? 6),
   otpExpiryMinutes: Number(process.env.OTP_EXPIRY_MINUTES ?? 5),
   otpMaxAttempts: Number(process.env.OTP_MAX_ATTEMPTS ?? 5),
-  corsOrigins: process.env.CORS_ORIGINS ?? "*"
+  corsOrigins: process.env.CORS_ORIGINS ?? "*",
+  emailFromDomain: process.env.EMAIL_FROM_DOMAIN ?? "vendorcenter.in",
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? "",
+  s3Bucket: process.env.S3_BUCKET ?? "vendorcenter-media"
 };

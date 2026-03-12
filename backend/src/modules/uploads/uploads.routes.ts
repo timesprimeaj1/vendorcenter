@@ -7,18 +7,22 @@ import crypto from "crypto";
 import { requireRole, AuthRequest } from "../../middleware/auth.js";
 import { trackActivity } from "../activity/activity.service.js";
 import { createMediaAsset, listMediaAssets } from "./uploads.repository.js";
+import { useCloudStorage, uploadToCloud } from "../../services/storageService.js";
 
 const UPLOAD_DIR = path.resolve("uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const name = crypto.randomBytes(16).toString("hex") + ext;
-    cb(null, name);
-  },
-});
+// Use memory storage in production (for S3 upload), disk in dev
+const storage = useCloudStorage()
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const name = crypto.randomBytes(16).toString("hex") + ext;
+        cb(null, name);
+      },
+    });
 
 const upload = multer({
   storage,
@@ -86,8 +90,15 @@ uploadsRouter.post("/file", requireRole(["customer", "vendor", "admin", "employe
     res.status(400).json({ success: false, error: "No file uploaded" });
     return;
   }
-  const url = `/api/uploads/files/${req.file.filename}`;
-  res.json({ success: true, data: { url, filename: req.file.filename } });
+
+  let url: string;
+  if (useCloudStorage()) {
+    url = await uploadToCloud(req.file.buffer, req.file.originalname, req.file.mimetype);
+  } else {
+    url = `/api/uploads/files/${req.file.filename}`;
+  }
+
+  res.json({ success: true, data: { url, filename: req.file.originalname } });
 });
 
 // Multiple files upload
@@ -105,7 +116,16 @@ uploadsRouter.post("/files", requireRole(["customer", "vendor", "admin", "employ
     res.status(400).json({ success: false, error: "No files uploaded" });
     return;
   }
-  const urls = files.map(f => `/api/uploads/files/${f.filename}`);
+
+  let urls: string[];
+  if (useCloudStorage()) {
+    urls = await Promise.all(
+      files.map(f => uploadToCloud(f.buffer, f.originalname, f.mimetype))
+    );
+  } else {
+    urls = files.map(f => `/api/uploads/files/${f.filename}`);
+  }
+
   res.json({ success: true, data: { urls } });
 });
 

@@ -1,4 +1,6 @@
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : "/api";
 
 interface ApiResponse<T = unknown> {
   success: boolean;
