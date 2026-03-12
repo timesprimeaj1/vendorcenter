@@ -35,6 +35,7 @@ export async function sendOtpEmail(opts: {
     vendor_onboarding: "Vendor Onboarding",
     password_reset: "Password Reset",
     employee_login: "Employee Login",
+    login: "Login",
   };
   const label = purposeLabels[opts.purpose] ?? "Verification";
 

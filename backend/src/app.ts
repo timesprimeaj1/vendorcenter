@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { authRouter } from "./modules/auth/auth.routes.js";

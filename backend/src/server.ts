@@ -4,6 +4,11 @@ import { initializeDatabase } from "./db/init.js";
 import { dbState } from "./db/state.js";
 import { processQueuedEmailJobs } from "./modules/notifications/notifications.repository.js";
 
+// Prevent process crash on unhandled async errors (Express 4 doesn't catch them)
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+
 const EMAIL_WORKER_INTERVAL = Number(process.env.EMAIL_WORKER_INTERVAL_MS ?? 15000);
 
 async function bootstrap() {

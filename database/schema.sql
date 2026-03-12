@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   phone TEXT,
   business_name TEXT,
+  profile_picture_url TEXT,
   verified BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
