@@ -1,81 +1,54 @@
 # VendorCenter
 
-VendorCenter is a scalable location-based vendor marketplace platform for service discovery, booking, onboarding, and operations.
+VendorCenter is a location-based services marketplace with separate customer, vendor, and company/admin experiences.
 
-## Project Status
-- System architecture blueprint approved
-- Modular workspace scaffold created
-- External API integrations intentionally not connected yet
+## Repository Layout
 
-## Top-Level Modules
-- frontend
-- backend
-- database
-- api
-- auth
-- services
-- bookings
-- payments
-- emails
-- notifications
-- uploads
-- analytics
-- zones
-- maps
-- admin
-- vendor
-- customer
-- employee
-- logs
-- config
+vendorcenter/
+- backend/
+	- src/
+	- config/
+	- package.json
+	- tsconfig.json
+- frontend/
+	- src/
+	- public/
+	- index.html
+	- vite.config.ts
+	- package.json
+- docs/
+	- architecture.md
+	- ai-features.md
+	- AI_PLAN.md
+	- modules/
+- infra/
+	- docker-compose.yml
+	- Dockerfile
+- .gitignore
+- README.md
 
-## Architecture Direction
-- Frontend: marketplace web app with role-based dashboards
-- Backend: modular domain services with event-driven notifications and analytics
-- Data: PostgreSQL + Redis + object storage
-- Maps: OpenStreetMap + Leaflet
-- Email: Brevo SMTP
-- Deploy: Docker-ready, environment-driven configuration
+## Deployment Safety
 
-## Local Database (PostgreSQL)
-- Default port: 5432
-- App defaults are already aligned to PostgreSQL on localhost:5432
-- Schema bootstrap file: database/schema.sql
+- Frontend deployment remains from frontend/ (Vercel setup unchanged).
+- Backend deployment remains from backend/ (Railway setup unchanged).
+- Environment variable usage is unchanged.
 
-## Production Hosting (vendorcenter.in)
-- Reverse proxy and TLS: deploy/Caddyfile
-- Production compose stack: deploy/docker-compose.prod.yml
-- Production env template: .env.production.example
-- Deploy scripts: deploy/deploy.ps1 and deploy/deploy.sh
-- Hosting runbook: deploy/HOSTING.md
+## Run Locally
 
-## DB Quick Fix Scripts
-- Sync PostgreSQL credentials into env files:
-	- `./deploy/set-db-credentials.ps1 -DbUser <user> -DbPassword <password>`
-- Verify local DB connectivity:
-	- `./deploy/verify-local-db.ps1`
-	- `npm run db:health`
+From repo root:
+- npm run dev:backend
+- npm run dev:frontend
 
-## Cloudflare DNS Validation
-- DNS checklist: deploy/CLOUDFLARE-DNS-CHECKLIST.md
-- Preflight command:
-	- `./deploy/cloudflare-preflight.ps1 -ExpectedIp <server-ip>`
-- Full go-live validation:
-	- `./deploy/go-live-check.ps1 -EnvFile .env.production -ExpectedIp <server-ip>`
+Build:
+- npm run build
 
-## Next Implementation Milestones
-1. Vendor documents and media object storage pipeline
-2. Review and ratings persistence with aggregate updater
-3. Map and geo-distance queries for nearby vendor discovery
-4. Notification worker queue and email templates
-5. Admin and employee operational UI workflows
-6. AI-ready event stream and feature flags
+## Database
 
-## External Credentials Policy
-Before connecting external APIs (payment, SMTP, SMS, map premium providers), credentials must be provided by the owner.
+- PostgreSQL schema bootstrap file: backend/src/db/schema.sql
+- Health check: npm run db:health
 
-## Credential-Gated Integrations
-- Payments (Razorpay, Stripe, UPI, Wallets): credentials required before adapter activation
-- Brevo SMTP production mode: credentials required before live email delivery
-- SMS providers for OTP fallback: credentials required before integration
-- Third-party map APIs beyond OpenStreetMap: credentials required before integration
+## Operations Docs
+
+- Production scripts and runbooks remain in deploy/
+- Architecture notes: docs/architecture.md
+- AI roadmap: docs/ai-features.md and docs/AI_PLAN.md

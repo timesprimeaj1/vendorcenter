@@ -29,4 +29,4 @@ Recommended stack:
 
 ## Notes
 - Protected endpoints require Authorization: Bearer <accessToken>
-- Database schema is initialized from database/schema.sql at backend startup
+- Database schema is initialized from src/db/schema.sql at backend startup

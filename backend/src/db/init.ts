@@ -10,8 +10,10 @@ const MIGRATIONS = [
 export async function initializeDatabase() {
   // Try multiple possible schema paths (monorepo root vs Docker container)
   const possiblePaths = [
+    path.resolve(process.cwd(), "src", "db", "schema.sql"),
     path.resolve(process.cwd(), "database", "schema.sql"),
     path.resolve(process.cwd(), "..", "database", "schema.sql"),
+    path.resolve(process.cwd(), "..", "backend", "src", "db", "schema.sql"),
   ];
 
   const schemaPath = possiblePaths.find((p) => existsSync(p));
