@@ -174,8 +174,14 @@ export const api = {
   // Vendors
   getVendors: () => request<any[]>("/vendors"),
 
-  getCategories: () =>
-    request<{ cat: string; vendor_count: number }[]>("/vendors/categories"),
+  getCategories: (lat?: number, lng?: number, radius?: number) => {
+    const params = new URLSearchParams();
+    if (lat != null) params.set("lat", String(lat));
+    if (lng != null) params.set("lng", String(lng));
+    if (radius != null) params.set("radius", String(radius));
+    const qs = params.toString();
+    return request<{ cat: string; vendor_count: number }[]>(`/vendors/categories${qs ? `?${qs}` : ""}`);
+  },
 
   getVendorsByCategory: (category: string, lat?: number, lng?: number, radius?: number, minRating?: number) => {
     const params = new URLSearchParams({ category });

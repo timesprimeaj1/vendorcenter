@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SERVICE_CATEGORIES, getCategoryMeta } from "@/data/serviceCategories";
 import { api } from "@/lib/api";
+import { useLocation } from "@/hooks/useLocation";
 
 interface DisplayCategory {
   id: string;
@@ -14,6 +15,7 @@ interface DisplayCategory {
 }
 
 const CategoriesSection = () => {
+  const { location } = useLocation();
   const [cats, setCats] = useState<DisplayCategory[]>(
     SERVICE_CATEGORIES.map((c, i) => ({
       id: String(i + 1),
@@ -25,7 +27,20 @@ const CategoriesSection = () => {
   );
 
   useEffect(() => {
-    api.getCategories().then((res) => {
+    if (!location?.latitude || !location?.longitude) {
+      setCats(
+        SERVICE_CATEGORIES.map((c, i) => ({
+          id: String(i + 1),
+          name: c.key,
+          icon: c.icon,
+          count: 0,
+          color: c.color,
+        }))
+      );
+      return;
+    }
+
+    api.getCategories(location.latitude, location.longitude, 25).then((res) => {
       if (res.data && res.data.length > 0) {
         const live: DisplayCategory[] = res.data.map((d, i) => {
           const meta = getCategoryMeta(d.cat);
@@ -47,9 +62,19 @@ const CategoriesSection = () => {
           color: c.color,
         }));
         setCats([...live, ...remaining]);
+      } else {
+        setCats(
+          SERVICE_CATEGORIES.map((c, i) => ({
+            id: String(i + 1),
+            name: c.key,
+            icon: c.icon,
+            count: 0,
+            color: c.color,
+          }))
+        );
       }
     }).catch(() => {});
-  }, []);
+  }, [location?.latitude, location?.longitude]);
   return (
     <section className="py-16 md:py-20 bg-background">
       <div className="container">

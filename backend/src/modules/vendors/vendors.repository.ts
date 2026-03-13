@@ -60,7 +60,60 @@ const STANDARD_CATEGORIES = [
   "Appliance Repair", "Moving", "Photography", "Catering"
 ];
 
-export async function getActiveCategories() {
+export async function getActiveCategories(lat?: number, lng?: number, radiusKm = 25) {
+  if (lat != null && lng != null) {
+    const latDelta = radiusKm / 111.32;
+    const lngDelta = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180));
+
+    const result = await pool.query(
+      `WITH eligible AS (
+        SELECT vp.vendor_id, vp.service_categories
+        FROM vendor_profiles vp
+        WHERE vp.verification_status = 'approved'
+          AND vp.latitude BETWEEN $3 AND $4
+          AND vp.longitude BETWEEN $5 AND $6
+          AND (
+            6371 * acos(
+              cos(radians($1)) * cos(radians(vp.latitude))
+              * cos(radians(vp.longitude) - radians($2))
+              + sin(radians($1)) * sin(radians(vp.latitude))
+            )
+          ) <= $7
+          AND (
+            6371 * acos(
+              cos(radians($1)) * cos(radians(vp.latitude))
+              * cos(radians(vp.longitude) - radians($2))
+              + sin(radians($1)) * sin(radians(vp.latitude))
+            )
+          ) <= vp.service_radius_km
+      )
+      SELECT cat, COUNT(DISTINCT vendor_id)::int AS vendor_count
+      FROM eligible, jsonb_array_elements_text(service_categories) AS cat
+      GROUP BY cat
+      ORDER BY vendor_count DESC`,
+      [lat, lng, lat - latDelta, lat + latDelta, lng - lngDelta, lng + lngDelta, radiusKm]
+    );
+
+    const raw = result.rows as { cat: string; vendor_count: number }[];
+    const standardSet = new Set(STANDARD_CATEGORIES);
+    const grouped: { cat: string; vendor_count: number }[] = [];
+    let otherCount = 0;
+
+    for (const row of raw) {
+      if (standardSet.has(row.cat)) {
+        grouped.push(row);
+      } else {
+        otherCount += row.vendor_count;
+      }
+    }
+
+    if (otherCount > 0) {
+      grouped.push({ cat: "Other", vendor_count: otherCount });
+    }
+
+    return grouped;
+  }
+
   // Standard category counts
   const result = await pool.query(
     `SELECT cat, COUNT(DISTINCT vendor_id)::int AS vendor_count

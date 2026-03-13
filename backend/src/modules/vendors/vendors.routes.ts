@@ -18,9 +18,19 @@ import {
 
 export const vendorsRouter = Router();
 
-// Public: get active service categories with vendor counts
-vendorsRouter.get("/categories", async (_req, res) => {
-  const cats = await getActiveCategories();
+// Public: get active service categories with vendor counts (optionally location-aware)
+vendorsRouter.get("/categories", async (req, res) => {
+  const parsed = z.object({
+    lat: z.coerce.number().min(-90).max(90).optional(),
+    lng: z.coerce.number().min(-180).max(180).optional(),
+    radius: z.coerce.number().positive().max(100).default(25),
+  }).safeParse(req.query);
+
+  const lat = parsed.success ? parsed.data.lat : undefined;
+  const lng = parsed.success ? parsed.data.lng : undefined;
+  const radius = parsed.success ? parsed.data.radius : 25;
+
+  const cats = await getActiveCategories(lat, lng, radius);
   res.json({ success: true, data: cats });
 });
 
