@@ -16,6 +16,7 @@ const SERVICE_CATEGORIES = [
   "Carpentry", "Pest Control", "AC Repair", "Salon",
   "Appliance Repair", "Moving", "Photography", "Catering"
 ];
+const VENDOR_SIGNUP_PREFILL_KEY = "vendor_signup_prefill";
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
@@ -53,16 +54,94 @@ const VendorOnboarding = () => {
   const [portfolioFiles, setPortfolioFiles] = useState<{ file: File; preview: string }[]>([]);
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [accountName, setAccountName] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountPhone, setAccountPhone] = useState("");
+  const [businessNameLocked, setBusinessNameLocked] = useState(false);
 
-  // Pre-fill from signup data
+  // Pre-fill from signed-up account details and local signup draft.
   useEffect(() => {
     if (!authLoading && !user) { navigate("/login"); return; }
-    if (user?.businessName) setBusinessName(user.businessName);
+    if (!user) return;
+
+    let isMounted = true;
+
+    const hydratePrefill = async () => {
+      let nextBusinessName = (user.businessName || "").trim();
+      let nextName = (user.name || "").trim();
+      let nextPhone = (user.phone || "").trim();
+      const nextEmail = (user.email || "").trim();
+
+      try {
+        const profileRes = await api.getProfile();
+        const profile = profileRes.data;
+        if (profile) {
+          nextName = (profile.name || "").trim() || nextName;
+          nextPhone = (profile.phone || "").trim() || nextPhone;
+          nextBusinessName = (profile.businessName || "").trim() || nextBusinessName;
+        }
+      } catch {
+        // Ignore profile fetch failures; user session data still gives fallback values.
+      }
+
+      try {
+        const raw = localStorage.getItem(VENDOR_SIGNUP_PREFILL_KEY);
+        if (raw) {
+          const draft = JSON.parse(raw) as {
+            email?: string;
+            name?: string;
+            phone?: string;
+            businessName?: string;
+            serviceCategories?: string[];
+            otherCategory?: string;
+          };
+          const draftEmail = (draft.email || "").trim().toLowerCase();
+          const currentEmail = nextEmail.trim().toLowerCase();
+
+          if (draftEmail && currentEmail && draftEmail === currentEmail) {
+            nextName = nextName || (draft.name || "").trim();
+            nextPhone = nextPhone || (draft.phone || "").trim();
+            nextBusinessName = nextBusinessName || (draft.businessName || "").trim();
+
+            if (Array.isArray(draft.serviceCategories)) {
+              const categories = draft.serviceCategories
+                .map((cat) => cat.trim())
+                .filter((cat) => cat.length > 0);
+
+              if ((draft.otherCategory || "").trim()) {
+                categories.push("Other");
+                setOtherCategory((draft.otherCategory || "").trim());
+              }
+
+              const unique = Array.from(new Set(categories));
+              if (unique.length > 0) {
+                setSelectedCategories((prev) => (prev.length > 0 ? prev : unique));
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore malformed local data.
+      }
+
+      if (!isMounted) return;
+      setAccountName(nextName);
+      setAccountPhone(nextPhone);
+      setAccountEmail(nextEmail);
+      setBusinessName(nextBusinessName);
+      setBusinessNameLocked(!!nextBusinessName);
+    };
+
+    void hydratePrefill();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, authLoading, navigate]);
 
   if (authLoading || !user) return null;
 
-  const businessNameFromSignup = !!user.businessName;
+  const businessNameFromSignup = businessNameLocked;
 
   const setLocationAndGeocode = async (lat: number, lng: number) => {
     setLatitude(String(lat));
@@ -130,6 +209,7 @@ const VendorOnboarding = () => {
         workingHours,
         portfolioUrls: uploadedUrls,
       });
+      localStorage.removeItem(VENDOR_SIGNUP_PREFILL_KEY);
       setOnboardingStatus("complete");
       toast.success("Onboarding submitted! Your profile is under review.");
       navigate("/dashboard");
@@ -172,6 +252,30 @@ const VendorOnboarding = () => {
           </p>
 
           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Signup Details</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Name</p>
+                  <p className="text-sm font-medium">{accountName || "Not provided"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium break-all">{accountEmail || user.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-sm font-medium">{accountPhone || "Not provided"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Business Name</p>
+                  <p className="text-sm font-medium">{businessName || "Not provided"}</p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">

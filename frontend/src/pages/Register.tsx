@@ -11,6 +11,7 @@ import { SERVICE_CATEGORIES } from "@/data/serviceCategories";
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 const PHONE_RULE = /^\d{10}$/;
+const VENDOR_SIGNUP_PREFILL_KEY = "vendor_signup_prefill";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -50,6 +51,21 @@ const Register = () => {
     if (!agreed) { toast.error("Please accept the terms"); return; }
     setLoading(true);
     try {
+      if (role === "vendor") {
+        const normalizedCategories = selectedCategories.filter((cat) => cat !== "Other");
+        localStorage.setItem(
+          VENDOR_SIGNUP_PREFILL_KEY,
+          JSON.stringify({
+            email: email.trim().toLowerCase(),
+            name: name.trim(),
+            phone: phone.trim(),
+            businessName: businessName.trim(),
+            serviceCategories: normalizedCategories,
+            otherCategory: otherCategory.trim(),
+          })
+        );
+      }
+
       await signup({
         email,
         password,

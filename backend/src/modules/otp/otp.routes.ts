@@ -159,7 +159,15 @@ otpRouter.post("/verify", async (req, res) => {
           verified: true,
           accessToken,
           refreshToken,
-          actor: { id: user.id, role: user.role, email: user.email, verified: user.verified }
+          actor: {
+            id: user.id,
+            role: user.role,
+            email: user.email,
+            verified: true,
+            name: user.name,
+            phone: user.phone,
+            businessName: user.business_name,
+          }
         }
       });
       return;

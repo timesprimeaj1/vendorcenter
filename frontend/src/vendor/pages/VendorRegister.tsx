@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 const PHONE_RULE = /^\d{10}$/;
+const VENDOR_SIGNUP_PREFILL_KEY = "vendor_signup_prefill";
 
 const VendorRegister = () => {
   const [name, setName] = useState("");
@@ -38,6 +39,18 @@ const VendorRegister = () => {
     }
     setLoading(true);
     try {
+      localStorage.setItem(
+        VENDOR_SIGNUP_PREFILL_KEY,
+        JSON.stringify({
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          phone: phone.trim(),
+          businessName: businessName.trim(),
+          serviceCategories: [],
+          otherCategory: "",
+        })
+      );
+
       await api.signup({ email, password, role: "vendor", name, phone: phone || undefined, businessName: businessName || undefined });
       const res = await api.requestOtp(email, "signup");
       if (res.data) {

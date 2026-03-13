@@ -49,7 +49,7 @@ const CTASection = () => {
               Join VendorCenter and reach thousands of customers in your area. Set up your profile, manage bookings, and watch your business grow.
             </p>
             <Button
-              onClick={() => navigate("/register")}
+              onClick={() => { window.location.href = "/vendor/register"; }}
               variant="outline"
               size="lg"
               className="rounded-xl font-semibold border-primary text-primary hover:bg-primary hover:text-primary-foreground"

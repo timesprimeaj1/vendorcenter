@@ -259,7 +259,7 @@ authRouter.get("/profile", requireRole(["customer", "vendor", "admin", "employee
   try {
     const user = await findUserById(req.actor!.id);
     if (!user) { res.status(404).json({ success: false, error: "User not found" }); return; }
-    res.json({ success: true, data: { id: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role, profilePictureUrl: user.profile_picture_url } });
+    res.json({ success: true, data: { id: user.id, email: user.email, name: user.name, phone: user.phone, businessName: user.business_name, role: user.role, profilePictureUrl: user.profile_picture_url } });
   } catch (err) {
     console.error("[auth] profile get error", err);
     res.status(500).json({ success: false, error: "Failed to fetch profile" });
@@ -279,7 +279,7 @@ authRouter.put("/profile", requireRole(["customer", "vendor", "admin", "employee
     if (!user) { res.status(404).json({ success: false, error: "User not found" }); return; }
 
     trackActivity({ actorId: user.id, role: user.role, action: "auth.profile_updated", entity: "user" });
-    res.json({ success: true, data: { id: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role, profilePictureUrl: user.profile_picture_url } });
+    res.json({ success: true, data: { id: user.id, email: user.email, name: user.name, phone: user.phone, businessName: user.business_name, role: user.role, profilePictureUrl: user.profile_picture_url } });
   } catch (err) {
     console.error("[auth] profile update error", err);
     res.status(500).json({ success: false, error: "Failed to update profile" });

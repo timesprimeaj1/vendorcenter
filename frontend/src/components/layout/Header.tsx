@@ -108,7 +108,7 @@ const Header = () => {
               variant="ghost"
               size="sm"
               className="text-sm font-medium"
-              onClick={() => navigate("/register?role=vendor")}
+              onClick={() => { window.location.href = "/vendor/register"; }}
             >
               Become a Vendor
             </Button>
@@ -235,7 +235,7 @@ const Header = () => {
                 ))}
               </div>
               <div className="flex flex-col gap-1 pt-2">
-                <Button variant="outline" size="sm" className="rounded-xl justify-start" onClick={() => { navigate("/register?role=vendor"); setMobileMenuOpen(false); }}>
+                <Button variant="outline" size="sm" className="rounded-xl justify-start" onClick={() => { window.location.href = "/vendor/register"; setMobileMenuOpen(false); }}>
                   Become a Vendor
                 </Button>
                 {user ? (
