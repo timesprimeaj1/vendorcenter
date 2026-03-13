@@ -20,6 +20,53 @@ type QueuedEmailJob = {
 
 let smtpTransporter: Transporter | null = null;
 
+async function sendViaBrevoApi(input: {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+  attachments?: EmailAttachment[] | null;
+}) {
+  if (!env.brevoApiKey) {
+    throw new Error("BREVO_API_KEY missing. Configure BREVO_API_KEY for HTTPS email fallback.");
+  }
+
+  const payload: {
+    sender: { email: string; name: string };
+    to: Array<{ email: string }>;
+    subject: string;
+    htmlContent: string;
+    attachment?: Array<{ name: string; content: string }>;
+  } = {
+    sender: { email: input.from, name: "VendorCenter" },
+    to: [{ email: input.to }],
+    subject: input.subject,
+    htmlContent: input.html,
+  };
+
+  if (input.attachments && input.attachments.length > 0) {
+    payload.attachment = input.attachments.map((a) => ({
+      name: a.filename,
+      content: a.content,
+    }));
+  }
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "api-key": env.brevoApiKey,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Brevo API send failed (${res.status}): ${body.slice(0, 180)}`);
+  }
+}
+
 function getSmtpTransporter() {
   if (smtpTransporter) {
     return smtpTransporter;
@@ -107,10 +154,13 @@ export async function processQueuedEmailJobs(maxJobs = 20) {
   );
 
   const useSmtp = env.emailTransportMode === "smtp";
+  const useBrevoApi = env.emailTransportMode === "brevo_api";
   let processed = 0;
 
   for (const row of select.rows) {
     try {
+      const fromEmail = row.senderEmail || env.emailFromNoreply;
+
       if (useSmtp) {
         if (!env.smtpHost || !env.smtpUser || !env.smtpPass) {
           throw new Error("SMTP credentials missing. Set SMTP_HOST, SMTP_USER and SMTP_PASS.");
@@ -119,7 +169,7 @@ export async function processQueuedEmailJobs(maxJobs = 20) {
         const transporter = getSmtpTransporter();
         const mailOpts: nodemailer.SendMailOptions = {
           to: row.recipientEmail,
-          from: row.senderEmail || env.emailFromNoreply,
+          from: fromEmail,
           subject: row.subject,
           html: row.bodyHtml,
         };
@@ -129,7 +179,34 @@ export async function processQueuedEmailJobs(maxJobs = 20) {
             content: Buffer.from(a.content, "base64"),
           }));
         }
-        await transporter.sendMail(mailOpts);
+
+        try {
+          await transporter.sendMail(mailOpts);
+        } catch (smtpError) {
+          const message = (smtpError as Error).message || "SMTP error";
+          const isTimeout = /timeout/i.test(message);
+
+          if (isTimeout && env.brevoApiKey) {
+            console.warn(`[email-worker] SMTP timeout for id=${row.id}. Falling back to Brevo API over HTTPS.`);
+            await sendViaBrevoApi({
+              to: row.recipientEmail,
+              from: fromEmail,
+              subject: row.subject,
+              html: row.bodyHtml,
+              attachments: row.attachments,
+            });
+          } else {
+            throw smtpError;
+          }
+        }
+      } else if (useBrevoApi) {
+        await sendViaBrevoApi({
+          to: row.recipientEmail,
+          from: fromEmail,
+          subject: row.subject,
+          html: row.bodyHtml,
+          attachments: row.attachments,
+        });
       }
 
       await pool.query(

@@ -26,6 +26,7 @@ export const env = {
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
   smtpUser: process.env.SMTP_USER ?? "",
   smtpPass: process.env.SMTP_PASS ?? "",
+  brevoApiKey: process.env.BREVO_API_KEY ?? "",
 
   emailFromNoreply:
     process.env.EMAIL_FROM_NOREPLY ?? "noreply@vendorcenter.in",
