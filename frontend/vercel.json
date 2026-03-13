@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://vendorcenterbackend-production.up.railway.app/api/$1" },
     { "source": "/company/(.*)", "destination": "/company.html" },
     { "source": "/vendor/(.*)", "destination": "/vendor.html" },
     { "source": "/((?!assets|company\\.html|vendor\\.html).*)", "destination": "/index.html" }

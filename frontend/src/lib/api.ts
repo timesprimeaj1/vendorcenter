@@ -1,4 +1,10 @@
 function resolveApiBase() {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const isLocalHost = host === "localhost" || host === "127.0.0.1";
+    if (!isLocalHost) return "/api";
+  }
+
   const raw = import.meta.env.VITE_API_BASE_URL;
   if (!raw) return "/api";
   const base = raw.startsWith("http") ? raw : `https://${raw}`;
