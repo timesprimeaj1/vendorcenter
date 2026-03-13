@@ -54,7 +54,24 @@ export function VendorAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("vendor_user");
-      if (stored) setUser(JSON.parse(stored));
+      if (stored) {
+        setUser(JSON.parse(stored));
+      } else {
+        // Compatibility bridge: if a vendor logged in via the main app while an older
+        // build wrote tokens to customer_* keys, migrate the session for vendor portal.
+        const legacyUserRaw = localStorage.getItem("customer_user");
+        const legacyAccess = localStorage.getItem("customer_accessToken");
+        const legacyRefresh = localStorage.getItem("customer_refreshToken");
+        if (legacyUserRaw && legacyAccess && legacyRefresh) {
+          const legacyUser = JSON.parse(legacyUserRaw) as Actor;
+          if (legacyUser?.role === "vendor") {
+            localStorage.setItem("vendor_user", JSON.stringify(legacyUser));
+            localStorage.setItem("vendor_accessToken", legacyAccess);
+            localStorage.setItem("vendor_refreshToken", legacyRefresh);
+            setUser(legacyUser);
+          }
+        }
+      }
       const status = localStorage.getItem("vendor_onboarding_status") as OnboardingStatus | null;
       if (status === "complete" || status === "incomplete" || status === "unknown") {
         setOnboardingStatusState(status);
