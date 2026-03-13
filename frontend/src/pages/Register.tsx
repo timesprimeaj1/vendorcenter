@@ -50,7 +50,14 @@ const Register = () => {
     if (!agreed) { toast.error("Please accept the terms"); return; }
     setLoading(true);
     try {
-      await signup({ email, password, role });
+      await signup({
+        email,
+        password,
+        role,
+        name: name.trim() || undefined,
+        phone: phone.trim() || undefined,
+        businessName: role === "vendor" ? (businessName.trim() || undefined) : undefined,
+      });
       // Account created, now send OTP for verification
       const otpRes = await api.requestOtp(email, "signup");
       if (otpRes.data) {

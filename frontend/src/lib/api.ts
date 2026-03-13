@@ -95,6 +95,16 @@ export interface SignupPayload {
   email: string;
   password: string;
   role: "customer" | "vendor";
+  name?: string;
+  phone?: string;
+  businessName?: string;
+}
+
+export interface PublicStats {
+  activeVendors: number;
+  happyCustomers: number;
+  servicesCompleted: number;
+  citiesCovered: number;
 }
 
 export interface Actor {
@@ -150,6 +160,9 @@ export const api = {
 
   // Services
   getServices: () => request<any[]>("/services"),
+
+  // Public analytics (homepage counters)
+  getPublicStats: () => request<PublicStats>("/analytics/public"),
 
   // Password reset
   resetPassword: (payload: { email: string; otpId: string; code: string; newPassword: string }) =>

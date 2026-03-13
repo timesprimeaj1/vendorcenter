@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/vendor/hooks/useVendorAuth";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
+import { isVendorProfileComplete } from "@/vendor/lib/profileCompletion";
 
 const VendorDashboard = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [hasProfile, setHasProfile] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
 
@@ -24,8 +26,15 @@ const VendorDashboard = () => {
   useEffect(() => {
     if (!user) return;
     api.getVendorProfile()
-      .then((res) => setOnboarded(!!res.data))
-      .catch(() => setOnboarded(false));
+      .then((res) => {
+        const profile = res.data ?? null;
+        setHasProfile(!!profile);
+        setOnboarded(isVendorProfileComplete(profile));
+      })
+      .catch(() => {
+        setHasProfile(false);
+        setOnboarded(false);
+      });
 
     api.getProfile()
       .then((res) => {
@@ -139,12 +148,14 @@ const VendorDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Store className="w-5 h-5 text-orange-500" />
-                  Complete Onboarding
+                  {hasProfile ? "Continue Onboarding" : "Complete Onboarding"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Set up your business profile, add service details, and submit for verification.
+                  {hasProfile
+                    ? "Your onboarding is incomplete. Finish business details to publish your vendor profile."
+                    : "Set up your business profile, add service details, and submit for verification."}
                 </p>
                 <Button variant="outline" size="sm" onClick={() => navigate("/onboarding")}>
                   Get Started

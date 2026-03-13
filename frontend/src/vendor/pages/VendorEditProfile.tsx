@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/vendor/hooks/useVendorAuth";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
+import { isVendorProfileComplete } from "@/vendor/lib/profileCompletion";
 import { toast } from "sonner";
 import { MapErrorBoundary } from "@/vendor/components/MapErrorBoundary";
 import LocationPicker from "@/vendor/components/LocationPicker";
@@ -41,6 +42,8 @@ const VendorEditProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [fetchTimedOut, setFetchTimedOut] = useState(false);
+  const [isOnboardingIncomplete, setIsOnboardingIncomplete] = useState(false);
   const [profileEdited, setProfileEdited] = useState(false);
   const [noProfile, setNoProfile] = useState(false);
 
@@ -68,8 +71,18 @@ const VendorEditProfile = () => {
   // Load existing profile
   useEffect(() => {
     if (!user) return;
+
+    let isActive = true;
+    const timeout = window.setTimeout(() => {
+      if (!isActive) return;
+      setFetchTimedOut(true);
+      setNoProfile(true);
+      setFetching(false);
+    }, 12000);
+
     api.getVendorProfile()
       .then((res) => {
+        if (!isActive) return;
         if (res.data) {
           const p = res.data;
           setBusinessName(p.businessName || "");
@@ -81,16 +94,25 @@ const VendorEditProfile = () => {
           setWorkingHours(p.workingHours || "");
           setProfileEdited(!!p.profileEdited);
           setExistingPortfolio(p.portfolioUrls || []);
+          setIsOnboardingIncomplete(!isVendorProfileComplete(p));
+        } else {
+          setNoProfile(true);
         }
       })
       .catch(() => {
+        if (!isActive) return;
         setNoProfile(true);
       })
-      .finally(() => setFetching(false));
+      .finally(() => {
+        if (!isActive) return;
+        window.clearTimeout(timeout);
+        setFetching(false);
+      });
 
     // Load user profile picture
     api.getProfile()
       .then((res) => {
+        if (!isActive) return;
         if (res.data?.profilePictureUrl) {
           const url = res.data.profilePictureUrl;
           setProfilePicPreview(url.startsWith("http") ? url : `/api/uploads/files/${url}`);
@@ -98,9 +120,33 @@ const VendorEditProfile = () => {
         }
       })
       .catch(() => {});
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeout);
+    };
   }, [user, navigate]);
 
-  if (authLoading || !user || fetching) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3 px-4">
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500 mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading vendor profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   const setLocationAndGeocode = async (lat: number, lng: number) => {
     setLatitude(String(lat));
@@ -203,7 +249,9 @@ const VendorEditProfile = () => {
                 <div>
                   <p className="font-semibold text-orange-800 dark:text-orange-200 text-lg">Complete Onboarding First</p>
                   <p className="text-sm text-orange-700 dark:text-orange-300 mt-2">
-                    You need to complete your business onboarding before you can edit your profile.
+                    {fetchTimedOut
+                      ? "Profile lookup timed out. Please continue onboarding and then revisit edit profile."
+                      : "You need to complete your business onboarding before you can edit your profile."}
                     Set up your business details, location, and services first.
                   </p>
                   <Button
@@ -420,6 +468,16 @@ const VendorEditProfile = () => {
           </Button>
 
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Edit Profile</h1>
+          {isOnboardingIncomplete && (
+            <Card className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800">
+              <CardContent className="pt-4">
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Your onboarding looks incomplete. You can finish the onboarding form first, then return here for one-time edits and portfolio updates.
+                </p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/onboarding")}>Go to Onboarding</Button>
+              </CardContent>
+            </Card>
+          )}
           <div className="flex items-center gap-2 mb-8">
             <AlertTriangle className="w-4 h-4 text-yellow-500" />
             <p className="text-sm text-yellow-600 font-medium">

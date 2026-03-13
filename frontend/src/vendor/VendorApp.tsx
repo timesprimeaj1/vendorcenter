@@ -13,6 +13,7 @@ import VendorEditProfile from "./pages/VendorEditProfile";
 import VendorBookings from "./pages/VendorBookings";
 import VendorServices from "./pages/VendorServices";
 import NotFound from "./pages/NotFound";
+import RequireVendorOnboardingComplete from "./components/RequireVendorOnboardingComplete";
 
 const queryClient = new QueryClient();
 
@@ -28,11 +29,39 @@ const VendorApp = () => (
             <Route path="/login" element={<VendorLogin />} />
             <Route path="/register" element={<VendorRegister />} />
             <Route path="/forgot-password" element={<VendorForgotPassword />} />
-            <Route path="/dashboard" element={<VendorDashboard />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireVendorOnboardingComplete>
+                  <VendorDashboard />
+                </RequireVendorOnboardingComplete>
+              }
+            />
             <Route path="/onboarding" element={<VendorOnboarding />} />
-            <Route path="/edit-profile" element={<VendorEditProfile />} />
-            <Route path="/bookings" element={<VendorBookings />} />
-            <Route path="/services" element={<VendorServices />} />
+            <Route
+              path="/edit-profile"
+              element={
+                <RequireVendorOnboardingComplete>
+                  <VendorEditProfile />
+                </RequireVendorOnboardingComplete>
+              }
+            />
+            <Route
+              path="/bookings"
+              element={
+                <RequireVendorOnboardingComplete>
+                  <VendorBookings />
+                </RequireVendorOnboardingComplete>
+              }
+            />
+            <Route
+              path="/services"
+              element={
+                <RequireVendorOnboardingComplete>
+                  <VendorServices />
+                </RequireVendorOnboardingComplete>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

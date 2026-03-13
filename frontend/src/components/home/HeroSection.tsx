@@ -3,18 +3,48 @@ import { motion } from "framer-motion";
 import { Search, MapPin, ArrowRight, Star, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { stats } from "@/data/mockData";
 import { useLocation } from "@/hooks/useLocation";
 import { useNavigate } from "react-router-dom";
 import { SERVICE_CATEGORIES } from "@/data/serviceCategories";
+import { api, type PublicStats } from "@/lib/api";
 
 const HeroSection = () => {
   const { cityName, fullAddress, loading, error, refresh } = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [liveStats, setLiveStats] = useState<PublicStats | null>(null);
   const [suggestions, setSuggestions] = useState<typeof SERVICE_CATEGORIES[number][]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    api.getPublicStats()
+      .then((res) => {
+        if (!active) return;
+        setLiveStats(res.data ?? null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLiveStats(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const stats = [
+    { label: "Active Vendors", value: liveStats?.activeVendors ?? 0, icon: "🏪" },
+    { label: "Happy Customers", value: liveStats?.happyCustomers ?? 0, icon: "😊" },
+    { label: "Services Completed", value: liveStats?.servicesCompleted ?? 0, icon: "✅" },
+    { label: "Cities Covered", value: liveStats?.citiesCovered ?? 0, icon: "🌆" },
+  ];
+
+  const formatCount = (value: number) => {
+    if (!Number.isFinite(value) || value < 0) return "0";
+    return new Intl.NumberFormat("en-IN").format(value);
+  };
 
   useEffect(() => {
     const q = query.trim().toLowerCase();
@@ -173,7 +203,7 @@ const HeroSection = () => {
           {stats.map((stat, i) => (
             <div key={i} className="text-center p-4 rounded-2xl bg-background/5 backdrop-blur-sm border border-background/10">
               <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="font-display font-bold text-xl md:text-2xl text-background">{stat.value}</div>
+              <div className="font-display font-bold text-xl md:text-2xl text-background">{formatCount(stat.value)}</div>
               <div className="text-xs text-background/50 mt-0.5">{stat.label}</div>
             </div>
           ))}
