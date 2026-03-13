@@ -51,6 +51,7 @@ export async function findNearbyVendors(
         AND vp.longitude BETWEEN $5 AND $6
     ) t
     WHERE t."distanceKm" <= $7
+      AND t."distanceKm" <= t."serviceRadiusKm"
     ORDER BY t."distanceKm" ASC
     LIMIT $8`,
     [lat, lng, lat - latDelta, lat + latDelta, lng - lngDelta, lng + lngDelta, radiusKm, limit]

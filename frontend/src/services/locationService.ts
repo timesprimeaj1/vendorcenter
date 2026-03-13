@@ -14,12 +14,12 @@ const LOCATION_CACHE_KEY = "vc_last_location";
 const CACHE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
 
 /** Try to return cached location if fresh enough */
-function getCachedLocation(): UserLocation | null {
+function getCachedLocation(maxAgeMs = CACHE_MAX_AGE_MS): UserLocation | null {
   try {
     const raw = localStorage.getItem(LOCATION_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as UserLocation & { ts: number };
-    if (Date.now() - parsed.ts > CACHE_MAX_AGE_MS) return null;
+    if (Date.now() - parsed.ts > maxAgeMs) return null;
     return { latitude: parsed.latitude, longitude: parsed.longitude, accuracy: parsed.accuracy };
   } catch {
     return null;
@@ -39,39 +39,71 @@ export function getUserLocation(options?: { timeout?: number; maximumAge?: numbe
   const cached = getCachedLocation();
   if (cached) return Promise.resolve(cached);
 
+  const toLocationError = (error: GeolocationPositionError): { code: LocationError; message: string } => {
+    const codeMap: Record<number, LocationError> = {
+      1: "PERMISSION_DENIED",
+      2: "POSITION_UNAVAILABLE",
+      3: "TIMEOUT",
+    };
+    return {
+      code: codeMap[error.code] ?? "POSITION_UNAVAILABLE",
+      message: error.message,
+    };
+  };
+
+  const requestPosition = (enableHighAccuracy: boolean, timeoutMs: number, maximumAgeMs: number): Promise<UserLocation> =>
+    new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const loc: UserLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          };
+          cacheLocation(loc);
+          resolve(loc);
+        },
+        (error) => {
+          reject(toLocationError(error));
+        },
+        {
+          enableHighAccuracy,
+          timeout: timeoutMs,
+          maximumAge: maximumAgeMs,
+        }
+      );
+    });
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject({ code: "NOT_SUPPORTED", message: "Geolocation is not supported by this browser" });
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const loc: UserLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        };
-        cacheLocation(loc);
-        resolve(loc);
-      },
-      (error) => {
-        const codeMap: Record<number, LocationError> = {
-          1: "PERMISSION_DENIED",
-          2: "POSITION_UNAVAILABLE",
-          3: "TIMEOUT",
-        };
-        reject({
-          code: codeMap[error.code] ?? "POSITION_UNAVAILABLE",
-          message: error.message,
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: options?.timeout ?? 10000,
-        maximumAge: options?.maximumAge ?? 60000,
-      }
-    );
+    const primaryTimeout = options?.timeout ?? 10000;
+    const primaryMaxAge = options?.maximumAge ?? 60000;
+
+    requestPosition(true, primaryTimeout, primaryMaxAge)
+      .then(resolve)
+      .catch((primaryErr: { code: LocationError; message: string }) => {
+        if (primaryErr.code === "PERMISSION_DENIED") {
+          reject(primaryErr);
+          return;
+        }
+
+        // Mobile fallback: relaxed settings often work better indoors/low signal.
+        requestPosition(false, Math.max(15000, primaryTimeout), Math.max(300000, primaryMaxAge))
+          .then(resolve)
+          .catch((fallbackErr: { code: LocationError; message: string }) => {
+            // Last known location fallback so UI still has a usable location.
+            const stale = getCachedLocation(7 * 24 * 60 * 60 * 1000);
+            if (stale) {
+              resolve(stale);
+              return;
+            }
+            reject(fallbackErr);
+          });
+      });
   });
 }
 
