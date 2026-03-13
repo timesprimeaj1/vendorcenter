@@ -348,7 +348,12 @@ const Account = () => {
       <EditProfilePanel
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        profile={{ name: profile?.name || user.name || "", phone: profile?.phone || user.phone || "", email: displayEmail, profilePictureUrl: (profile as any)?.profilePictureUrl }}
+        profile={{
+          name: (profile?.name ?? user.name ?? "").trim(),
+          phone: String(profile?.phone ?? user.phone ?? "").trim(),
+          email: displayEmail,
+          profilePictureUrl: (profile as any)?.profilePictureUrl,
+        }}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ["user-profile"] });
           // Re-fetch profile and update auth context + localStorage
@@ -382,17 +387,16 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
   const [newPicUrl, setNewPicUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) {
-      setName(profile.name);
-      setPhone(profile.phone);
-      setNewPicUrl(null);
-      setPreviewUrl(profile.profilePictureUrl
-        ? (profile.profilePictureUrl.startsWith("http") || profile.profilePictureUrl.startsWith("/api/")
-            ? profile.profilePictureUrl
-            : `/api/uploads/files/${profile.profilePictureUrl}`)
-        : null);
-    }
-  }, [open, profile]);
+    if (!open) return;
+    setName(profile.name ?? "");
+    setPhone(profile.phone ?? "");
+    setNewPicUrl(null);
+    setPreviewUrl(profile.profilePictureUrl
+      ? (profile.profilePictureUrl.startsWith("http") || profile.profilePictureUrl.startsWith("/api/")
+          ? profile.profilePictureUrl
+          : `/api/uploads/files/${profile.profilePictureUrl}`)
+      : null);
+  }, [open, profile.name, profile.phone, profile.profilePictureUrl]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
