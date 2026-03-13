@@ -60,6 +60,10 @@ const VendorDetail = () => {
 
   const handleBooking = async () => {
     if (!user) { toast.error("Please log in to book"); return; }
+    if (user.role !== "customer") {
+      toast.error("Bookings can be requested only from a customer account. Please log in as customer.");
+      return;
+    }
     if (!selectedService) { toast.error("Please select a service"); return; }
     if (!scheduledDate) { toast.error("Please select a date"); return; }
     if (!scheduledTime) { toast.error("Please select a time"); return; }

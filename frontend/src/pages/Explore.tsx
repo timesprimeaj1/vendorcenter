@@ -4,6 +4,7 @@ import type { VendorMapData, ZoneData } from "@/components/map";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { api } from "@/lib/api";
 import Layout from "@/components/layout/Layout";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -28,6 +29,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 }
 
 export default function Explore() {
+  const navigate = useNavigate();
   const { location, error: locError, loading: locLoading, refresh, setManualLocation } = useUserLocation();
   const [vendors, setVendors] = useState<VendorMapData[]>([]);
   const [zones, setZones] = useState<ZoneData[]>([]);
@@ -323,7 +325,12 @@ export default function Explore() {
                   )}
                   <div className="flex justify-between items-center mt-3 text-sm">
                     <span className="text-muted-foreground">{Number(v.distanceKm).toFixed(1)} km away</span>
-                    <Button size="sm" variant="outline" className="rounded-lg text-xs h-7">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg text-xs h-7"
+                      onClick={() => navigate(`/vendor/${encodeURIComponent(v.vendorId)}`)}
+                    >
                       View
                     </Button>
                   </div>
