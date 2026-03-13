@@ -10,9 +10,17 @@ const FeaturedVendors = () => {
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { location: userLoc } = useLocation();
+  const hasLocation = !!(userLoc?.latitude && userLoc?.longitude);
 
   useEffect(() => {
-    api.getApprovedVendors(userLoc?.latitude, userLoc?.longitude)
+    if (!hasLocation) {
+      setVendors([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    api.getApprovedVendors(userLoc?.latitude, userLoc?.longitude, 10)
       .then((res) => {
         setVendors(
           (res.data || []).slice(0, 6).map((v: any) => ({
@@ -28,7 +36,7 @@ const FeaturedVendors = () => {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [userLoc?.latitude, userLoc?.longitude]);
+  }, [hasLocation, userLoc?.latitude, userLoc?.longitude]);
   return (
     <section className="py-16 md:py-20 bg-secondary/30">
       <div className="container">
@@ -50,7 +58,7 @@ const FeaturedVendors = () => {
           </div>
         ) : vendors.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No vendors available yet. Check back soon!</p>
+            <p>{hasLocation ? "No nearby vendors found for your location yet." : "Enable location to see nearby vendors."}</p>
           </div>
         ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

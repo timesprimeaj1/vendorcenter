@@ -211,7 +211,7 @@ const Header = () => {
       {/* Category nav — hidden on /services page which has its own filter */}
       {!isServicesPage && <div className="hidden md:block border-b border-border/30">
         <div className="container">
-          <nav className="flex items-center gap-6 h-10 overflow-x-auto scrollbar-hide">
+          <nav className="flex items-center gap-6 h-10 overflow-visible">
             <Link
               to="/services"
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap"
