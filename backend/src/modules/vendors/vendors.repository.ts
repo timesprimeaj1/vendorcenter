@@ -131,6 +131,14 @@ export async function listApprovedVendors(lat?: number, lng?: number, radiusKm =
           + sin(radians($${paramIdx})) * sin(radians(vp.latitude))
         )
       ) <= $${paramIdx + 2}`;
+    query += `
+      AND (
+        6371 * acos(
+          cos(radians($${paramIdx})) * cos(radians(vp.latitude))
+          * cos(radians(vp.longitude) - radians($${paramIdx + 1}))
+          + sin(radians($${paramIdx})) * sin(radians(vp.latitude))
+        )
+      ) <= vp.service_radius_km`;
     params.push(lat, lng, radiusKm);
   }
 
@@ -186,6 +194,14 @@ export async function getVendorsByCategory(category: string, lat?: number, lng?:
           + sin(radians($${paramIdx})) * sin(radians(vp.latitude))
         )
       ) <= $${paramIdx + 2}`;
+    query += `
+      AND (
+        6371 * acos(
+          cos(radians($${paramIdx})) * cos(radians(vp.latitude))
+          * cos(radians(vp.longitude) - radians($${paramIdx + 1}))
+          + sin(radians($${paramIdx})) * sin(radians(vp.latitude))
+        )
+      ) <= vp.service_radius_km`;
     params.push(lat, lng, radiusKm);
   }
 

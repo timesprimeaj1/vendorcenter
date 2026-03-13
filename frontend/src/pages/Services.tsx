@@ -23,6 +23,7 @@ const Services = () => {
   const [minRating, setMinRating] = useState(0);
   const { user } = useAuth();
   const { location: userLoc } = useLocation();
+  const hasLocation = !!(userLoc?.latitude && userLoc?.longitude);
 
   // Sync URL param → state on navigation
   useEffect(() => {
@@ -86,6 +87,10 @@ const Services = () => {
     queryKey: ["services", selectedCategory, userLoc?.latitude, userLoc?.longitude, minRating],
     queryFn: async () => {
       try {
+        if (!hasLocation) {
+          return [];
+        }
+
         if (selectedCategory) {
           const res = await api.getVendorsByCategory(
             selectedCategory,
@@ -108,6 +113,7 @@ const Services = () => {
         return [];
       }
     },
+    enabled: hasLocation,
   });
 
   const vendors = services || [];
@@ -224,6 +230,12 @@ const Services = () => {
             </button>
           )}
         </div>
+
+        {!hasLocation && (
+          <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+            Enable location to see only nearby vendors.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((vendor, index) => (
