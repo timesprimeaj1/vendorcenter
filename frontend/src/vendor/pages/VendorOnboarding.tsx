@@ -10,6 +10,7 @@ import { vendorApi as api } from "@/vendor/lib/vendorApi";
 import { toast } from "sonner";
 import { MapErrorBoundary } from "@/vendor/components/MapErrorBoundary";
 import LocationPicker from "@/vendor/components/LocationPicker";
+import PlaceAutocompleteInput from "@/vendor/components/PlaceAutocompleteInput";
 
 const SERVICE_CATEGORIES = [
   "Cleaning", "Plumbing", "Electrical", "Painting",
@@ -341,7 +342,17 @@ const VendorOnboarding = () => {
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">Zone / Area *</label>
-                  <Input placeholder="e.g. South Delhi" className="h-11 rounded-xl" value={zone} onChange={e => setZone(e.target.value)} />
+                  <PlaceAutocompleteInput
+                    value={zone}
+                    onChange={setZone}
+                    onSelect={(suggestion) => {
+                      setZone(suggestion.display);
+                      setLatitude(String(suggestion.lat));
+                      setLongitude(String(suggestion.lng));
+                    }}
+                    placeholder="Type 3+ chars (e.g. South Delhi)"
+                    className="h-11 rounded-xl"
+                  />
                 </div>
 
                 {/* Map Picker */}
