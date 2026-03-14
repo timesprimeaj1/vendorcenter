@@ -7,6 +7,8 @@ const MIGRATIONS = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture_url TEXT`,
   `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS work_started_at TIMESTAMPTZ`,
   `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS completion_requested_at TIMESTAMPTZ`,
+  `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_request_token_hash TEXT`,
+  `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_request_expires TIMESTAMPTZ`,
   `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS rejection_reason TEXT`,
   `ALTER TABLE vendor_services ADD COLUMN IF NOT EXISTS pending_price NUMERIC(12,2)`,
   `ALTER TABLE vendor_services ADD COLUMN IF NOT EXISTS pending_price_effective_at TIMESTAMPTZ`,

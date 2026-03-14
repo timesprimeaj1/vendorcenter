@@ -16,6 +16,8 @@ export interface DbBooking {
   finalAmount: number | null;
   workStartedAt: string | null;
   completionRequestedAt: string | null;
+  paymentRequestTokenHash: string | null;
+  paymentRequestExpires: string | null;
   rejectionReason: string | null;
   completionOtpHash: string | null;
   completionOtpExpires: string | null;
@@ -27,7 +29,7 @@ export async function createBooking(input: { customerId: string; vendorId: strin
   const result = await pool.query<DbBooking>(
     `INSERT INTO bookings (customer_id, vendor_id, service_name, status, transaction_id, payment_status, scheduled_date, scheduled_time, notes)
      VALUES ($1, $2, $3, 'pending', $4, 'pending', $5, $6, $7)
-    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [input.customerId, input.vendorId, input.serviceName, input.transactionId, input.scheduledDate || null, input.scheduledTime || null, input.notes || null]
   );
   return result.rows[0];
@@ -38,7 +40,7 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
     `UPDATE bookings
      SET status = $2, updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId, status]
   );
   return result.rows[0] ?? null;
@@ -46,7 +48,7 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
 export async function getBookingById(bookingId: string) {
   const result = await pool.query<DbBooking>(
-    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
+    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
      FROM bookings WHERE id = $1`,
     [bookingId]
   );
@@ -69,6 +71,8 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
               b.final_amount as "finalAmount",
               b.work_started_at as "workStartedAt",
               b.completion_requested_at as "completionRequestedAt",
+              b.payment_request_token_hash as "paymentRequestTokenHash",
+              b.payment_request_expires as "paymentRequestExpires",
               b.rejection_reason as "rejectionReason",
               b.created_at as "createdAt",
               b.updated_at as "updatedAt",
@@ -86,7 +90,7 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
 
   if (role === "vendor") {
     const result = await pool.query<DbBooking>(
-      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
+      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
        FROM bookings WHERE vendor_id = $1 ORDER BY created_at DESC`,
       [actorId]
     );
@@ -94,7 +98,7 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
   }
 
   const result = await pool.query<DbBooking>(
-    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
+    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
      FROM bookings ORDER BY created_at DESC`
   );
   return result.rows;
@@ -124,8 +128,17 @@ export async function getVendorBookingStats(vendorId: string) {
 
 export async function updateBookingFinalAmount(bookingId: string, finalAmount: number) {
   const result = await pool.query<DbBooking>(
-    `UPDATE bookings SET final_amount = $2, updated_at = NOW() WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    `UPDATE bookings
+     SET final_amount = $2,
+       payment_status = CASE WHEN status = 'completed' THEN payment_status ELSE 'pending' END,
+       completion_requested_at = NULL,
+       payment_request_token_hash = NULL,
+       payment_request_expires = NULL,
+       completion_otp_hash = NULL,
+       completion_otp_expires = NULL,
+       updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId, finalAmount]
   );
   return result.rows[0] ?? null;
@@ -139,7 +152,7 @@ export async function markBookingInProgress(bookingId: string) {
          rejection_reason = NULL,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId]
   );
   return result.rows[0] ?? null;
@@ -154,7 +167,7 @@ export async function rejectBookingWithReason(bookingId: string, reason: string)
          completion_otp_expires = NULL,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId, reason]
   );
   return result.rows[0] ?? null;
@@ -166,18 +179,32 @@ export async function markCompletionRequested(bookingId: string) {
      SET completion_requested_at = NOW(),
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId]
   );
   return result.rows[0] ?? null;
 }
 
+export async function setPaymentRequestToken(bookingId: string, tokenHash: string, expiresAt: Date) {
+  await pool.query(
+    `UPDATE bookings
+     SET payment_request_token_hash = $2,
+         payment_request_expires = $3,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [bookingId, tokenHash, expiresAt]
+  );
+}
+
 export async function markPaymentSuccess(bookingId: string) {
   const result = await pool.query<DbBooking>(
     `UPDATE bookings
-     SET payment_status = 'success', updated_at = NOW()
+     SET payment_status = 'success',
+         payment_request_token_hash = NULL,
+         payment_request_expires = NULL,
+         updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId]
   );
   return result.rows[0] ?? null;

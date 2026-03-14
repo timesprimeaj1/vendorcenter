@@ -7,15 +7,36 @@ import { pool } from "../../db/pool.js";
 
 export const analyticsRouter = Router();
 
+function normalizeCityFromZone(zone: string): string {
+  const parts = zone.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return "";
+
+  // Prefer the first meaningful locality/city token from left to right.
+  for (const part of parts) {
+    const lower = part.toLowerCase();
+    if (lower === "india") continue;
+    if (lower.includes("district") || lower.includes("state")) continue;
+    if (/^\d+$/.test(part)) continue;
+    return part;
+  }
+  return parts[0];
+}
+
 // Public homepage counters (no auth)
 analyticsRouter.get("/public", async (_req, res, next) => {
   try {
-    const [vendorsR, customersR, completedR, citiesR] = await Promise.all([
+    const [vendorsR, customersR, completedR, vendorZonesR] = await Promise.all([
       pool.query("SELECT COUNT(*)::int AS total FROM vendor_profiles WHERE verification_status = 'approved'"),
       pool.query("SELECT COUNT(*)::int AS total FROM users WHERE role = 'customer'"),
       pool.query("SELECT COUNT(*)::int AS total FROM bookings WHERE status = 'completed'"),
-      pool.query("SELECT COUNT(DISTINCT city)::int AS total FROM zones"),
+      pool.query<{ zone: string }>("SELECT zone FROM vendor_profiles WHERE verification_status = 'approved' AND zone IS NOT NULL"),
     ]);
+
+    const coveredCities = new Set<string>();
+    for (const row of vendorZonesR.rows) {
+      const city = normalizeCityFromZone(row.zone || "");
+      if (city) coveredCities.add(city.toLowerCase());
+    }
 
     res.json({
       success: true,
@@ -23,7 +44,7 @@ analyticsRouter.get("/public", async (_req, res, next) => {
         activeVendors: vendorsR.rows[0]?.total ?? 0,
         happyCustomers: customersR.rows[0]?.total ?? 0,
         servicesCompleted: completedR.rows[0]?.total ?? 0,
-        citiesCovered: citiesR.rows[0]?.total ?? 0,
+        citiesCovered: coveredCities.size,
       },
     });
   } catch (err) {

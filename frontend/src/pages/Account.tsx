@@ -46,7 +46,6 @@ const Account = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
 
   // Fetch which bookings already have reviews
   const { data: reviewedBookingIds, refetch: refetchReviewed } = useQuery({
@@ -113,19 +112,6 @@ const Account = () => {
       toast.error(err.message || "Failed to submit review");
     } finally {
       setSubmittingReview(false);
-    }
-  };
-
-  const payAndGenerateOtp = async (bookingId: string) => {
-    setPayingBookingId(bookingId);
-    try {
-      const res = await api.payBooking(bookingId);
-      toast.success(`Payment done. OTP sent to your email. Payment token: ${res.data?.paymentToken || "generated"}`);
-      queryClient.invalidateQueries({ queryKey: ["user-bookings"] });
-    } catch (err: any) {
-      toast.error(err.message || "Payment failed");
-    } finally {
-      setPayingBookingId(null);
     }
   };
 
@@ -281,15 +267,7 @@ const Account = () => {
                           )}
                           {booking.status === "in_progress" && booking.paymentStatus !== "success" && (
                             <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                className="text-xs rounded-lg"
-                                disabled={payingBookingId === booking.id}
-                                onClick={() => payAndGenerateOtp(booking.id)}
-                              >
-                                {payingBookingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                                Pay Now (Dummy)
-                              </Button>
+                              <span className="text-xs text-muted-foreground">Use payment link from your email to pay securely.</span>
                             </div>
                           )}
                         </div>

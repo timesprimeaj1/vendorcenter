@@ -209,9 +209,10 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  payBooking: (bookingId: string) =>
+  payBooking: (bookingId: string, paymentToken: string) =>
     request<{ bookingId: string; paymentToken: string; otpSent: boolean }>(`/bookings/${encodeURIComponent(bookingId)}/pay`, {
       method: "POST",
+      body: JSON.stringify({ paymentToken }),
     }),
 
   getBookings: () => request<any[]>("/bookings"),

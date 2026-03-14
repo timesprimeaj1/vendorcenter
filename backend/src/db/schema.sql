@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   final_amount INTEGER,
   work_started_at TIMESTAMPTZ,
   completion_requested_at TIMESTAMPTZ,
+  payment_request_token_hash TEXT,
+  payment_request_expires TIMESTAMPTZ,
   rejection_reason TEXT,
   completion_otp_hash TEXT,
   completion_otp_expires TIMESTAMPTZ,

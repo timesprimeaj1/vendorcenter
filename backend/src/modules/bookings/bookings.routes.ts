@@ -14,6 +14,7 @@ import {
   markCompletionRequested,
   markPaymentSuccess,
   rejectBookingWithReason,
+  setPaymentRequestToken,
   setCompletionOtp,
   updateBookingFinalAmount,
   updateBookingStatus,
@@ -61,18 +62,7 @@ bookingsRouter.post("/", requireRole(["customer"]), async (req: AuthRequest, res
     metadata: { bookingId: booking.id, vendorId: booking.vendorId }
   });
 
-  // Send booking intimation email (request created, pending vendor action)
-  const customer = await findUserById(req.actor!.id);
-  if (customer?.email) {
-    sendBookingConfirmation({
-      recipientEmail: customer.email,
-      bookingId: booking.id,
-      serviceName: booking.serviceName,
-      transactionId: booking.transactionId,
-      status: "pending",
-      createdAt: new Date(booking.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-    }).catch((err) => console.error("[booking] failed to queue confirmation email", err));
-  }
+  // No email at creation. Customer gets booking confirmation only after vendor accepts.
 
   res.status(201).json({ success: true, data: booking });
 });
@@ -271,15 +261,38 @@ bookingsRouter.post("/:bookingId/complete", requireRole(["vendor"]), async (req:
     res.status(400).json({ success: false, error: "Booking must be in progress to mark complete" });
     return;
   }
+  if (!booking.finalAmount || booking.finalAmount <= 0) {
+    res.status(400).json({ success: false, error: "Set final amount before requesting payment" });
+    return;
+  }
+
+  if (booking.completionRequestedAt) {
+    const requestedAtMs = new Date(booking.completionRequestedAt).getTime();
+    const expired = Date.now() > requestedAtMs + 15 * 60 * 1000;
+    if (!expired) {
+      res.status(409).json({ success: false, error: "Payment request already active. Wait 15 minutes or complete payment." });
+      return;
+    }
+    const adjustedAfterExpiry = new Date(booking.updatedAt).getTime() > requestedAtMs;
+    if (!adjustedAfterExpiry) {
+      res.status(400).json({ success: false, error: "Payment window expired. Vendor must adjust amount and request payment again." });
+      return;
+    }
+  }
+
+  const paymentToken = `pay_${nanoid(16)}`;
+  const paymentTokenHash = crypto.createHash("sha256").update(paymentToken).digest("hex");
+  const paymentExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   await markCompletionRequested(booking.id);
+  await setPaymentRequestToken(booking.id, paymentTokenHash, paymentExpiresAt);
 
   const customer = await findUserById(booking.customerId);
   const vendorProfile = await getVendorProfile(booking.vendorId);
   const amountStr = booking.finalAmount ? (booking.finalAmount / 100).toFixed(2) : undefined;
 
   // Demo payment link (customer confirms dummy payment then OTP is generated)
-  const paymentLink = `https://vendorcenter.in/pay/${booking.id}?amount=${booking.finalAmount ?? 0}&txn=${booking.transactionId}`;
+  const paymentLink = `https://vendorcenter.in/pay/${booking.id}?amount=${booking.finalAmount ?? 0}&txn=${booking.transactionId}&pt=${paymentToken}`;
 
   if (customer?.email) {
     sendNotificationEmail({
@@ -293,7 +306,7 @@ bookingsRouter.post("/:bookingId/complete", requireRole(["vendor"]), async (req:
         <p style="color:#374151;margin:0 0 10px"><strong>Service:</strong> ${booking.serviceName}</p>
         <p style="color:#374151;margin:0 0 10px"><strong>Amount:</strong> ${amountStr ? `₹ ${amountStr}` : "To be confirmed"}</p>
         <p style="margin:16px 0"><a href="${paymentLink}" style="background:#f97316;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">Proceed To Payment</a></p>
-        <p style="color:#6b7280;margin:0">After payment, OTP will be sent to your email. Share that OTP with the vendor to complete booking.</p>`,
+        <p style="color:#6b7280;margin:0">Link valid for 15 minutes. If payment is not completed in time, vendor must adjust amount and resend request.</p>`,
     }).catch((err) => console.error("[booking] failed to send payment intimation email", err));
   }
 
@@ -310,6 +323,12 @@ bookingsRouter.post("/:bookingId/complete", requireRole(["vendor"]), async (req:
 
 // ── Customer confirms dummy payment → receives OTP to share with vendor ──
 bookingsRouter.post("/:bookingId/pay", requireRole(["customer"]), async (req: AuthRequest, res) => {
+  const parsed = z.object({ paymentToken: z.string().min(10) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.flatten() });
+    return;
+  }
+
   const booking = await getBookingById(req.params.bookingId);
   if (!booking) {
     res.status(404).json({ success: false, error: "Booking not found" });
@@ -321,6 +340,19 @@ bookingsRouter.post("/:bookingId/pay", requireRole(["customer"]), async (req: Au
   }
   if (booking.status !== "in_progress") {
     res.status(400).json({ success: false, error: "Booking is not in progress" });
+    return;
+  }
+  if (!booking.completionRequestedAt || !booking.paymentRequestTokenHash || !booking.paymentRequestExpires) {
+    res.status(400).json({ success: false, error: "No active payment request. Ask vendor to request again." });
+    return;
+  }
+  if (Date.now() > new Date(booking.paymentRequestExpires).getTime()) {
+    res.status(410).json({ success: false, error: "Payment link expired. Ask vendor to adjust amount and resend request." });
+    return;
+  }
+  const inputHash = crypto.createHash("sha256").update(parsed.data.paymentToken).digest("hex");
+  if (inputHash !== booking.paymentRequestTokenHash) {
+    res.status(403).json({ success: false, error: "Invalid payment link" });
     return;
   }
 
