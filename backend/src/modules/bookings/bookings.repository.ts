@@ -14,6 +14,9 @@ export interface DbBooking {
   scheduledTime: string | null;
   notes: string | null;
   finalAmount: number | null;
+  workStartedAt: string | null;
+  completionRequestedAt: string | null;
+  rejectionReason: string | null;
   completionOtpHash: string | null;
   completionOtpExpires: string | null;
   createdAt: string;
@@ -24,7 +27,7 @@ export async function createBooking(input: { customerId: string; vendorId: strin
   const result = await pool.query<DbBooking>(
     `INSERT INTO bookings (customer_id, vendor_id, service_name, status, transaction_id, payment_status, scheduled_date, scheduled_time, notes)
      VALUES ($1, $2, $3, 'pending', $4, 'pending', $5, $6, $7)
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"`,
+    RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [input.customerId, input.vendorId, input.serviceName, input.transactionId, input.scheduledDate || null, input.scheduledTime || null, input.notes || null]
   );
   return result.rows[0];
@@ -35,7 +38,7 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
     `UPDATE bookings
      SET status = $2, updated_at = NOW()
      WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"`,
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId, status]
   );
   return result.rows[0] ?? null;
@@ -43,7 +46,7 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
 export async function getBookingById(bookingId: string) {
   const result = await pool.query<DbBooking>(
-    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"
+    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
      FROM bookings WHERE id = $1`,
     [bookingId]
   );
@@ -53,8 +56,29 @@ export async function getBookingById(bookingId: string) {
 export async function listBookingsByRole(role: "customer" | "vendor" | "admin" | "employee", actorId: string) {
   if (role === "customer") {
     const result = await pool.query<DbBooking>(
-      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"
-       FROM bookings WHERE customer_id = $1 ORDER BY created_at DESC`,
+      `SELECT b.id,
+              b.customer_id as "customerId",
+              b.vendor_id as "vendorId",
+              b.service_name as "serviceName",
+              b.status,
+              b.transaction_id as "transactionId",
+              b.payment_status as "paymentStatus",
+              b.scheduled_date as "scheduledDate",
+              b.scheduled_time as "scheduledTime",
+              b.notes,
+              b.final_amount as "finalAmount",
+              b.work_started_at as "workStartedAt",
+              b.completion_requested_at as "completionRequestedAt",
+              b.rejection_reason as "rejectionReason",
+              b.created_at as "createdAt",
+              b.updated_at as "updatedAt",
+              vp.business_name as "vendorName",
+              COALESCE(vra.average_rating, 0)::float8 as "vendorRating"
+       FROM bookings b
+       LEFT JOIN vendor_profiles vp ON vp.vendor_id = b.vendor_id
+       LEFT JOIN vendor_rating_aggregates vra ON vra.vendor_id = b.vendor_id
+       WHERE b.customer_id = $1
+       ORDER BY b.created_at DESC`,
       [actorId]
     );
     return result.rows;
@@ -62,7 +86,7 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
 
   if (role === "vendor") {
     const result = await pool.query<DbBooking>(
-      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"
+      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
        FROM bookings WHERE vendor_id = $1 ORDER BY created_at DESC`,
       [actorId]
     );
@@ -70,7 +94,7 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
   }
 
   const result = await pool.query<DbBooking>(
-    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"
+    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
      FROM bookings ORDER BY created_at DESC`
   );
   return result.rows;
@@ -101,8 +125,60 @@ export async function getVendorBookingStats(vendorId: string) {
 export async function updateBookingFinalAmount(bookingId: string, finalAmount: number) {
   const result = await pool.query<DbBooking>(
     `UPDATE bookings SET final_amount = $2, updated_at = NOW() WHERE id = $1
-     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", created_at as "createdAt", updated_at as "updatedAt"`,
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
     [bookingId, finalAmount]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function markBookingInProgress(bookingId: string) {
+  const result = await pool.query<DbBooking>(
+    `UPDATE bookings
+     SET status = 'in_progress',
+         work_started_at = COALESCE(work_started_at, NOW()),
+         rejection_reason = NULL,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    [bookingId]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function rejectBookingWithReason(bookingId: string, reason: string) {
+  const result = await pool.query<DbBooking>(
+    `UPDATE bookings
+     SET status = 'cancelled',
+         rejection_reason = $2,
+         completion_otp_hash = NULL,
+         completion_otp_expires = NULL,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    [bookingId, reason]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function markCompletionRequested(bookingId: string) {
+  const result = await pool.query<DbBooking>(
+    `UPDATE bookings
+     SET completion_requested_at = NOW(),
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    [bookingId]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function markPaymentSuccess(bookingId: string) {
+  const result = await pool.query<DbBooking>(
+    `UPDATE bookings
+     SET payment_status = 'success', updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"`,
+    [bookingId]
   );
   return result.rows[0] ?? null;
 }

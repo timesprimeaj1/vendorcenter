@@ -190,16 +190,38 @@ export const vendorApi = {
 
   getVendorServices: () => request<any[]>("/services/mine"),
 
+  getDeletedVendorServices: () => request<any[]>("/services/mine/deleted"),
+
+  getServiceHistory: (serviceId: string) => request<any[]>(`/services/${encodeURIComponent(serviceId)}/history`),
+
   createService: (payload: { name: string; price: number; availability: string }) =>
     request("/services", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
+  scheduleServicePriceUpdate: (serviceId: string, payload: { newPrice: number; effectiveInDays: 1 | 2 }) =>
+    request(`/services/${encodeURIComponent(serviceId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteService: (serviceId: string, reason?: string) =>
+    request(`/services/${encodeURIComponent(serviceId)}`, {
+      method: "DELETE",
+      body: JSON.stringify({ reason }),
+    }),
+
   updateBookingStatus: (bookingId: string, status: string) =>
     request("/bookings/" + encodeURIComponent(bookingId) + "/status", {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    }),
+
+  rejectBooking: (bookingId: string, reason: string) =>
+    request("/bookings/" + encodeURIComponent(bookingId) + "/reject", {
+      method: "POST",
+      body: JSON.stringify({ reason }),
     }),
 
   updateBookingFinalAmount: (bookingId: string, amount: number) =>

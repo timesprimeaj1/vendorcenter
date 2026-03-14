@@ -10,6 +10,16 @@ export function bookingConfirmationHtml(opts: {
   location?: string;
   amount?: string;
 }) {
+  const normalizedStatus = String(opts.status || "pending").toLowerCase();
+  const isConfirmed = normalizedStatus === "confirmed";
+  const heading = isConfirmed ? "Booking Confirmed!" : "Booking Request Received";
+  const subheading = isConfirmed
+    ? "Your booking has been confirmed by vendor."
+    : "Your request is received and waiting for vendor acceptance.";
+  const preheader = isConfirmed
+    ? `Booking #${opts.bookingId.slice(0, 8).toUpperCase()} confirmed for ${opts.serviceName}`
+    : `Booking request #${opts.bookingId.slice(0, 8).toUpperCase()} created for ${opts.serviceName}`;
+
   const vendorLine = opts.vendorName
     ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Vendor</td><td style="padding:6px 0;color:#1a1a2e;font-size:14px;text-align:right;font-weight:500">${opts.vendorName}</td></tr>`
     : "";
@@ -21,8 +31,8 @@ export function bookingConfirmationHtml(opts: {
     : "";
 
   const content = `
-    <h2 style="text-align:center;color:#1a1a2e;margin:0 0 4px;font-size:22px">Booking Confirmed!</h2>
-    <p style="text-align:center;color:#6b7280;margin:0 0 24px;font-size:14px">Your booking has been placed successfully.</p>
+    <h2 style="text-align:center;color:#1a1a2e;margin:0 0 4px;font-size:22px">${heading}</h2>
+    <p style="text-align:center;color:#6b7280;margin:0 0 24px;font-size:14px">${subheading}</p>
 
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center;margin-bottom:24px">
       <span style="font-size:28px">&#10004;</span>
@@ -53,5 +63,5 @@ export function bookingConfirmationHtml(opts: {
 
     <p style="text-align:center;color:#9ca3af;font-size:13px">You can track your booking in your VendorCenter dashboard.</p>`;
 
-  return baseTemplate(content, { preheader: `Booking #${opts.bookingId.slice(0, 8).toUpperCase()} confirmed for ${opts.serviceName}` });
+  return baseTemplate(content, { preheader });
 }

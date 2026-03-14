@@ -19,6 +19,10 @@ coverage/
 .env.*
 !.env.example
 
+# Private local secrets vault (never commit)
+.private/
+credentials.local.md
+
 # OS/Editor
 .DS_Store
 Thumbs.db

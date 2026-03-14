@@ -29,6 +29,7 @@ const VendorBookings = () => {
   const [sendingOtp, setSendingOtp] = useState<Record<string, boolean>>({});
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
   const [verifyingOtp, setVerifyingOtp] = useState<Record<string, boolean>>({});
+  const [rejecting, setRejecting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -49,6 +50,25 @@ const VendorBookings = () => {
       toast.success(`Booking ${status}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to update status");
+    }
+  };
+
+  const rejectBooking = async (bookingId: string) => {
+    const reason = window.prompt("Enter cancellation reason for customer:", "Service unavailable at requested time");
+    if (!reason || reason.trim().length < 5) {
+      toast.error("Cancellation reason must be at least 5 characters");
+      return;
+    }
+
+    setRejecting(prev => ({ ...prev, [bookingId]: true }));
+    try {
+      await api.rejectBooking(bookingId, reason.trim());
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: "cancelled", rejectionReason: reason.trim() } : b));
+      toast.success("Booking declined and customer notified");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reject booking");
+    } finally {
+      setRejecting(prev => ({ ...prev, [bookingId]: false }));
     }
   };
 
@@ -76,7 +96,7 @@ const VendorBookings = () => {
     try {
       await api.requestCompletion(bookingId);
       setOtpSent(prev => ({ ...prev, [bookingId]: true }));
-      toast.success("Completion OTP sent to customer's email");
+      toast.success("Payment request sent. OTP will be generated after customer payment.");
     } catch (err: any) {
       toast.error(err.message || "Failed to send completion OTP");
     } finally {
@@ -187,6 +207,16 @@ const VendorBookings = () => {
                         </p>
                       )}
                       {b.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">"{b.notes}"</p>}
+                      {b.workStartedAt && (
+                        <p className="text-xs text-green-700 mt-0.5">
+                          Work started: {new Date(b.workStartedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      )}
+                      {b.rejectionReason && (
+                        <p className="text-xs text-red-600 mt-0.5">
+                          Cancellation reason: {b.rejectionReason}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">ID: {b.transactionId}</p>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColors[b.status] || "bg-gray-100 text-gray-800"}`}>
@@ -199,9 +229,9 @@ const VendorBookings = () => {
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                         Accept
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => updateStatus(b.id, "cancelled")}>
+                      <Button size="sm" variant="destructive" disabled={rejecting[b.id]} onClick={() => rejectBooking(b.id)}>
                         <XCircle className="w-3.5 h-3.5 mr-1" />
-                        Decline
+                        {rejecting[b.id] ? "Declining..." : "Decline"}
                       </Button>
                     </div>
                   )}
@@ -249,7 +279,7 @@ const VendorBookings = () => {
                         </div>
                       </div>
 
-                      {/* Step 2: Work Done → Send OTP */}
+                      {/* Step 2: Work Done → Ask customer to pay */}
                       {!otpSent[b.id] ? (
                         <Button
                           size="sm"
@@ -260,7 +290,7 @@ const VendorBookings = () => {
                           {sendingOtp[b.id] ? (
                             <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Sending...</>
                           ) : (
-                            <><Send className="w-3.5 h-3.5 mr-1" /> Work Done — Send OTP to Customer</>
+                            <><Send className="w-3.5 h-3.5 mr-1" /> Work Done — Request Customer Payment</>
                           )}
                         </Button>
                       ) : (
@@ -270,7 +300,7 @@ const VendorBookings = () => {
                             <ShieldCheck className="w-3.5 h-3.5" /> Enter OTP from Customer
                           </p>
                           <p className="text-xs text-muted-foreground mb-2">
-                            An OTP with payment link has been sent to the customer's email. Ask the customer for the OTP to verify completion.
+                            Customer has been asked to complete payment. OTP is sent after payment. Ask customer for OTP to verify completion.
                           </p>
                           <div className="flex gap-2">
                             <Input

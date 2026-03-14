@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   scheduled_time TEXT,
   notes TEXT,
   final_amount INTEGER,
+  work_started_at TIMESTAMPTZ,
+  completion_requested_at TIMESTAMPTZ,
+  rejection_reason TEXT,
   completion_otp_hash TEXT,
   completion_otp_expires TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -103,8 +106,25 @@ CREATE TABLE IF NOT EXISTS vendor_services (
   availability TEXT NOT NULL CHECK (availability IN ('available', 'unavailable')),
   locations JSONB NOT NULL DEFAULT '[]'::jsonb,
   images JSONB NOT NULL DEFAULT '[]'::jsonb,
+  pending_price NUMERIC(12,2),
+  pending_price_effective_at TIMESTAMPTZ,
+  is_deleted BOOLEAN NOT NULL DEFAULT false,
+  deleted_at TIMESTAMPTZ,
+  deleted_reason TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vendor_service_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  service_id UUID NOT NULL,
+  vendor_id TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('price_update_scheduled', 'price_update_applied', 'deleted')),
+  old_price NUMERIC(12,2),
+  new_price NUMERIC(12,2),
+  effective_at TIMESTAMPTZ,
+  reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS employee_zone_assignments (

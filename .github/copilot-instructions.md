@@ -45,6 +45,9 @@ When issue is urgent:
 - Preserve existing deployment behavior unless explicitly asked to change it.
 - Never push when owner says: "do not push until I say".
 - Never hide uncertainty; verify or state what needs verification.
+- Use local private credential vault at `.private/credentials.local.md` for this repo.
+- Never commit or push secrets; if a credential is marked high-billing-risk, ask before using it.
+- If required credentials are missing, ask the owner once with a concise checklist.
 
 ### Reaction Handling
 - If owner is frustrated, do not argue.

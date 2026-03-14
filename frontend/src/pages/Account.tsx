@@ -46,6 +46,7 @@ const Account = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
 
   // Fetch which bookings already have reviews
   const { data: reviewedBookingIds, refetch: refetchReviewed } = useQuery({
@@ -112,6 +113,19 @@ const Account = () => {
       toast.error(err.message || "Failed to submit review");
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const payAndGenerateOtp = async (bookingId: string) => {
+    setPayingBookingId(bookingId);
+    try {
+      const res = await api.payBooking(bookingId);
+      toast.success(`Payment done. OTP sent to your email. Payment token: ${res.data?.paymentToken || "generated"}`);
+      queryClient.invalidateQueries({ queryKey: ["user-bookings"] });
+    } catch (err: any) {
+      toast.error(err.message || "Payment failed");
+    } finally {
+      setPayingBookingId(null);
     }
   };
 
@@ -211,6 +225,12 @@ const Account = () => {
                             <p className="text-xs text-muted-foreground mt-1">
                               ORDER #{booking.transactionId} &nbsp;|&nbsp; {new Date(booking.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
                             </p>
+                            {(booking.vendorName || booking.vendorRating != null) && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {booking.vendorName ? `Vendor: ${booking.vendorName}` : "Vendor assigned"}
+                                {booking.vendorRating != null ? ` • Rating: ${Number(booking.vendorRating).toFixed(1)}` : ""}
+                              </p>
+                            )}
                           </div>
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[booking.status] || "bg-gray-100 text-gray-800"}`}>
                             {statusIcons[booking.status]}
@@ -229,6 +249,14 @@ const Account = () => {
                             <span className="text-xs text-muted-foreground">
                               Payment: {booking.paymentStatus}
                             </span>
+                            {booking.workStartedAt && (
+                              <span className="text-xs text-green-700 block">
+                                Work started: {new Date(booking.workStartedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
+                              </span>
+                            )}
+                            {booking.rejectionReason && (
+                              <span className="text-xs text-red-600 block">Cancellation reason: {booking.rejectionReason}</span>
+                            )}
                           </div>
                           {(booking.status === "confirmed" || booking.status === "completed") && (
                             <div className="flex items-center gap-2">
@@ -249,6 +277,19 @@ const Account = () => {
                                   <CheckCircle2 className="w-3 h-3" /> Reviewed
                                 </span>
                               )}
+                            </div>
+                          )}
+                          {booking.status === "in_progress" && booking.paymentStatus !== "success" && (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="text-xs rounded-lg"
+                                disabled={payingBookingId === booking.id}
+                                onClick={() => payAndGenerateOtp(booking.id)}
+                              >
+                                {payingBookingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                                Pay Now (Dummy)
+                              </Button>
                             </div>
                           )}
                         </div>

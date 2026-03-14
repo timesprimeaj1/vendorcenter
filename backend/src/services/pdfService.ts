@@ -15,6 +15,12 @@ export interface ReceiptData {
   amount?: string;
   paymentStatus: string;
   date: string;
+  bookingStatus?: string;
+  notes?: string;
+  workStartedAt?: string;
+  completionRequestedAt?: string;
+  completedAt?: string;
+  rejectionReason?: string;
 }
 
 export function generateBookingReceipt(data: ReceiptData): Promise<Buffer> {
@@ -51,7 +57,13 @@ export function generateBookingReceipt(data: ReceiptData): Promise<Buffer> {
     rows.push(["Customer Email", data.customerEmail]);
     if (data.vendorName) rows.push(["Vendor", data.vendorName]);
     if (data.amount) rows.push(["Amount", `₹ ${data.amount}`]);
+    if (data.bookingStatus) rows.push(["Booking Status", data.bookingStatus.replace("_", " ").toUpperCase()]);
     rows.push(["Payment Status", data.paymentStatus.toUpperCase()]);
+    if (data.workStartedAt) rows.push(["Work Started", data.workStartedAt]);
+    if (data.completionRequestedAt) rows.push(["Completion Requested", data.completionRequestedAt]);
+    if (data.completedAt) rows.push(["Completed At", data.completedAt]);
+    if (data.rejectionReason) rows.push(["Cancellation Reason", data.rejectionReason]);
+    if (data.notes) rows.push(["Customer Notes", data.notes]);
     rows.push(["Date", data.date]);
 
     for (const [label, value] of rows) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, LogOut, Plus, Wrench, IndianRupee } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Plus, Wrench, IndianRupee, Trash2, Clock4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,16 @@ const VendorServices = () => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+  const [refreshingDeleted, setRefreshingDeleted] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
+  const [pendingPrices, setPendingPrices] = useState<Record<string, string>>({});
+  const [pendingDays, setPendingDays] = useState<Record<string, 1 | 2>>({});
+  const [scheduling, setScheduling] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+  const [deletedServices, setDeletedServices] = useState<any[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -24,8 +31,11 @@ const VendorServices = () => {
 
   useEffect(() => {
     if (!user) return;
-    api.getVendorServices()
-      .then((res) => setServices(res.data || []))
+    Promise.all([api.getVendorServices(), api.getDeletedVendorServices()])
+      .then(([activeRes, deletedRes]) => {
+        setServices(activeRes.data || []);
+        setDeletedServices(deletedRes.data || []);
+      })
       .catch(() => toast.error("Failed to load services"))
       .finally(() => setLoading(false));
   }, [user]);
@@ -45,6 +55,53 @@ const VendorServices = () => {
       toast.error(err.message || "Failed to add service");
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  const refreshDeleted = async () => {
+    setRefreshingDeleted(true);
+    try {
+      const res = await api.getDeletedVendorServices();
+      setDeletedServices(res.data || []);
+    } finally {
+      setRefreshingDeleted(false);
+    }
+  };
+
+  const schedulePriceUpdate = async (serviceId: string) => {
+    const price = parseFloat(pendingPrices[serviceId] ?? "");
+    const days = pendingDays[serviceId] ?? 1;
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.error("Enter a valid new price");
+      return;
+    }
+
+    setScheduling(prev => ({ ...prev, [serviceId]: true }));
+    try {
+      const res = await api.scheduleServicePriceUpdate(serviceId, { newPrice: price, effectiveInDays: days });
+      if (res.data) {
+        setServices(prev => prev.map(s => s.id === serviceId ? res.data : s));
+      }
+      toast.success(`Price update scheduled. It will go live in ${days} day${days === 1 ? "" : "s"}.`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to schedule price update");
+    } finally {
+      setScheduling(prev => ({ ...prev, [serviceId]: false }));
+    }
+  };
+
+  const deleteService = async (serviceId: string) => {
+    const reason = window.prompt("Reason for deleting this service (optional):", "No longer offered");
+    setDeleting(prev => ({ ...prev, [serviceId]: true }));
+    try {
+      await api.deleteService(serviceId, reason?.trim() || undefined);
+      setServices(prev => prev.filter(s => s.id !== serviceId));
+      await refreshDeleted();
+      toast.success("Service deleted and added to history");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete service");
+    } finally {
+      setDeleting(prev => ({ ...prev, [serviceId]: false }));
     }
   };
 
@@ -80,10 +137,15 @@ const VendorServices = () => {
             <Wrench className="w-6 h-6 text-orange-500" />
             Your Services
           </h1>
-          <Button size="sm" className="bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0" onClick={() => setShowAdd(!showAdd)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Add Service
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowDeleted(v => !v)}>
+              {showDeleted ? "Hide Deleted" : "Deleted History"}
+            </Button>
+            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0" onClick={() => setShowAdd(!showAdd)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Add Service
+            </Button>
+          </div>
         </div>
 
         {showAdd && (
@@ -121,21 +183,101 @@ const VendorServices = () => {
           <div className="space-y-3">
             {services.map((s) => (
               <Card key={s.id}>
-                <CardContent className="pt-4 pb-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">{s.name}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <IndianRupee className="w-3 h-3" />
-                      {s.price}
-                    </p>
+                <CardContent className="pt-4 pb-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">{s.name}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <IndianRupee className="w-3 h-3" />
+                        {s.price}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${s.availability === "available" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                        {s.availability}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deleting[s.id]}
+                        onClick={() => deleteService(s.id)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        {deleting[s.id] ? "Deleting..." : "Delete"}
+                      </Button>
+                    </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${s.availability === "available" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                    {s.availability}
-                  </span>
+
+                  {s.pendingPrice != null && s.pendingPriceEffectiveAt && (
+                    <p className="text-xs text-orange-700 flex items-center gap-1">
+                      <Clock4 className="w-3.5 h-3.5" />
+                      Scheduled price ₹{s.pendingPrice} effective on {new Date(s.pendingPriceEffectiveAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-muted-foreground">New Price</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter new price"
+                        value={pendingPrices[s.id] ?? ""}
+                        onChange={(e) => setPendingPrices(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Apply In</label>
+                      <select
+                        className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                        value={pendingDays[s.id] ?? 1}
+                        onChange={(e) => setPendingDays(prev => ({ ...prev, [s.id]: Number(e.target.value) as 1 | 2 }))}
+                      >
+                        <option value={1}>1 day</option>
+                        <option value={2}>2 days</option>
+                      </select>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={scheduling[s.id]}
+                      onClick={() => schedulePriceUpdate(s.id)}
+                    >
+                      {scheduling[s.id] ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                      Schedule
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+        )}
+
+        {showDeleted && (
+          <Card className="mt-6 border-dashed">
+            <CardHeader>
+              <CardTitle className="text-base">Deleted Services History</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {refreshingDeleted ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+                </div>
+              ) : deletedServices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No deleted services yet.</p>
+              ) : (
+                deletedServices.map((s) => (
+                  <div key={s.id} className="rounded-lg border p-3">
+                    <p className="font-medium text-sm">{s.name}</p>
+                    <p className="text-xs text-muted-foreground">Last price: ₹{s.price}</p>
+                    <p className="text-xs text-muted-foreground">Deleted on: {s.deletedAt ? new Date(s.deletedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "-"}</p>
+                    {s.deletedReason && <p className="text-xs text-muted-foreground">Reason: {s.deletedReason}</p>}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -65,11 +65,13 @@ export async function sendBookingConfirmation(opts: {
   location?: string;
   amount?: string;
 }) {
+  const isConfirmed = String(opts.status).toLowerCase() === "confirmed";
+  const subjectPrefix = isConfirmed ? "Booking Confirmed" : "Booking Request Received";
   console.log(`[emailService] queueing booking confirmation for ${opts.recipientEmail} booking=${opts.bookingId}`);
   return queueEmailJob({
     recipientEmail: opts.recipientEmail,
     senderEmail: senders.noreply,
-    subject: `Booking Confirmed — #${opts.bookingId.slice(0, 8).toUpperCase()}`,
+    subject: `${subjectPrefix} — #${opts.bookingId.slice(0, 8).toUpperCase()}`,
     bodyHtml: bookingConfirmationHtml({
       bookingId: opts.bookingId,
       serviceName: opts.serviceName,
