@@ -11,15 +11,20 @@ function normalizeCityFromZone(zone: string): string {
   const parts = zone.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length === 0) return "";
 
-  // Prefer the first meaningful locality/city token from left to right.
-  for (const part of parts) {
+  const cleaned = parts.filter((part) => {
     const lower = part.toLowerCase();
-    if (lower === "india") continue;
-    if (lower.includes("district") || lower.includes("state")) continue;
-    if (/^\d+$/.test(part)) continue;
-    return part;
-  }
-  return parts[0];
+    if (lower === "india") return false;
+    if (lower.includes("district") || lower.includes("state")) return false;
+    if (/^\d+$/.test(part)) return false;
+    return true;
+  });
+
+  if (cleaned.length === 0) return "";
+
+  // Our zone format is usually: locality, city, state.
+  // Prefer the city token (second meaningful token) when available.
+  if (cleaned.length >= 2) return cleaned[1];
+  return cleaned[0];
 }
 
 // Public homepage counters (no auth)
