@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useId } from "react";
 import {
   X,
   Send,
@@ -9,7 +9,6 @@ import {
   RotateCcw,
   CheckCircle2,
   Trophy,
-  Bot,
   Zap,
   Search,
   CalendarCheck,
@@ -17,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation as useRouteLocation } from "react-router-dom";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -114,6 +113,38 @@ function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function VendorCenterAiLogo({ size = 40 }: { size?: number }) {
+  const badgeGradientId = useId();
+
+  return (
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <svg
+        viewBox="0 0 40 40"
+        className="h-full w-full"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id={badgeGradientId} x1="6" y1="6" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+            <stop stopColor="hsl(34,100%,53%)" />
+            <stop offset="0.5" stopColor="hsl(12,93%,55%)" />
+            <stop offset="1" stopColor="hsl(337,86%,51%)" />
+          </linearGradient>
+        </defs>
+        <circle cx="20" cy="20" r="18" fill={`url(#${badgeGradientId})`} />
+        <circle cx="20" cy="20" r="18" stroke="white" strokeOpacity="0.22" strokeWidth="1.2" />
+        <path d="M30.8 29.8L26.9 25.9" stroke="white" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M12.7 15.5C12.7 13.3 14.5 11.5 16.7 11.5H23.3C25.5 11.5 27.3 13.3 27.3 15.5V20.3C27.3 22.5 25.5 24.3 23.3 24.3H19.1L15.4 27.1C14.9 27.5 14.2 27.1 14.2 26.5V24.3H16.7C14.5 24.3 12.7 22.5 12.7 20.3V15.5Z" fill="white" fillOpacity="0.97" />
+        <path d="M17.3 18.3L19.2 20.2L22.8 16.6" stroke={`url(#${badgeGradientId})`} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 // ─── Sub-components ──────────────────────────────────────────
 
 function TypingIndicator() {
@@ -135,9 +166,7 @@ function WelcomeCard({ onSuggestionClick, suggestions }: { onSuggestionClick: (s
       {/* Welcome hero */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 p-4 border border-primary/10">
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[hsl(340,82%,52%)] shadow-md">
-            <Bot className="h-5 w-5 text-white" />
-          </div>
+          <VendorCenterAiLogo size={40} />
           <div>
             <p className="text-sm font-semibold text-foreground">VendorCenter AI</p>
             <p className="text-xs text-muted-foreground">Your personal service finder</p>
@@ -282,9 +311,26 @@ const WELCOME_MESSAGE: ChatMessage = {
 const CHAT_STORAGE_KEY = "vc_ai_chat_messages";
 const CHAT_CONV_KEY = "vc_ai_chat_conv_id";
 
-function loadSavedMessages(): ChatMessage[] {
+function getAuthScope(): string {
+  const token = localStorage.getItem("customer_accessToken");
+  if (!token) return "guest";
+
   try {
-    const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+    const payload = JSON.parse(atob(token.split(".")[1] || "")) as Record<string, unknown>;
+    const uid = String(payload.id || payload.sub || payload.userId || "").trim();
+    return uid ? `user:${uid}` : "guest";
+  } catch {
+    return "guest";
+  }
+}
+
+function scopedStorageKey(baseKey: string, scope: string): string {
+  return `${baseKey}:${scope}`;
+}
+
+function loadSavedMessages(scope: string): ChatMessage[] {
+  try {
+    const raw = sessionStorage.getItem(scopedStorageKey(CHAT_STORAGE_KEY, scope));
     if (raw) {
       const parsed = JSON.parse(raw) as ChatMessage[];
       // Restore Date objects
@@ -295,19 +341,44 @@ function loadSavedMessages(): ChatMessage[] {
 }
 
 export default function AiAssistantChat() {
+  const [authScope, setAuthScope] = useState<string>(() => getAuthScope());
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(loadSavedMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages(getAuthScope()));
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(
-    () => sessionStorage.getItem(CHAT_CONV_KEY) || undefined,
+    () => sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, getAuthScope())) || undefined,
   );
   const [isClosing, setIsClosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { location } = useGeoLocation();
   const navigate = useNavigate();
+  const routeLocation = useRouteLocation();
+
+  useEffect(() => {
+    const syncScope = () => {
+      const nextScope = getAuthScope();
+      setAuthScope((prev) => (prev === nextScope ? prev : nextScope));
+    };
+
+    syncScope();
+    const intervalId = window.setInterval(syncScope, 1500);
+    window.addEventListener("focus", syncScope);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncScope);
+    };
+  }, []);
+
+  useEffect(() => {
+    const nextMessages = loadSavedMessages(authScope);
+    const nextConversationId = sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, authScope)) || undefined;
+    setMessages(nextMessages);
+    setConversationId(nextConversationId);
+  }, [authScope]);
 
   useEffect(() => {
     if (open && suggestions.length === 0) {
@@ -323,16 +394,30 @@ export default function AiAssistantChat() {
 
   // Persist chat to sessionStorage
   useEffect(() => {
-    try { sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages)); } catch { /* quota */ }
-  }, [messages]);
+    try { sessionStorage.setItem(scopedStorageKey(CHAT_STORAGE_KEY, authScope), JSON.stringify(messages)); } catch { /* quota */ }
+  }, [messages, authScope]);
+
   useEffect(() => {
-    if (conversationId) sessionStorage.setItem(CHAT_CONV_KEY, conversationId);
-    else sessionStorage.removeItem(CHAT_CONV_KEY);
-  }, [conversationId]);
+    const key = scopedStorageKey(CHAT_CONV_KEY, authScope);
+    if (conversationId) sessionStorage.setItem(key, conversationId);
+    else sessionStorage.removeItem(key);
+  }, [conversationId, authScope]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 350);
   }, [open]);
+
+  // Always start minimized after a page refresh/mount.
+  useEffect(() => {
+    setOpen(false);
+    setIsClosing(false);
+  }, []);
+
+  // Minimize chat when user navigates to other pages/activities.
+  useEffect(() => {
+    setOpen(false);
+    setIsClosing(false);
+  }, [routeLocation.pathname]);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -357,9 +442,9 @@ export default function AiAssistantChat() {
     if (conversationId) clearConversation(conversationId);
     setConversationId(undefined);
     setMessages([{ ...WELCOME_MESSAGE, id: `welcome-${Date.now()}`, timestamp: new Date() }]);
-    sessionStorage.removeItem(CHAT_STORAGE_KEY);
-    sessionStorage.removeItem(CHAT_CONV_KEY);
-  }, [conversationId]);
+    sessionStorage.removeItem(scopedStorageKey(CHAT_STORAGE_KEY, authScope));
+    sessionStorage.removeItem(scopedStorageKey(CHAT_CONV_KEY, authScope));
+  }, [conversationId, authScope]);
 
   const send = useCallback(
     async (text: string) => {
@@ -456,9 +541,7 @@ export default function AiAssistantChat() {
             className="flex items-center gap-3 px-4 py-3 text-white"
             style={{ background: "linear-gradient(135deg, hsl(25,95%,53%), hsl(340,82%,52%))" }}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-              <Bot className="h-4 w-4" />
-            </div>
+            <VendorCenterAiLogo size={32} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold leading-tight">VendorCenter AI</p>
               <p className="text-[11px] opacity-75 leading-tight">

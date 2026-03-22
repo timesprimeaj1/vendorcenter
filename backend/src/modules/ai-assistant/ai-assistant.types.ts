@@ -1,5 +1,7 @@
-export type Intent = "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "FAQ" | "GENERAL";
-export type Action = "SHOW_RESULTS" | "ASK_LOCATION" | "BOOK_SERVICE" | "NAVIGATE" | "NONE";
+export type Intent = "GREETING" | "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "FAQ" | "UNKNOWN";
+export type Action = "SHOW_RESULTS" | "GET_RECOMMENDATIONS" | "BOOK_SERVICE" | "ASK_LOCATION" | "ASK_DETAILS" | "NONE";
+export type AssistantMode = "CHAT" | "SYSTEM";
+export type AssistantProvider = "gemini" | "groq";
 
 export interface VendorResult {
   name: string;
@@ -19,6 +21,11 @@ export interface AssistantResponse {
   vendors: VendorResult[];
   action: Action;
   followUp?: string;
+  service?: string;
+  location?: string;
+  confidence?: number;
+  mode?: AssistantMode;
+  provider?: AssistantProvider;
 }
 
 export interface AssistantQuery {
@@ -36,4 +43,16 @@ export interface ConversationTurn {
 export interface ToolCallResult {
   toolName: string;
   result: unknown;
+}
+
+export interface AssistantDecision {
+  mode: AssistantMode;
+  intent: Intent;
+  service: string;
+  location: string;
+  action: Action;
+  message: string;
+  confidence: number;
+  provider: AssistantProvider;
+  rawText: string;
 }

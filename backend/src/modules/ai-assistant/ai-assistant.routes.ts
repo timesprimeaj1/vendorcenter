@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { processAssistantQuery } from "./ai-assistant.service.js";
-import { clearConversation } from "./gemini.service.js";
+import { clearConversation } from "./provider-chain.service.js";
 import { getActorFromBearerToken } from "../../middleware/auth.js";
 
 export const aiAssistantRouter = Router();

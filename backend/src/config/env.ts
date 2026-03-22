@@ -52,7 +52,14 @@ export const env = {
     process.env.S3_BUCKET ?? "vendorcenter-media",
 
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  geminiApiKeys: (process.env.GEMINI_API_KEYS ?? "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter(Boolean),
   geminiModel: process.env.GEMINI_MODEL ?? "gemini-2.0-flash",
+  groqApiKey: process.env.GROQ_API_KEY ?? "",
+  groqModel: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+  groqBaseUrl: process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1",
 };
 
 const DEFAULT_ACCESS_SECRET = "change_me_access";
