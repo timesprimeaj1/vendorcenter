@@ -16,6 +16,7 @@ const systemDecisionSchema = z.object({
   service: z.string().catch(""),
   location: z.string().catch(""),
   action: z.enum(["SHOW_RESULTS", "GET_RECOMMENDATIONS", "BOOK_SERVICE", "ASK_LOCATION", "ASK_DETAILS", "NONE"]),
+  navigateTo: z.string().catch(""),
   message: z.string().min(1),
   confidence: z.coerce.number().min(0).max(1),
 });
@@ -172,6 +173,7 @@ function normalizeResponse(rawText: string, provider: "gemini" | "groq", chatMod
       confidence: 0.95,
       provider,
       rawText,
+      navigateTo: "",
     };
   }
 
@@ -186,6 +188,7 @@ function normalizeResponse(rawText: string, provider: "gemini" | "groq", chatMod
     confidence: parsed.confidence,
     provider,
     rawText,
+    navigateTo: parsed.navigateTo || "",
   };
 }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, Star, BadgeCheck, Clock, Calendar, MessageSquare, Download, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, MapPin, Star, BadgeCheck, Clock, Calendar, MessageSquare, Download, ChevronLeft, ChevronRight, X, Sparkles } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 const placeholder = "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop";
 
@@ -24,6 +25,8 @@ const VendorDetail = () => {
   const [notes, setNotes] = useState("");
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
+  const servicesRef = useScrollReveal({ preset: "fadeUp", delay: 0.1 });
+  const bookingRef = useScrollReveal({ preset: "fadeRight", delay: 0.2 });
 
   const { data: vendor, isLoading } = useQuery({
     queryKey: ["vendor-detail", vendorId],
@@ -129,30 +132,34 @@ const VendorDetail = () => {
   return (
     <Layout>
       {/* Back button */}
-      <div className="bg-secondary/50 border-b border-border">
+      <div className="bg-card/60 backdrop-blur-md border-b border-border/40">
         <div className="container py-3">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> Back
           </button>
         </div>
       </div>
 
       {/* Photo Gallery */}
       <div className="container pt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-2xl overflow-hidden max-h-[320px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 rounded-2xl overflow-hidden max-h-[340px]">
           {photos.slice(0, 4).map((src, i) => (
-            <div
+            <motion.div
               key={i}
-              className={`relative overflow-hidden cursor-pointer ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1, duration: 0.4 }}
+              className={`relative overflow-hidden cursor-pointer rounded-xl group ${i === 0 ? "col-span-2 row-span-2" : ""}`}
               onClick={() => setLightboxIdx(i)}
             >
-              <img src={src} alt={`${vendorName} photo ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" />
+              <img src={src} alt={`${vendorName} photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {i === 3 && photos.length > 4 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
                   <span className="text-white font-semibold text-lg">+{photos.length - 4} more</span>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -215,18 +222,20 @@ const VendorDetail = () => {
             </div>
 
             {/* Services offered */}
-            <div>
-              <h2 className="font-display font-semibold text-lg mb-3">Services Offered</h2>
+            <div ref={servicesRef}>
+              <h2 className="font-display font-semibold text-lg mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" /> Services Offered
+              </h2>
               {services.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {services.map((s) => (
                     <div
                       key={s.id}
                       onClick={() => setSelectedService(s.serviceName)}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
+                      className={`card-3d flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
                         selectedService === s.serviceName
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/30"
+                          ? "border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(249,115,22,0.12)]"
+                          : "border-border/50 hover:border-primary/30 bg-card/60 backdrop-blur-sm hover:shadow-md"
                       }`}
                     >
                       <div>
@@ -234,7 +243,7 @@ const VendorDetail = () => {
                         {s.description && <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>}
                       </div>
                       <div className="text-right shrink-0 ml-4">
-                        <span className="font-display font-bold text-primary">₹{s.price}</span>
+                        <span className="font-display font-bold text-primary text-lg">₹{s.price}</span>
                       </div>
                     </div>
                   ))}
@@ -246,8 +255,8 @@ const VendorDetail = () => {
           </div>
 
           {/* Right: Booking form */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 bg-card border border-border/60 rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="lg:col-span-1" ref={bookingRef}>
+            <div className="sticky top-24 bg-card/80 backdrop-blur-xl border border-border/40 rounded-2xl p-5 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
               <h3 className="font-display font-semibold text-lg">Book a Service</h3>
 
               {/* Selected service */}
@@ -265,13 +274,15 @@ const VendorDetail = () => {
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-primary" /> Date
                 </label>
-                <Input
-                  type="date"
-                  value={scheduledDate}
-                  min={minDate}
-                  onChange={e => setScheduledDate(e.target.value)}
-                  className="rounded-xl"
-                />
+                <div className="glow-focus rounded-xl">
+                  <Input
+                    type="date"
+                    value={scheduledDate}
+                    min={minDate}
+                    onChange={e => setScheduledDate(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
               </div>
 
               {/* Time picker */}
@@ -279,12 +290,14 @@ const VendorDetail = () => {
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-primary" /> Time
                 </label>
-                <Input
-                  type="time"
-                  value={scheduledTime}
-                  onChange={e => setScheduledTime(e.target.value)}
-                  className="rounded-xl"
-                />
+                <div className="glow-focus rounded-xl">
+                  <Input
+                    type="time"
+                    value={scheduledTime}
+                    onChange={e => setScheduledTime(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </div>
               </div>
 
               {/* Notes */}
@@ -292,17 +305,19 @@ const VendorDetail = () => {
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
                   <MessageSquare className="w-4 h-4 text-primary" /> Notes (optional)
                 </label>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  maxLength={500}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Any special requirements..."
-                />
+                <div className="glow-focus rounded-xl">
+                  <textarea
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    maxLength={500}
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Any special requirements..."
+                  />
+                </div>
               </div>
 
               <Button
-                className="w-full gradient-bg text-primary-foreground border-0 rounded-xl h-11"
+                className="w-full gradient-bg text-primary-foreground border-0 rounded-xl h-11 btn-press shadow-lg hover:shadow-xl transition-shadow"
                 disabled={!selectedService || !scheduledDate || !scheduledTime || booking}
                 onClick={handleBooking}
               >

@@ -6,6 +6,8 @@ import {
   getVendorServicePriceRange,
   getCustomerProfileForAI,
   getCustomerBookingsForAI,
+  getServiceCategories,
+  getPlatformStats,
 } from "./ai-assistant.repository.js";
 import {
   isAssistantAvailable,
@@ -22,6 +24,7 @@ import { randomUUID } from "crypto";
 // ═══════════════════════════════════════════════════════════════
 
 const CATEGORY_MAP: Record<string, string> = {
+  // Plumbing
   plumber: "Plumbing",
   plumbing: "Plumbing",
   pipe: "Plumbing",
@@ -29,55 +32,118 @@ const CATEGORY_MAP: Record<string, string> = {
   tap: "Plumbing",
   faucet: "Plumbing",
   drain: "Plumbing",
+  toilet: "Plumbing",
+  bathroom: "Plumbing",
+  water: "Plumbing",
+  // Electrical
   electrician: "Electrical",
   electrical: "Electrical",
   wiring: "Electrical",
   switch: "Electrical",
   fan: "Electrical",
   light: "Electrical",
+  inverter: "Electrical",
+  mcb: "Electrical",
+  // AC Repair
   ac: "AC Repair",
   "ac repair": "AC Repair",
   "air conditioner": "AC Repair",
   "air conditioning": "AC Repair",
   cooling: "AC Repair",
   hvac: "AC Repair",
+  "ac service": "AC Repair",
+  "ac installation": "AC Repair",
+  // Cleaning
   clean: "Cleaning",
   cleaning: "Cleaning",
   cleaner: "Cleaning",
   maid: "Cleaning",
   housekeeping: "Cleaning",
+  "deep cleaning": "Cleaning",
+  "home cleaning": "Cleaning",
+  sanitization: "Cleaning",
+  // Painting
   paint: "Painting",
   painting: "Painting",
   painter: "Painting",
   wall: "Painting",
+  whitewash: "Painting",
+  // Carpentry
   carpenter: "Carpentry",
   carpentry: "Carpentry",
   furniture: "Carpentry",
   wood: "Carpentry",
+  cupboard: "Carpentry",
+  wardrobe: "Carpentry",
+  door: "Carpentry",
+  // Pest Control
   pest: "Pest Control",
   termite: "Pest Control",
   cockroach: "Pest Control",
+  "pest control": "Pest Control",
+  rats: "Pest Control",
+  mosquito: "Pest Control",
+  bedbugs: "Pest Control",
+  // Salon
   salon: "Salon",
   haircut: "Salon",
   beauty: "Salon",
   spa: "Salon",
   grooming: "Salon",
+  facial: "Salon",
+  makeup: "Salon",
+  bridal: "Salon",
+  mehndi: "Salon",
+  // Appliance Repair
   appliance: "Appliance Repair",
   fridge: "Appliance Repair",
   washing: "Appliance Repair",
   microwave: "Appliance Repair",
+  "washing machine": "Appliance Repair",
+  refrigerator: "Appliance Repair",
+  geyser: "Appliance Repair",
+  // Moving
   moving: "Moving",
   packers: "Moving",
   movers: "Moving",
   relocation: "Moving",
   shifting: "Moving",
+  "packers and movers": "Moving",
+  transport: "Moving",
+  // Photography
   photography: "Photography",
   photographer: "Photography",
   photo: "Photography",
+  "photo shoot": "Photography",
+  videography: "Photography",
+  // Catering
   catering: "Catering",
   caterer: "Catering",
   food: "Catering",
   cook: "Catering",
+  chef: "Catering",
+  tiffin: "Catering",
+  // Mobile / Electronics
+  mobile: "Mobile Repair",
+  "mobile repair": "Mobile Repair",
+  phone: "Mobile Repair",
+  "phone repair": "Mobile Repair",
+  "screen repair": "Mobile Repair",
+  laptop: "Computer Repair",
+  computer: "Computer Repair",
+  "laptop repair": "Computer Repair",
+  printer: "Computer Repair",
+  // Tutoring / Education
+  tutor: "Tutoring",
+  tutoring: "Tutoring",
+  tuition: "Tutoring",
+  teacher: "Tutoring",
+  coaching: "Tutoring",
+  // Fitness
+  fitness: "Fitness",
+  "personal trainer": "Fitness",
+  yoga: "Fitness",
+  gym: "Fitness",
 };
 
 function normalizeCategory(value: string): string | null {
@@ -145,7 +211,7 @@ async function buildAuthenticatedUserContext(userId: string): Promise<string[]> 
   try {
     const [profile, bookings] = await Promise.all([
       getCustomerProfileForAI(userId),
-      getCustomerBookingsForAI(userId, 3),
+      getCustomerBookingsForAI(userId, 5),
     ]);
 
     if (profile) {
@@ -162,16 +228,54 @@ async function buildAuthenticatedUserContext(userId: string): Promise<string[]> 
         service: b.serviceName,
         vendor: b.vendorName,
         status: b.status,
+        paymentStatus: b.paymentStatus,
         scheduledDate: b.scheduledDate,
         scheduledTime: b.scheduledTime,
+        amount: b.finalAmount ? `₹${b.finalAmount}` : null,
+        createdAt: b.createdAt,
       }));
       contextParts.push(`[Recent Bookings: ${JSON.stringify(bookingSummary)}]`);
+    } else {
+      contextParts.push(`[Recent Bookings: none]`);
     }
   } catch (error) {
     console.warn("[ai-assistant] Failed to fetch user context:", error);
   }
 
   return contextParts;
+}
+
+// Platform-level context: available services + stats (cached 5 min)
+let platformContextCache: { data: string[]; expires: number } | null = null;
+
+async function buildPlatformContext(lat?: number, lng?: number): Promise<string[]> {
+  const now = Date.now();
+  if (platformContextCache && platformContextCache.expires > now) {
+    return platformContextCache.data;
+  }
+
+  const parts: string[] = [];
+  try {
+    const [categories, stats] = await Promise.all([
+      getServiceCategories(lat, lng, 50),
+      getPlatformStats(),
+    ]);
+
+    if (Array.isArray(categories) && categories.length > 0) {
+      const catSummary = categories.map((c: any) => `${c.cat} (${c.vendor_count} vendors)`).join(", ");
+      parts.push(`[Available Services: ${catSummary}]`);
+    }
+
+    if (stats) {
+      parts.push(`[Platform Stats: ${stats.activeVendors} active vendors, ${stats.completedBookings} completed bookings, ${stats.serviceCategories} service categories]`);
+    }
+
+    platformContextCache = { data: parts, expires: now + 5 * 60 * 1000 };
+  } catch (error) {
+    console.warn("[ai-assistant] Failed to fetch platform context:", error);
+  }
+
+  return parts;
 }
 
 async function searchForVendors(
@@ -181,7 +285,9 @@ async function searchForVendors(
   lat?: number,
   lng?: number,
 ): Promise<VendorResult[]> {
-  const normalizedCategory = normalizeCategory(decision.service || originalMessage) || inferServiceFromHistory(history);
+  // Only use history inference for explicit follow-ups — never contaminate new queries
+  const normalizedCategory = normalizeCategory(decision.service || originalMessage)
+    || (isFollowUpRequest(originalMessage) ? inferServiceFromHistory(history) : "");
 
   if (decision.action === "GET_RECOMMENDATIONS") {
     if (normalizedCategory) {
@@ -212,13 +318,16 @@ async function resolveDecision(
   lat?: number,
   lng?: number,
 ): Promise<AssistantResponse> {
-  const inferredService = normalizeCategory(decision.service || originalMessage) || inferServiceFromHistory(history);
-  const effectiveService = decision.service || inferredService;
+  // Only infer from history for explicit follow-up requests, not new queries
+  const isFollowUp = isFollowUpRequest(originalMessage);
+  const currentService = normalizeCategory(decision.service || originalMessage);
+  const effectiveService = decision.service || currentService || (isFollowUp ? inferServiceFromHistory(history) : "");
   const effectiveAction =
-    decision.action === "ASK_DETAILS" && !decision.service && isFollowUpRequest(originalMessage) && inferredService
+    decision.action === "ASK_DETAILS" && !decision.service && isFollowUp && effectiveService
       ? "SHOW_RESULTS"
       : decision.action;
 
+  // CHAT MODE — direct response
   if (decision.mode === "CHAT") {
     return {
       intent: decision.intent,
@@ -230,6 +339,71 @@ async function resolveDecision(
       confidence: decision.confidence,
       mode: decision.mode,
       provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
+    };
+  }
+
+  // MY_BOOKINGS — return AI-generated booking summary directly
+  if (decision.intent === "MY_BOOKINGS" || decision.action === "SHOW_MY_BOOKINGS") {
+    return {
+      intent: "MY_BOOKINGS",
+      message: decision.message,
+      vendors: [],
+      action: "SHOW_MY_BOOKINGS",
+      service: effectiveService,
+      location: decision.location,
+      confidence: decision.confidence,
+      mode: decision.mode,
+      provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
+    };
+  }
+
+  // AVAILABLE_SERVICES — return AI-generated service list
+  if (decision.intent === "AVAILABLE_SERVICES" || decision.action === "SHOW_CATEGORIES") {
+    return {
+      intent: "AVAILABLE_SERVICES",
+      message: decision.message,
+      vendors: [],
+      action: "SHOW_CATEGORIES",
+      service: "",
+      location: decision.location,
+      confidence: decision.confidence,
+      mode: decision.mode,
+      provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
+    };
+  }
+
+  // FAQ — return AI answer directly
+  if (decision.intent === "FAQ") {
+    return {
+      intent: "FAQ",
+      message: decision.message,
+      vendors: [],
+      action: decision.action === "NAVIGATE" ? "NAVIGATE" : "NONE",
+      service: effectiveService,
+      location: decision.location,
+      confidence: decision.confidence,
+      mode: decision.mode,
+      provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
+    };
+  }
+
+  // UNKNOWN / redirects
+  if (decision.intent === "UNKNOWN") {
+    return {
+      intent: "UNKNOWN",
+      message: decision.message,
+      vendors: [],
+      action: decision.action === "NAVIGATE" ? "NAVIGATE" : "NONE",
+      service: "",
+      location: decision.location,
+      confidence: decision.confidence,
+      mode: decision.mode,
+      provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
     };
   }
 
@@ -246,6 +420,7 @@ async function resolveDecision(
       confidence: decision.confidence,
       mode: decision.mode,
       provider: decision.provider,
+      navigateTo: "",
     };
   }
 
@@ -260,6 +435,7 @@ async function resolveDecision(
       confidence: decision.confidence,
       mode: decision.mode,
       provider: decision.provider,
+      navigateTo: decision.navigateTo || "",
     };
   }
 
@@ -272,21 +448,23 @@ async function resolveDecision(
   const vendors = await searchForVendors(effectiveDecision, originalMessage, history, lat, lng);
 
   if (vendors.length === 0) {
-    const inferred = normalizeCategory(decision.service || originalMessage) || inferServiceFromHistory(history);
-    const fallbackMessage = inferred
-      ? `I couldn't find available ${inferred.toLowerCase()} vendors right now. Try another nearby area or a related service.`
-      : "I couldn't find matching vendors yet. Tell me the exact service you need and I'll search again.";
+    // Use the current query's service, NOT stale history
+    const serviceName = currentService || decision.service || "";
+    const fallbackMessage = serviceName
+      ? `I couldn't find ${serviceName.toLowerCase()} vendors near you right now. Try a different area or a related service — I'm happy to help!`
+      : "I couldn't find matching vendors right now. Could you tell me exactly what service you're looking for?";
 
     return {
       intent: decision.intent,
       message: fallbackMessage,
       vendors: [],
       action: "NONE",
-      service: effectiveService || inferred,
+      service: effectiveService || serviceName,
       location: decision.location,
       confidence: decision.confidence,
       mode: decision.mode,
       provider: decision.provider,
+      navigateTo: "",
     };
   }
 
@@ -300,6 +478,7 @@ async function resolveDecision(
     confidence: decision.confidence,
     mode: decision.mode,
     provider: decision.provider,
+    navigateTo: "",
   };
 }
 
@@ -311,6 +490,7 @@ export async function processAssistantQuery(
   lng?: number,
   conversationId?: string,
   userId?: string,
+  currentPage?: string,
 ): Promise<AssistantResponse & { conversationId: string }> {
   const sessionId = conversationId || randomUUID();
 
@@ -329,12 +509,21 @@ export async function processAssistantQuery(
 
   try {
     const history = getConversationHistory(sessionId);
-    const contextParts: string[] = userId
-      ? await buildAuthenticatedUserContext(userId)
-      : ["[Auth: guest]"];
+
+    // Build context: auth + platform data
+    const [userContext, platformContext] = await Promise.all([
+      userId ? buildAuthenticatedUserContext(userId) : Promise.resolve(["[Auth: guest]"]),
+      buildPlatformContext(lat, lng),
+    ]);
+
+    const contextParts = [...userContext, ...platformContext];
 
     if (lat != null && lng != null) {
       contextParts.push(`[User location: ${lat.toFixed(4)}, ${lng.toFixed(4)}]`);
+    }
+
+    if (currentPage) {
+      contextParts.push(`[Current Page: ${currentPage}]`);
     }
 
     const enrichedMessage = contextParts.length > 0 ? `${contextParts.join(" ")} ${message}` : message;

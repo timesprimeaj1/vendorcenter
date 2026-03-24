@@ -1,8 +1,8 @@
-import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import { testimonials } from "@/data/mockData";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 function toInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -38,25 +38,24 @@ const TestimonialsSection = () => {
       }))
     : testimonials;
 
+  const headerRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp" });
+  const gridRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", stagger: 0.1, children: true, delay: 0.15 });
+
   return (
     <section className="py-16 md:py-20 bg-secondary/30">
       <div className="container">
-        <div className="text-center mb-12">
+        <div ref={headerRef} className="text-center mb-12">
           <h2 className="font-display text-2xl md:text-3xl font-bold">
             What Our <span className="gradient-text">Customers</span> Say
           </h2>
           <p className="text-muted-foreground mt-2">Real reviews from real people</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {reviewCards.map((t, index) => (
-            <motion.div
+        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {reviewCards.map((t) => (
+            <div
               key={t.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="bg-card p-6 rounded-2xl border border-border/60 hover:border-primary/20 transition-colors"
+              className="bg-card p-6 rounded-2xl border border-border/60 hover:border-primary/20 transition-all duration-300 card-3d"
             >
               <Quote className="w-8 h-8 text-primary/20 mb-3" />
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{t.text}"</p>
@@ -74,7 +73,7 @@ const TestimonialsSection = () => {
                   <div className="text-xs text-muted-foreground">{t.service}</div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

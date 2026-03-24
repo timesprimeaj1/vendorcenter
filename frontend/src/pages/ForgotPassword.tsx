@@ -63,7 +63,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background">
       {/* Left - Form */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-12">
         <motion.div
@@ -104,7 +104,7 @@ const ForgotPassword = () => {
 
           {step === "email" && (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="relative">
+              <div className="relative glow-focus rounded-xl">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Email address"
@@ -118,7 +118,7 @@ const ForgotPassword = () => {
               <Button
                 disabled={loading}
                 onClick={handleSendOtp}
-                className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
+                className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press shadow-lg hover:shadow-xl transition-all"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                 Send Reset Code
@@ -156,7 +156,7 @@ const ForgotPassword = () => {
 
           {step === "password" && (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="relative">
+              <div className="relative glow-focus rounded-xl">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="New password (min 8 characters)"
@@ -167,7 +167,7 @@ const ForgotPassword = () => {
                 />
               </div>
               <p className="text-xs text-muted-foreground -mt-2">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
-              <div className="relative">
+              <div className="relative glow-focus rounded-xl">
                 <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Confirm new password"
@@ -201,16 +201,17 @@ const ForgotPassword = () => {
 
       {/* Right - Visual */}
       <div className="hidden lg:flex flex-1 gradient-hero items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/15 blur-3xl animate-float" />
-          <div className="absolute bottom-20 -left-20 w-80 h-80 rounded-full bg-accent/10 blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute -top-20 -right-20 w-[360px] h-[360px] rounded-full bg-primary/15 blur-[80px] animate-float" />
+          <div className="absolute bottom-10 -left-20 w-[300px] h-[300px] rounded-full bg-accent/10 blur-[70px] animate-float-slow" style={{ animationDelay: "2s" }} />
+          <div className="absolute inset-0 gradient-mesh opacity-30" />
         </div>
-        <div className="relative text-center text-background max-w-sm">
+        <div className="relative text-center text-white max-w-sm">
           <div className="w-20 h-20 rounded-3xl gradient-bg flex items-center justify-center mx-auto mb-8 animate-pulse-glow">
             <Lock className="w-8 h-8 text-primary-foreground" />
           </div>
           <h2 className="font-display text-3xl font-bold mb-4">Secure Reset</h2>
-          <p className="text-background/70 leading-relaxed">
+          <p className="text-white/65 leading-relaxed">
             We'll send a verification code to your email to help you reset your password securely.
           </p>
         </div>

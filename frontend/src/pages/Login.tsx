@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,8 @@ const Login = () => {
   const [otpId, setOtpId] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("email");
+  const [rateLimited, setRateLimited] = useState(false);
   const { loginWithTokens } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -105,7 +107,16 @@ const Login = () => {
         actor: res.data.actor,
       });
     } catch (err: any) {
-      toast.error(err.message || "Login failed");
+      const msg = err.message || "Login failed";
+      const isRateLimit = msg.toLowerCase().includes("too many") || err.status === 429;
+      if (isRateLimit) {
+        setRateLimited(true);
+        setOtpEmail(email);
+        setActiveTab("phone");
+        toast.error("Too many attempts. Try OTP login instead.", { duration: 5000 });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -160,16 +171,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
+    <div className="min-h-screen flex relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.08),transparent)]" />
+
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-md"
         >
-          <Link to="/" className="flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-2 mb-8 group">
+            <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center group-hover:scale-110 transition-transform">
               <span className="text-primary-foreground font-display font-bold text-lg">V</span>
             </div>
             <span className="font-display font-bold text-xl">
@@ -180,37 +194,54 @@ const Login = () => {
           <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">Welcome back</h1>
           <p className="text-muted-foreground mb-8">Sign in to your account to continue</p>
 
-          <Tabs defaultValue="email" className="w-full">
+          {/* Rate limit banner */}
+          {rateLimited && activeTab === "phone" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex items-center gap-2.5 p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl text-sm"
+            >
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="text-amber-700 dark:text-amber-300">
+                Too many login attempts. Use OTP to sign in securely.
+              </span>
+            </motion.div>
+          )}
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="phone">OTP Login</TabsTrigger>
+              <TabsTrigger value="phone" className="gap-1.5">
+                OTP Login
+                {rateLimited && <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="email">
               <form className="space-y-4" onSubmit={handleEmailLogin}>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="relative group">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
                     placeholder="Email address"
                     type="email"
-                    className="pl-10 h-12 rounded-xl"
+                    className="pl-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="relative group">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
                     placeholder="Password"
                     type={showPassword ? "text" : "password"}
-                    className="pl-10 pr-10 h-12 rounded-xl"
+                    className="pl-10 pr-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -229,7 +260,7 @@ const Login = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
+                  className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press glow-focus"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                   Sign In
@@ -240,12 +271,12 @@ const Login = () => {
 
             <TabsContent value="phone">
               <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="relative group">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
                     placeholder="Email address for OTP"
                     type="email"
-                    className="pl-10 h-12 rounded-xl"
+                    className="pl-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={otpEmail}
                     onChange={(e) => setOtpEmail(e.target.value)}
                   />
@@ -256,7 +287,7 @@ const Login = () => {
                     <Input
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
-                      className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg"
+                      className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg border-border/60 focus:border-primary/40"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value)}
                     />
@@ -268,7 +299,7 @@ const Login = () => {
                   type="button"
                   disabled={loading}
                   onClick={() => (otpSent ? handleVerifyOtp() : handleSendOtp())}
-                  className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
+                  className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press glow-focus"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                   {otpSent ? "Verify OTP" : "Send OTP"}
@@ -287,22 +318,59 @@ const Login = () => {
         </motion.div>
       </div>
 
+      {/* Right side hero panel */}
       <div className="hidden lg:flex flex-1 gradient-hero items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 gradient-mesh opacity-30" />
         <div className="absolute inset-0">
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/15 blur-3xl animate-float" />
-          <div
-            className="absolute bottom-20 -left-20 w-80 h-80 rounded-full bg-accent/10 blur-3xl animate-float"
-            style={{ animationDelay: "2s" }}
-          />
+          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary/15 blur-3xl animate-float-drift" />
+          <div className="absolute bottom-10 -left-20 w-96 h-96 rounded-full bg-accent/10 blur-3xl animate-float-drift-reverse" />
+          <div className="absolute top-1/2 right-1/4 w-40 h-40 rounded-full bg-white/5 blur-2xl animate-pulse-glow" />
         </div>
+
         <div className="relative text-center text-background max-w-sm">
-          <div className="w-20 h-20 rounded-3xl gradient-bg flex items-center justify-center mx-auto mb-8 animate-pulse-glow">
-            <span className="text-primary-foreground font-display font-bold text-3xl">V</span>
-          </div>
-          <h2 className="font-display text-3xl font-bold mb-4">Your Local Marketplace</h2>
-          <p className="text-background/70 leading-relaxed">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="w-24 h-24 rounded-3xl gradient-bg flex items-center justify-center mx-auto mb-8 animate-pulse-glow shadow-2xl">
+              <span className="text-primary-foreground font-display font-bold text-4xl">V</span>
+            </div>
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="font-display text-3xl font-bold mb-4"
+          >
+            Your Local Marketplace
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="text-background/70 leading-relaxed"
+          >
             Connect with thousands of verified service providers. Book, manage, and review — all in one place.
-          </p>
+          </motion.p>
+
+          {/* Trust indicators */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.9 }}
+            className="mt-10 flex items-center justify-center gap-6 text-background/60 text-sm"
+          >
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span>Verified Vendors</span>
+            </div>
+            <div className="w-px h-4 bg-background/20" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+              <span>Secure Payments</span>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

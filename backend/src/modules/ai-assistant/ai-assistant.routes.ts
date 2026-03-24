@@ -11,6 +11,7 @@ const querySchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
   conversationId: z.string().uuid().optional(),
+  currentPage: z.string().max(200).optional(),
 });
 
 // POST /api/ai-assistant/query — public endpoint, optional auth for user-aware features
@@ -21,14 +22,14 @@ aiAssistantRouter.post("/query", async (req: Request, res: Response) => {
     return;
   }
 
-  const { message, lat, lng, conversationId } = parsed.data;
+  const { message, lat, lng, conversationId, currentPage } = parsed.data;
 
   // Extract optional user identity from Bearer token (no 401 if missing)
   const actor = getActorFromBearerToken(req.header("authorization"));
   const userId = actor?.id;
 
   try {
-    const result = await processAssistantQuery(message, lat, lng, conversationId, userId);
+    const result = await processAssistantQuery(message, lat, lng, conversationId, userId, currentPage);
     res.json({ success: true, data: result });
   } catch (err) {
     console.error("[ai-assistant] query error:", err);
@@ -49,16 +50,22 @@ aiAssistantRouter.post("/clear", (req: Request, res: Response) => {
 });
 
 // GET /api/ai-assistant/suggestions — returns quick-action suggestions
-aiAssistantRouter.get("/suggestions", (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: [
-      "Find a plumber near me",
-      "Best electrician",
-      "Book AC repair",
-      "How does booking work?",
-      "Top-rated cleaning services",
-      "What services are available?",
-    ],
-  });
+aiAssistantRouter.get("/suggestions", (req: Request, res: Response) => {
+  const actor = getActorFromBearerToken(req.header("authorization"));
+
+  const baseSuggestions = [
+    "Find a plumber near me",
+    "Best electrician",
+    "Book AC repair",
+    "How does booking work?",
+    "Top-rated cleaning services",
+    "What services are available?",
+  ];
+
+  // Add booking-related suggestions for logged-in users
+  if (actor?.id) {
+    baseSuggestions.unshift("Show my bookings");
+  }
+
+  res.json({ success: true, data: baseSuggestions });
 });

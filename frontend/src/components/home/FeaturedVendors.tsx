@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Star, MapPin, BadgeCheck, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { Link } from "react-router-dom";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 const FeaturedVendors = () => {
   const [vendors, setVendors] = useState<any[]>([]);
@@ -37,17 +37,20 @@ const FeaturedVendors = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [hasLocation, userLoc?.latitude, userLoc?.longitude]);
+  const headerRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp" });
+  const gridRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", stagger: 0.08, children: true, delay: 0.15 });
+
   return (
     <section className="py-16 md:py-20 bg-secondary/30">
       <div className="container">
-        <div className="flex items-end justify-between mb-10">
+        <div ref={headerRef} className="flex items-end justify-between mb-10">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold">
               Top Rated <span className="gradient-text">Vendors</span>
             </h2>
             <p className="text-muted-foreground mt-2">Handpicked professionals near you</p>
           </div>
-          <Link to="/services" className="hidden md:flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          <Link to="/services" className="hidden md:flex items-center gap-1 text-sm font-medium text-primary link-underline">
             View All <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -61,15 +64,11 @@ const FeaturedVendors = () => {
             <p>{hasLocation ? "No nearby vendors found for your location yet." : "Enable location to see nearby vendors."}</p>
           </div>
         ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {vendors.map((vendor, index) => (
-            <motion.div
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {vendors.map((vendor) => (
+            <div
               key={vendor.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.08 }}
-              className="group bg-card rounded-2xl border border-border/60 overflow-hidden hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer hover-lift"
+              className="group bg-card rounded-2xl border border-border/60 overflow-hidden card-3d border-glow cursor-pointer"
             >
               {/* Content */}
               <div className="p-5">
@@ -104,13 +103,13 @@ const FeaturedVendors = () => {
                 <div className="mt-4 pt-3 border-t border-border/60">
                   <Link
                     to={`/vendor/${vendor.id}`}
-                    className="px-4 py-2 rounded-xl gradient-bg text-primary-foreground text-sm font-medium hover:shadow-md transition-shadow inline-block"
+                    className="px-4 py-2 rounded-xl gradient-bg text-primary-foreground text-sm font-medium hover:shadow-md transition-all btn-press inline-block"
                   >
                     View & Book
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
         )}

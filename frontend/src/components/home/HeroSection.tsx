@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, ArrowRight, Star, Shield } from "lucide-react";
+import { Search, MapPin, ArrowRight, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation } from "@/hooks/useLocation";
 import { useNavigate } from "react-router-dom";
 import { SERVICE_CATEGORIES } from "@/data/serviceCategories";
 import { api, type PublicStats } from "@/lib/api";
+import { useScrollReveal, useCountUp } from "@/hooks/useScrollAnimation";
 
 const HeroSection = () => {
   const { cityName, fullAddress, loading, error, refresh } = useLocation();
@@ -82,61 +83,102 @@ const HeroSection = () => {
     setShowSuggestions(false);
     navigate(`/services?category=${encodeURIComponent(cat.key)}`);
   };
+  const statsRevealRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", delay: 0.2, stagger: 0.1, children: true });
+
+  // CountUp hooks for each stat
+  const [vendorCountRef, triggerVendors] = useCountUp(liveStats?.activeVendors ?? 0, 2);
+  const [customerCountRef, triggerCustomers] = useCountUp(liveStats?.happyCustomers ?? 0, 2);
+  const [servicesCountRef, triggerServices] = useCountUp(liveStats?.servicesCompleted ?? 0, 2);
+  const [citiesCountRef, triggerCities] = useCountUp(liveStats?.citiesCovered ?? 0, 2);
+
+  const countRefs = [vendorCountRef, customerCountRef, servicesCountRef, citiesCountRef];
+  const countTriggers = [triggerVendors, triggerCustomers, triggerServices, triggerCities];
+
+  // Trigger count animations when stats become visible
+  const statsObserved = useRef(false);
+  useEffect(() => {
+    if (!liveStats || statsObserved.current) return;
+    const el = statsRevealRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !statsObserved.current) {
+          statsObserved.current = true;
+          countTriggers.forEach((fn) => fn());
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [liveStats, countTriggers, statsRevealRef]);
+
   return (
     <section className="relative overflow-hidden gradient-hero text-background">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/10 blur-3xl animate-float" />
-        <div className="absolute bottom-0 -left-20 w-60 h-60 rounded-full bg-accent/10 blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
-        <div className="absolute top-1/2 right-1/4 w-40 h-40 rounded-full bg-primary/5 blur-2xl animate-float" style={{ animationDelay: "0.8s" }} />
+      {/* Animated background elements — ambient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-primary/15 blur-[100px] animate-float-slow" />
+        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-accent/10 blur-[80px] animate-float" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute top-1/3 right-1/5 w-64 h-64 rounded-full bg-orange-500/8 blur-[60px] animate-float" style={{ animationDelay: "0.8s" }} />
+        <div className="absolute top-2/3 left-1/4 w-48 h-48 rounded-full bg-accent/6 blur-[50px] animate-float-slow" style={{ animationDelay: "2.5s" }} />
+        {/* Gradient mesh overlay */}
+        <div className="absolute inset-0 gradient-mesh opacity-30" />
       </div>
 
-      <div className="container relative py-16 md:py-24 lg:py-32">
+      <div className="container relative py-16 md:py-20 lg:py-24">
         <div className="max-w-3xl mx-auto text-center">
+          {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-background/10 backdrop-blur-sm border border-background/10 mb-6">
-              <Shield className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium text-background/80">Verified & Trusted Vendors</span>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.15] mb-6 shadow-[0_0_20px_rgba(249,115,22,0.12)]">
+              <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-xs font-semibold tracking-widest uppercase text-white/90">AI-Powered Service Discovery</span>
+              <Shield className="w-3.5 h-3.5 text-orange-400" />
             </div>
           </motion.div>
 
+          {/* Heading */}
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 tracking-tight"
           >
             Find the Best{" "}
-            <span className="gradient-text">Local Services</span>
+            <span className="gradient-text relative">
+              Local Services
+              <span className="absolute -bottom-1 left-0 right-0 h-1 rounded-full gradient-bg opacity-60" />
+            </span>
             <br />
             Near You
           </motion.h1>
 
+          {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-background/70 mb-8 max-w-xl mx-auto"
+            transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
+            className="text-lg md:text-xl text-white/65 mb-10 max-w-xl mx-auto leading-relaxed"
           >
             From home cleaning to salon services — book trusted professionals in minutes.
           </motion.p>
 
           {/* Search bar */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
             className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
           >
-            <div className="flex-1 relative" ref={wrapperRef}>
+            <div className="flex-1 relative glow-focus rounded-xl" ref={wrapperRef}>
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
               <Input
                 placeholder="What service do you need?"
-                className="pl-10 h-12 rounded-xl bg-background text-foreground border-0 shadow-lg"
+                className="pl-10 h-12 rounded-xl bg-background text-foreground border-0 shadow-lg transition-shadow focus:shadow-xl"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -165,7 +207,7 @@ const HeroSection = () => {
             </div>
             <Button
               size="lg"
-              className="h-12 px-6 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow"
+              className="h-12 px-6 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all btn-press"
               onClick={handleSearch}
             >
               Search
@@ -177,37 +219,37 @@ const HeroSection = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
             className="flex items-center justify-center gap-2 mt-4"
           >
-            <MapPin className="w-3.5 h-3.5 text-primary" />
+            <MapPin className="w-3.5 h-3.5 text-orange-400" />
             {loading ? (
-              <span className="text-sm text-background/60">Detecting your location...</span>
+              <span className="text-sm text-white/55">Detecting your location...</span>
             ) : error ? (
-              <button onClick={refresh} className="text-sm text-background/60 underline hover:text-background/80">
+              <button onClick={refresh} className="text-sm text-white/55 underline hover:text-white/80 transition-colors">
                 Enable location access
               </button>
             ) : (
-              <span className="text-sm text-background/80">{fullAddress || cityName}</span>
+              <span className="text-sm text-white/75">{fullAddress || cityName}</span>
             )}
           </motion.div>
         </div>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-3xl mx-auto"
+        {/* Stats with animated counters */}
+        <div
+          ref={statsRevealRef}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 max-w-3xl mx-auto"
         >
           {stats.map((stat, i) => (
-            <div key={i} className="text-center p-4 rounded-2xl bg-background/5 backdrop-blur-sm border border-background/10">
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="font-display font-bold text-xl md:text-2xl text-background">{formatCount(stat.value)}</div>
-              <div className="text-xs text-background/50 mt-0.5">{stat.label}</div>
+            <div key={i} className="text-center p-5 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/[0.12] hover:bg-white/[0.14] hover:border-white/[0.22] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.15)]">
+              <div className="text-2xl mb-2">{stat.icon}</div>
+              <div className="font-display font-bold text-2xl md:text-3xl text-white">
+                <span ref={countRefs[i]}>{formatCount(stat.value)}</span>
+              </div>
+              <div className="text-xs font-medium text-white/60 mt-1 tracking-wide uppercase">{stat.label}</div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

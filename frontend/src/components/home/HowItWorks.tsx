@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
 import { Search, CalendarCheck, Star, MapPin } from "lucide-react";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 const steps = [
   {
@@ -29,10 +29,13 @@ const steps = [
 ];
 
 const HowItWorks = () => {
+  const headingRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp" });
+  const stepsRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", stagger: 0.12, children: true, delay: 0.1 });
+
   return (
-    <section className="py-16 md:py-20 bg-background">
+    <section className="py-16 md:py-20 bg-background gradient-mesh">
       <div className="container">
-        <div className="text-center mb-12">
+        <div ref={headingRef} className="text-center mb-12">
           <h2 className="font-display text-2xl md:text-3xl font-bold">
             How It <span className="gradient-text">Works</span>
           </h2>
@@ -41,29 +44,25 @@ const HowItWorks = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        <div ref={stepsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
           {steps.map((step, index) => (
-            <motion.div
+            <div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="relative text-center p-6"
+              className="relative text-center p-6 group"
             >
               {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] border-t-2 border-dashed border-border" />
               )}
 
-              <div className={`w-14 h-14 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-4`}>
+              <div className={`w-14 h-14 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                 {step.icon}
               </div>
 
               <div className="text-xs font-bold text-muted-foreground mb-1">STEP {index + 1}</div>
               <h3 className="font-display font-semibold text-base mb-2">{step.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

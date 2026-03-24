@@ -14,6 +14,7 @@ const Header = () => {
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [topCategoriesOpen, setTopCategoriesOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const topCategoriesRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -21,6 +22,13 @@ const Header = () => {
   const isServicesPage = routerLocation.pathname === "/services";
   const { user, logout } = useAuth();
   const { cityName, location, loading: locationLoading } = useLocation();
+
+  // Compact header on scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Fetch profile pic for logged-in users
   const { data: headerProfile } = useQuery({
@@ -93,14 +101,23 @@ const Header = () => {
   }, [profileDropdownOpen, topCategoriesOpen]);
 
   return (
-    <header className="sticky top-0 z-50 glass">
+    <header className="sticky top-0 z-50 glass transition-all duration-300">
       {/* Top bar */}
       <div className="border-b border-border/50">
-        <div className="container flex items-center justify-between h-16 gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-lg">V</span>
+        <div className={`container flex items-center justify-between gap-4 transition-all duration-300 ${scrolled ? "h-12" : "h-16"}`}>
+          {/* Logo — click scrolls to top when scrolled */}
+          <Link
+            to="/"
+            className="flex items-center gap-2 shrink-0"
+            onClick={(e) => {
+              if (scrolled && routerLocation.pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+          >
+            <div className={`rounded-lg gradient-bg flex items-center justify-center transition-all duration-300 ${scrolled ? "w-7 h-7" : "w-9 h-9"}`}>
+              <span className={`text-primary-foreground font-display font-bold transition-all duration-300 ${scrolled ? "text-sm" : "text-lg"}`}>V</span>
             </div>
             <span className="font-display font-bold text-xl hidden sm:block">
               Vendor<span className="gradient-text">Center</span>
@@ -208,8 +225,9 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Category nav — hidden on /services page which has its own filter */}
-      {!isServicesPage && <div className="hidden md:block border-b border-border/30">
+      {/* Category nav — hidden on /services page and collapsed on scroll */}
+      {!isServicesPage && (
+        <div className={`hidden md:block border-b border-border/30 transition-all duration-300 overflow-hidden ${scrolled ? "max-h-0 border-b-0" : "max-h-12"}`}>
         <div className="container">
           <nav className="flex items-center gap-6 h-10 overflow-visible">
             <Link
@@ -250,7 +268,8 @@ const Header = () => {
             </div>
           </nav>
         </div>
-      </div>}
+      </div>
+      )}
 
       {/* Mobile menu */}
       <AnimatePresence>

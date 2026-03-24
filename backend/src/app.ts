@@ -112,6 +112,18 @@ const authLimiter = rateLimit({
   },
 });
 
+// AI assistant limiter (prevents abuse of LLM API calls)
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: "Too many requests. Please wait a moment before trying again.",
+  },
+});
+
 
 app.use(requestContext);
 app.use(requestLogger);
@@ -187,7 +199,7 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/maps", mapsRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/email-test", emailTestRouter);
-app.use("/api/ai-assistant", aiAssistantRouter);
+app.use("/api/ai-assistant", aiLimiter, aiAssistantRouter);
 
 
 // Global error handler

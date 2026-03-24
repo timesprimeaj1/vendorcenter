@@ -1,5 +1,5 @@
-export type Intent = "GREETING" | "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "FAQ" | "UNKNOWN";
-export type Action = "SHOW_RESULTS" | "GET_RECOMMENDATIONS" | "BOOK_SERVICE" | "ASK_LOCATION" | "ASK_DETAILS" | "NONE";
+export type Intent = "GREETING" | "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "MY_BOOKINGS" | "AVAILABLE_SERVICES" | "FAQ" | "UNKNOWN";
+export type Action = "SHOW_RESULTS" | "GET_RECOMMENDATIONS" | "BOOK_SERVICE" | "SHOW_MY_BOOKINGS" | "SHOW_CATEGORIES" | "ASK_LOCATION" | "ASK_DETAILS" | "NAVIGATE" | "NONE";
 export type AssistantMode = "CHAT" | "SYSTEM";
 export type AssistantProvider = "gemini" | "groq";
 
@@ -26,6 +26,7 @@ export interface AssistantResponse {
   confidence?: number;
   mode?: AssistantMode;
   provider?: AssistantProvider;
+  navigateTo?: string;
 }
 
 export interface AssistantQuery {
@@ -55,4 +56,5 @@ export interface AssistantDecision {
   confidence: number;
   provider: AssistantProvider;
   rawText: string;
+  navigateTo: string;
 }

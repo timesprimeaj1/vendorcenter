@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, ClipboardList, Settings, X, MapPin, Clock, CheckCircle2, XCircle, Loader2, AlertCircle, Download, CalendarDays, Camera, Star } from "lucide-react";
+import { User, ClipboardList, Settings, X, MapPin, Clock, CheckCircle2, XCircle, Loader2, AlertCircle, Download, CalendarDays, Camera, Star, Sparkles } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -128,27 +128,30 @@ const Account = () => {
   return (
     <Layout>
       {/* Profile header */}
-      <div className="bg-gradient-to-r from-slate-700 to-slate-900 text-white">
-        <div className="container py-8">
+      <div className="relative gradient-hero text-white overflow-hidden">
+        {/* Floating orbs */}
+        <div className="absolute top-[-80px] right-[-60px] w-[300px] h-[300px] rounded-full bg-orange-500/10 blur-[80px] animate-float-drift pointer-events-none" />
+        <div className="absolute bottom-[-60px] left-[-40px] w-[240px] h-[240px] rounded-full bg-purple-500/10 blur-[70px] animate-float-reverse pointer-events-none" />
+        <div className="container py-10 relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {profilePicUrl ? (
-                <img src={profilePicUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-white/30" />
+                <img src={profilePicUrl} alt={displayName} className="w-18 h-18 rounded-full object-cover border-2 border-white/20 shadow-lg" />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="w-18 h-18 rounded-full bg-white/[0.08] backdrop-blur-md flex items-center justify-center border border-white/[0.12]">
                   <User className="w-8 h-8 text-white/70" />
                 </div>
               )}
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">{displayName}</h1>
-                <p className="text-sm text-white/70 mt-1">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{displayName}</h1>
+                <p className="text-sm text-white/65 mt-1">
                   {displayPhone} &nbsp;&middot;&nbsp; {displayEmail}
                 </p>
               </div>
             </div>
             <Button
               variant="outline"
-              className="border-white/50 text-white bg-white/10 hover:bg-white/20 rounded-xl"
+              className="border-white/20 text-white bg-white/[0.08] backdrop-blur-md hover:bg-white/[0.14] rounded-xl transition-all"
               onClick={() => setEditOpen(true)}
             >
               EDIT PROFILE
@@ -191,20 +194,25 @@ const Account = () => {
                   </div>
                 ) : !bookings || bookings.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-lg font-medium">No bookings yet</p>
-                    <p className="text-sm mt-1">Your bookings will appear here after you book a service.</p>
-                    <Button className="mt-4 rounded-xl" onClick={() => navigate("/services")}>
-                      Browse Services
-                    </Button>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p className="text-lg font-medium">No bookings yet</p>
+                      <p className="text-sm mt-1">Your bookings will appear here after you book a service.</p>
+                      <Button className="mt-4 rounded-xl gradient-bg text-primary-foreground border-0 btn-press" onClick={() => navigate("/services")}>
+                        <Sparkles className="w-4 h-4 mr-1.5" /> Browse Services
+                      </Button>
+                    </motion.div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {bookings.map((booking: any) => (
                       <div
                         key={booking.id}
-                        className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-shadow"
-                      >
+                        className="card-3d bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:border-primary/20">
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="font-semibold text-base">{booking.serviceName}</h3>
@@ -333,8 +341,8 @@ const Account = () => {
             {activeTab === "settings" && (
               <div>
                 <h2 className="text-xl font-bold mb-4">Account Settings</h2>
-                <div className="bg-card border border-border rounded-xl divide-y divide-border">
-                  <div className="flex items-center justify-between px-5 py-4">
+                <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl divide-y divide-border/50">
+                  <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
                       <p className="text-sm font-semibold">Name</p>
                       <p className="text-sm text-muted-foreground">{displayName}</p>
@@ -343,7 +351,7 @@ const Account = () => {
                       CHANGE
                     </button>
                   </div>
-                  <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
                       <p className="text-sm font-semibold">Phone number</p>
                       <p className="text-sm text-muted-foreground">{displayPhone}</p>
@@ -352,7 +360,7 @@ const Account = () => {
                       CHANGE
                     </button>
                   </div>
-                  <div className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
                       <p className="text-sm font-semibold">Email</p>
                       <p className="text-sm text-muted-foreground">{displayEmail}</p>
@@ -507,27 +515,31 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Name</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  className="h-12 rounded-lg"
-                />
+                <div className="glow-focus rounded-lg">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="h-12 rounded-lg"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">Phone number</label>
-                <Input
-                  value={phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                    setPhone(val);
-                    setPhoneError("");
-                  }}
-                  placeholder="10-digit phone number"
-                  className={`h-12 rounded-lg ${phoneError ? "border-red-500" : ""}`}
-                  maxLength={10}
-                  inputMode="numeric"
-                />
+                <div className="glow-focus rounded-lg">
+                  <Input
+                    value={phone}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setPhone(val);
+                      setPhoneError("");
+                    }}
+                    placeholder="10-digit phone number"
+                    className={`h-12 rounded-lg ${phoneError ? "border-red-500" : ""}`}
+                    maxLength={10}
+                    inputMode="numeric"
+                  />
+                </div>
                 {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
                 {phone && phone.length < 10 && !phoneError && (
                   <p className="text-xs text-muted-foreground mt-1">{phone.length}/10 digits</p>
@@ -548,7 +560,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
               <Button
                 onClick={handleSave}
                 disabled={saving || uploading}
-                className="w-full h-12 rounded-xl gradient-bg text-primary-foreground font-semibold"
+                className="w-full h-12 rounded-xl gradient-bg text-primary-foreground font-semibold btn-press shadow-lg hover:shadow-xl transition-shadow"
               >
                 {uploading ? "Uploading photo..." : saving ? "Saving..." : "Save Changes"}
               </Button>

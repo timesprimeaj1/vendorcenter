@@ -1,46 +1,59 @@
+import { motion } from "framer-motion";
+import { Shield, Database, Lock, UserCheck, Mail } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
+
+const sections = [
+  { icon: <Database className="w-5 h-5" />, title: "Data We Collect", body: "Account details (name, email, phone), profile information, booking data, and service activity. For vendors, this can include business profile and portfolio media uploaded by the account owner." },
+  { icon: <Lock className="w-5 h-5" />, title: "How We Use Data", body: "Data is used to authenticate users, show relevant vendors by location, process bookings, manage dashboards, and improve service quality. We do not sell personal data." },
+  { icon: <UserCheck className="w-5 h-5" />, title: "Account Privacy", body: "Profile updates are performed against the currently authenticated account. Access tokens and refresh tokens are scoped per user role and stored in the browser for session handling." },
+  { icon: <Mail className="w-5 h-5" />, title: "Contact", body: "For privacy-related requests, contact support@vendorcenter.in." },
+];
 
 const Privacy = () => {
+  const cardsRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", stagger: 0.1, children: true });
+
   return (
     <Layout>
-      <section className="container py-10 md:py-14 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Privacy Policy</h1>
-        <p className="text-muted-foreground leading-7 mb-6">
-          Your account data is personal and private. VendorCenter uses your information only to run
-          core platform features such as authentication, bookings, profile management, payments, and support.
-        </p>
+      {/* Hero */}
+      <section className="relative overflow-hidden gradient-hero text-white">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute -top-32 -right-32 w-[360px] h-[360px] rounded-full bg-primary/12 blur-[90px] animate-float-slow" />
+          <div className="absolute bottom-0 -left-16 w-[280px] h-[280px] rounded-full bg-accent/8 blur-[70px] animate-float" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute inset-0 gradient-mesh opacity-25" />
+        </div>
+        <div className="container relative py-16 md:py-24 text-center max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.12] mb-6">
+              <Shield className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-xs font-semibold tracking-widest uppercase text-white/90">Privacy Policy</span>
+            </div>
+          </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="font-display text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4 tracking-tight">
+            Your Privacy Matters
+          </motion.h1>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-lg text-white/60 max-w-xl mx-auto">
+            Your account data is personal and private. We use your information only to run core platform features.
+          </motion.p>
+        </div>
+      </section>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Data We Collect</h2>
-            <p className="text-muted-foreground leading-7">
-              Account details (name, email, phone), profile information, booking data, and service activity.
-              For vendors, this can include business profile and portfolio media uploaded by the account owner.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-2">How We Use Data</h2>
-            <p className="text-muted-foreground leading-7">
-              Data is used to authenticate users, show relevant vendors by location, process bookings,
-              manage dashboards, and improve service quality. We do not sell personal data.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Account Privacy</h2>
-            <p className="text-muted-foreground leading-7">
-              Profile updates are performed against the currently authenticated account.
-              Access tokens and refresh tokens are scoped per user role and stored in the browser for session handling.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Contact</h2>
-            <p className="text-muted-foreground leading-7">
-              For privacy-related requests, contact support@vendorcenter.in.
-            </p>
-          </div>
+      {/* Content */}
+      <section className="py-12 md:py-20">
+        <div ref={cardsRef} className="container max-w-3xl space-y-6">
+          {sections.map((s, i) => (
+            <div key={i} className="p-6 rounded-2xl bg-card border border-border/60 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
+                  {s.icon}
+                </div>
+                <div>
+                  <h2 className="font-display font-semibold text-lg mb-2">{s.title}</h2>
+                  <p className="text-muted-foreground leading-7">{s.body}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </Layout>

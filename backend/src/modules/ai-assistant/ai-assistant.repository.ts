@@ -140,6 +140,12 @@ export async function searchVendorsByKeyword(
         SELECT 1 FROM jsonb_array_elements_text(vp.service_categories) AS cat
         WHERE LOWER(cat) LIKE LOWER($${idx})
       )
+      OR EXISTS (
+        SELECT 1 FROM vendor_services vs
+        WHERE vs.vendor_id = vp.vendor_id
+          AND vs.is_deleted = false
+          AND LOWER(vs.name) LIKE LOWER($${idx})
+      )
     )`;
   params.push(pattern);
   idx++;

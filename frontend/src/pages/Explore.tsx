@@ -8,9 +8,10 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { MapPin, Search, Loader2, LocateFixed, AlertCircle, MousePointerClick } from "lucide-react";
+import { MapPin, Search, Loader2, LocateFixed, AlertCircle, MousePointerClick, Star, ArrowRight, Compass } from "lucide-react";
 import { toast } from "sonner";
 import { forwardGeocode, reverseGeocode } from "@/services/locationService";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -158,11 +159,12 @@ export default function Explore() {
     <Layout>
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+      <div className="border-b bg-card relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.06),transparent)]" />
+        <div className="container mx-auto px-4 py-5 relative">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg">
+              <Compass className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-display text-xl font-bold">Explore Services</h1>
@@ -173,11 +175,11 @@ export default function Explore() {
           <div className="flex flex-col md:flex-row gap-3">
             {/* Search bar with autocomplete */}
             <div className="flex-1 flex gap-2">
-              <div className="relative flex-1" ref={searchWrapperRef}>
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+              <div className="relative flex-1 group" ref={searchWrapperRef}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 transition-colors group-focus-within:text-primary" />
                 <Input
                   placeholder="Search location (e.g. Koramangala, Bangalore)"
-                  className="pl-10 h-10 rounded-xl"
+                  className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary/40"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -221,13 +223,13 @@ export default function Explore() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleSearch} disabled={searching} className="h-10 rounded-xl">
+              <Button onClick={handleSearch} disabled={searching} className="h-11 rounded-xl btn-press">
                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
               </Button>
             </div>
 
             {/* Locate me button */}
-            <Button variant="outline" onClick={refresh} disabled={locLoading} className="h-10 rounded-xl gap-2">
+            <Button variant="outline" onClick={refresh} disabled={locLoading} className="h-11 rounded-xl gap-2 btn-press">
               {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
               My Location
             </Button>
@@ -277,7 +279,7 @@ export default function Explore() {
           <span>Click anywhere on the map to set your location</span>
         </div>
         <MapErrorBoundary>
-        <MapView center={mapCenter} zoom={location ? 13 : 5} className="w-full h-[calc(100vh-280px)] min-h-[400px] rounded-xl overflow-hidden shadow-lg" onMapClick={handleMapClick}>
+        <MapView center={mapCenter} zoom={location ? 13 : 5} className="w-full h-[calc(100vh-280px)] min-h-[400px] rounded-xl overflow-hidden shadow-lg border border-border/40" onMapClick={handleMapClick}>
           {location && (
             <UserLocationMarker
               position={[location.latitude, location.longitude]}
@@ -291,23 +293,24 @@ export default function Explore() {
         </MapErrorBoundary>
 
         {/* Vendor cards list below map */}
-        {vendors.length > 0 && (
-          <div className="mt-6">
-            <h2 className="font-display text-lg font-semibold mb-3">Nearby Vendors</h2>
+        {vendors.length > 0 ? (
+          <div className="mt-8">
+            <h2 className="font-display text-lg font-semibold mb-4">Nearby Vendors</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {vendors.map((v) => (
                 <div
                   key={v.vendorId}
-                  className="border rounded-xl p-4 bg-card hover:shadow-md transition-shadow"
+                  className="group border rounded-xl p-4 bg-card hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer card-3d"
+                  onClick={() => navigate(`/vendor/${encodeURIComponent(v.vendorId)}`)}
                 >
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold">{v.businessName}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{v.businessName}</p>
                       <p className="text-sm text-muted-foreground">{v.zone}</p>
                     </div>
                     {v.averageRating > 0 && (
-                      <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        ⭐ {Number(v.averageRating).toFixed(1)}
+                      <span className="flex items-center gap-1 text-xs font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full shrink-0">
+                        <Star className="w-3 h-3 fill-current" /> {Number(v.averageRating).toFixed(1)}
                       </span>
                     )}
                   </div>
@@ -323,22 +326,32 @@ export default function Explore() {
                       ))}
                     </div>
                   )}
-                  <div className="flex justify-between items-center mt-3 text-sm">
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/40 text-sm">
                     <span className="text-muted-foreground">{Number(v.distanceKm).toFixed(1)} km away</span>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg text-xs h-7"
-                      onClick={() => navigate(`/vendor/${encodeURIComponent(v.vendorId)}`)}
+                      className="rounded-lg text-xs h-7 gap-1 group-hover:gradient-bg group-hover:text-primary-foreground group-hover:border-0 transition-all"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/vendor/${encodeURIComponent(v.vendorId)}`); }}
                     >
-                      View
+                      View <ArrowRight className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
+        ) : !loadingVendors && location ? (
+          <div className="mt-8 flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <MapPin className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="font-display text-lg font-semibold mb-2">No vendors nearby</h3>
+            <p className="text-muted-foreground text-sm max-w-sm">
+              Try increasing the search radius or searching a different location to find service providers.
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
     </Layout>

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SERVICE_CATEGORIES, getCategoryMeta } from "@/data/serviceCategories";
 import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
+import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 interface DisplayCategory {
   id: string;
@@ -75,44 +75,39 @@ const CategoriesSection = () => {
       }
     }).catch(() => {});
   }, [location?.latitude, location?.longitude]);
+  const headerRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp" });
+  const gridRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", stagger: 0.06, children: true, delay: 0.1 });
+
   return (
-    <section className="py-16 md:py-20 bg-background">
+    <section className="py-16 md:py-20 bg-background gradient-mesh">
       <div className="container">
-        <div className="flex items-end justify-between mb-10">
+        <div ref={headerRef} className="flex items-end justify-between mb-10">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold">
               Browse by <span className="gradient-text">Category</span>
             </h2>
             <p className="text-muted-foreground mt-2">Find the perfect service for your needs</p>
           </div>
-          <button className="hidden md:flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          <Link to="/services" className="hidden md:flex items-center gap-1 text-sm font-medium text-primary link-underline">
             View All <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {cats.map((cat, index) => (
-            <motion.div
-              key={cat.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-            >
+        <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {cats.map((cat) => (
+            <div key={cat.id}>
               <Link
                 to={`/services?category=${encodeURIComponent(cat.name)}`}
-                className="group relative p-5 rounded-2xl bg-card border border-border/60 hover:border-primary/30 hover:shadow-lg transition-all duration-300 text-left card-glow block"
+                className="group relative p-5 rounded-2xl bg-card border border-border/60 hover:border-primary/30 transition-all duration-300 text-left card-3d border-glow block"
               >
-                <div className="text-4xl mb-3">{cat.icon}</div>
+                <div className="text-4xl mb-3 transition-transform duration-300 group-hover:scale-110">{cat.icon}</div>
                 <h3 className="font-display font-semibold text-sm md:text-base">{cat.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{cat.count} vendors</p>
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0 translate-x-2">
                   <ArrowRight className="w-4 h-4 text-primary" />
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
