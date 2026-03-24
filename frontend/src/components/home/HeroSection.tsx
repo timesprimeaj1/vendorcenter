@@ -7,7 +7,7 @@ import { useLocation } from "@/hooks/useLocation";
 import { useNavigate } from "react-router-dom";
 import { SERVICE_CATEGORIES } from "@/data/serviceCategories";
 import { api, type PublicStats } from "@/lib/api";
-import { useScrollReveal, useCountUp } from "@/hooks/useScrollAnimation";
+import { useCountUp } from "@/hooks/useScrollAnimation";
 
 const HeroSection = () => {
   const { cityName, fullAddress, loading, error, refresh } = useLocation();
@@ -36,13 +36,14 @@ const HeroSection = () => {
   }, []);
 
   const stats = [
-    { label: "Active Vendors", value: liveStats?.activeVendors ?? 0, icon: "🏪" },
-    { label: "Happy Customers", value: liveStats?.happyCustomers ?? 0, icon: "😊" },
-    { label: "Services Completed", value: liveStats?.servicesCompleted ?? 0, icon: "✅" },
-    { label: "Cities Covered", value: liveStats?.citiesCovered ?? 0, icon: "🌆" },
+    { label: "Active Vendors", value: liveStats?.activeVendors ?? null, icon: "🏪" },
+    { label: "Happy Customers", value: liveStats?.happyCustomers ?? null, icon: "😊" },
+    { label: "Services Completed", value: liveStats?.servicesCompleted ?? null, icon: "✅" },
+    { label: "Cities Covered", value: liveStats?.citiesCovered ?? null, icon: "🌆" },
   ];
 
-  const formatCount = (value: number) => {
+  const formatCount = (value: number | null) => {
+    if (value == null) return "...";
     if (!Number.isFinite(value) || value < 0) return "0";
     return new Intl.NumberFormat("en-IN").format(value);
   };
@@ -83,8 +84,6 @@ const HeroSection = () => {
     setShowSuggestions(false);
     navigate(`/services?category=${encodeURIComponent(cat.key)}`);
   };
-  const statsRevealRef = useScrollReveal<HTMLDivElement>({ preset: "fadeUp", delay: 0.2, stagger: 0.1, children: true });
-
   // CountUp hooks for each stat
   const [vendorCountRef, triggerVendors] = useCountUp(liveStats?.activeVendors ?? 0, 2);
   const [customerCountRef, triggerCustomers] = useCountUp(liveStats?.happyCustomers ?? 0, 2);
@@ -94,25 +93,13 @@ const HeroSection = () => {
   const countRefs = [vendorCountRef, customerCountRef, servicesCountRef, citiesCountRef];
   const countTriggers = [triggerVendors, triggerCustomers, triggerServices, triggerCities];
 
-  // Trigger count animations when stats become visible
+  // Trigger count animations once live stats are available.
   const statsObserved = useRef(false);
   useEffect(() => {
     if (!liveStats || statsObserved.current) return;
-    const el = statsRevealRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !statsObserved.current) {
-          statsObserved.current = true;
-          countTriggers.forEach((fn) => fn());
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [liveStats, countTriggers, statsRevealRef]);
+    statsObserved.current = true;
+    countTriggers.forEach((fn) => fn());
+  }, [liveStats, countTriggers]);
 
   return (
     <section className="relative overflow-hidden gradient-hero text-background">
@@ -236,20 +223,42 @@ const HeroSection = () => {
         </div>
 
         {/* Stats with animated counters */}
-        <div
-          ref={statsRevealRef}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: {
+              transition: {
+                staggerChildren: 0.08,
+                delayChildren: 0.45,
+              },
+            },
+          }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 max-w-3xl mx-auto"
         >
           {stats.map((stat, i) => (
-            <div key={i} className="text-center p-5 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/[0.12] hover:bg-white/[0.14] hover:border-white/[0.22] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.15)]">
+            <motion.div
+              key={i}
+              variants={{
+                hidden: { opacity: 0, y: 24 },
+                visible: { opacity: 1, y: 0 },
+              }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="text-center p-5 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/[0.12] hover:bg-white/[0.14] hover:border-white/[0.22] hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.15)]"
+            >
               <div className="text-2xl mb-2">{stat.icon}</div>
               <div className="font-display font-bold text-2xl md:text-3xl text-white">
-                <span ref={countRefs[i]}>{formatCount(stat.value)}</span>
+                {liveStats ? (
+                  <span ref={countRefs[i]}>{formatCount(stat.value)}</span>
+                ) : (
+                  <span className="inline-block min-w-[2ch] text-white/55 animate-pulse">{formatCount(stat.value)}</span>
+                )}
               </div>
               <div className="text-xs font-medium text-white/60 mt-1 tracking-wide uppercase">{stat.label}</div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
