@@ -55,7 +55,8 @@ export default function PageLoader() {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-xs text-muted-foreground tracking-widest uppercase"
+              className="notranslate text-xs text-muted-foreground tracking-widest uppercase"
+              translate="no"
             >
               VendorCenter
             </motion.p>

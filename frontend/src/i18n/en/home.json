@@ -1,0 +1,157 @@
+{
+  "hero": {
+    "badge": "AI-Powered Service Discovery",
+    "titleLine1": "Find the Best",
+    "titleHighlight": "Local Services",
+    "titleLine2": "Near You",
+    "subtitle": "From home cleaning to salon services — book trusted professionals in minutes.",
+    "searchPlaceholder": "What service do you need?",
+    "stats": {
+      "activeVendors": "Active Vendors",
+      "happyCustomers": "Happy Customers",
+      "servicesCompleted": "Services Completed",
+      "citiesCovered": "Cities Covered"
+    }
+  },
+  "cta": {
+    "lookingForService": "Looking for a Service?",
+    "customerDesc": "Browse thousands of verified vendors, compare prices, and book in seconds. Your perfect service provider is just a tap away.",
+    "exploreServices": "Explore Services",
+    "growBusiness": "Grow Your Business",
+    "vendorDesc": "Join VendorCenter and reach thousands of customers in your area. Set up your profile, manage bookings, and watch your business grow.",
+    "registerAsVendor": "Register as Vendor"
+  },
+  "howItWorks": {
+    "title": "How It",
+    "titleHighlight": "Works",
+    "subtitle": "Get your service done in 4 simple steps",
+    "stepPrefix": "STEP",
+    "steps": {
+      "location": {
+        "title": "Set Location",
+        "description": "Allow GPS or enter your area to find nearby vendors"
+      },
+      "choose": {
+        "title": "Choose Service",
+        "description": "Browse categories and compare vendors by rating & price"
+      },
+      "book": {
+        "title": "Book & Confirm",
+        "description": "Select time slot, confirm booking, and get instant updates"
+      },
+      "review": {
+        "title": "Rate & Review",
+        "description": "Share your experience and help others find great vendors"
+      }
+    }
+  },
+  "categories": {
+    "title": "Browse by",
+    "titleHighlight": "Category",
+    "subtitle": "Find the perfect service for your needs",
+    "vendorCount": "{{count}} vendors"
+  },
+  "testimonials": {
+    "titleStart": "What Our",
+    "titleHighlight": "Customers",
+    "titleEnd": "Say",
+    "subtitle": "Real reviews from real people",
+    "fallbackReview": "Great service experience.",
+    "verifiedCustomer": "Verified Customer",
+    "fallbackService": "Service"
+  },
+  "featured": {
+    "titleStart": "Top Rated",
+    "titleHighlight": "Vendors",
+    "subtitle": "Handpicked professionals near you",
+    "noVendorsWithLocation": "No nearby vendors found for your location yet.",
+    "noVendorsNoLocation": "Enable location to see nearby vendors."
+  },
+  "scrollStory": {
+    "label": "Story",
+    "heading": "A calm, premium booking flow built around one clear action.",
+    "subtitle": "Scroll to move through the narrative—trust signal, booking preview, and a focused CTA—without breaking the visual rhythm.",
+    "trust": {
+      "label": "01",
+      "title": "Trusted by real people",
+      "description": "4.9/5 average satisfaction. Every vendor is verified, insured, and monitored.",
+      "badge": "4.9 rating",
+      "customerTrust": "Customer trust",
+      "ratingDisplay": "4.9 / 5.0",
+      "basedOn": "Based on verified bookings",
+      "trustLayer": "Trust layer",
+      "implementation": "Background checks & live quality scoring"
+    },
+    "booking": {
+      "label": "02",
+      "title": "Book in one flow",
+      "description": "Pick a slot, lock price, and get instant confirmation—no clutter or distractions.",
+      "badge": "Live availability",
+      "preview": "Booking preview",
+      "serviceName": "Premium Deep Clean",
+      "serviceTime": "Tomorrow · 10:00 - 12:00",
+      "liveSlots": "Live slots",
+      "homeSize": "Home size",
+      "homeSizeValue": "2 BHK",
+      "estPrice": "Est. price",
+      "priceValue": "₹2,900",
+      "addUpholstery": "Add upholstery care",
+      "optionalAddon": "Optional add-on",
+      "total": "Total",
+      "totalValue": "₹3,400",
+      "continue": "Continue"
+    },
+    "cta": {
+      "label": "03",
+      "title": "Move with confidence",
+      "description": "A concierge-like CTA that keeps you focused on completing the booking.",
+      "badge": "Priority support",
+      "priorityConcierge": "Priority concierge",
+      "ctaMessage": "Finish your booking with a single, focused CTA.",
+      "ctaDescription": "No extra cards or distractions—just the path to confirm with assurance and support.",
+      "support247": "24/7",
+      "humanSupport": "Human support on standby",
+      "supportNote": "Instant help if anything changes",
+      "bookWithConfidence": "Book with confidence"
+    }
+  },
+  "about": {
+    "badge": "About Us",
+    "titleStart": "Building Trust in",
+    "titleHighlight": "Local Services",
+    "tagline": "VendorCenter connects customers with verified service professionals — making local services reliable, transparent, and easy to book.",
+    "whatDrivesUs": "What Drives Us",
+    "whatDrivesUsSubtitle": "Our core principles shape every feature, every interaction, and every vendor partnership on the platform.",
+    "values": {
+      "trust": {
+        "title": "Trust & Transparency",
+        "description": "Vendor visibility is based on relevance, location, and verified profiles — no hidden promotions."
+      },
+      "quality": {
+        "title": "Quality First",
+        "description": "Every vendor goes through verification. Service ratings and reviews keep quality accountable."
+      },
+      "customer": {
+        "title": "Customer Focus",
+        "description": "From AI-powered discovery to secure payments — every feature is designed around customer confidence."
+      }
+    },
+    "storyTitle": "Our Story",
+    "storyParagraph1": "VendorCenter started as a simple idea: make it effortless for households to find trusted local service providers. From cleaning and electrical work to salon services and appliance repair — we're building a reliable ecosystem.",
+    "storyParagraph2": "Based in Ratnagiri, Maharashtra, we're expanding across the state with a focus on quality, transparency, and innovation — including AI-powered service discovery.",
+    "stats": {
+      "customersServed": "Customers Served",
+      "growingDaily": "Growing Daily",
+      "citiesActive": "Cities Active",
+      "maharashtra": "Maharashtra",
+      "vendorsVerified": "Vendors Verified",
+      "hundredPercent": "100% Checked",
+      "aiDiscovery": "AI Discovery",
+      "smartMatch": "Smart Match"
+    },
+    "ctaTitle": "Ready to Get Started?",
+    "ctaDescription": "Discover trusted service professionals near you, or grow your business by joining as a vendor.",
+    "exploreServices": "Explore Services",
+    "becomeVendor": "Become a Vendor"
+  }
+}

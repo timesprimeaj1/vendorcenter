@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Home, ArrowLeft, Search, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 const NotFound = () => {
+  const { t } = useTranslation("legal");
   const location = useLocation();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -69,10 +71,10 @@ const NotFound = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <h1 className="mb-3 text-2xl md:text-3xl font-display font-bold text-foreground">
-            Page not found
+            {t("notFound.title")}
           </h1>
           <p className="mb-8 text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            The page you're looking for doesn't exist or has been moved. Let's get you back on track.
+            {t("notFound.subtitle")}
           </p>
         </motion.div>
 
@@ -88,18 +90,18 @@ const NotFound = () => {
             className="gap-2 rounded-xl btn-press"
           >
             <ArrowLeft className="h-4 w-4" />
-            Go back
+            {t("notFound.goBack")}
           </Button>
           <Button asChild className="gap-2 gradient-bg text-primary-foreground border-0 rounded-xl btn-press glow-focus">
             <Link to="/">
               <Home className="h-4 w-4" />
-              Home
+              {t("notFound.home")}
             </Link>
           </Button>
           <Button asChild variant="ghost" className="gap-2 rounded-xl">
             <Link to="/services">
               <Search className="h-4 w-4" />
-              Browse services
+              {t("notFound.browseServices")}
             </Link>
           </Button>
         </motion.div>
@@ -112,7 +114,7 @@ const NotFound = () => {
           className="mt-12 flex items-center justify-center gap-2 text-xs text-muted-foreground/60"
         >
           <Compass className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "8s" }} />
-          <span>Lost? Our AI assistant can help you find what you need.</span>
+          <span>{t("notFound.lostHint")}</span>
         </motion.div>
       </div>
     </div>

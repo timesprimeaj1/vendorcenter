@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SERVICE_CATEGORIES, getCategoryMeta } from "@/data/serviceCategories";
@@ -15,6 +16,7 @@ interface DisplayCategory {
 }
 
 const CategoriesSection = () => {
+  const { t } = useTranslation("home");
   const { location } = useLocation();
   const [cats, setCats] = useState<DisplayCategory[]>(
     SERVICE_CATEGORIES.map((c, i) => ({
@@ -84,9 +86,9 @@ const CategoriesSection = () => {
         <div ref={headerRef} className="flex items-end justify-between mb-10">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold">
-              Browse by <span className="gradient-text">Category</span>
+              {t("categories.title")} <span className="gradient-text">{t("categories.titleHighlight")}</span>
             </h2>
-            <p className="text-muted-foreground mt-2">Find the perfect service for your needs</p>
+            <p className="text-muted-foreground mt-2">{t("categories.subtitle")}</p>
           </div>
           <Link to="/services" className="hidden md:flex items-center gap-1 text-sm font-medium text-primary link-underline">
             View All <ArrowRight className="w-3.5 h-3.5" />
@@ -102,7 +104,7 @@ const CategoriesSection = () => {
               >
                 <div className="text-4xl mb-3 transition-transform duration-300 group-hover:scale-110">{cat.icon}</div>
                 <h3 className="font-display font-semibold text-sm md:text-base">{cat.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{cat.count} vendors</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("categories.vendorCount", { count: cat.count })}</p>
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0 translate-x-2">
                   <ArrowRight className="w-4 h-4 text-primary" />
                 </div>

@@ -1,0 +1,39 @@
+{
+  "success": {
+    "accountCreated": "Account created! Verify your email.",
+    "emailVerified": "Email verified!",
+    "otpSent": "OTP sent to your email",
+    "loginSuccess": "Welcome back!",
+    "profileUpdated": "Profile updated successfully",
+    "serviceAdded": "Service added!",
+    "serviceDeleted": "Service deleted and added to history",
+    "bookingAccepted": "Booking accepted",
+    "bookingDeclined": "Booking declined and customer notified",
+    "workVerified": "Work verified & completed!",
+    "amountUpdated": "Amount updated",
+    "paymentRequestSent": "Payment request sent",
+    "passwordReset": "Password has been reset successfully",
+    "reviewSubmitted": "Review submitted",
+    "portfolioSaved": "Portfolio saved",
+    "priceScheduled": "Price update scheduled"
+  },
+  "error": {
+    "generic": "Something went wrong. Please try again.",
+    "networkError": "Network error. Check your connection.",
+    "loginFailed": "Login failed. Check your credentials.",
+    "registrationFailed": "Registration failed",
+    "invalidOtp": "Invalid OTP",
+    "otpExpired": "OTP expired. Please request a new one.",
+    "failedSendOtp": "Failed to send OTP",
+    "failedLoadBookings": "Failed to load bookings",
+    "failedDownloadReceipt": "Failed to download receipt",
+    "enterValidAmount": "Enter a valid amount",
+    "enterValidPrice": "Enter a valid price",
+    "enterServiceName": "Enter service name",
+    "fillAllFields": "Please fill all required fields",
+    "vendorOnly": "This portal is for vendors only.",
+    "cancellationReasonMin": "Cancellation reason must be at least 5 characters",
+    "uploadFailed": "Failed to upload",
+    "sessionExpired": "Session expired. Please login again."
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "editProfile": "EDIT PROFILE",
+  "tabs": {
+    "bookings": "Bookings",
+    "settings": "Settings"
+  },
+  "bookings": {
+    "title": "Your Bookings",
+    "loading": "Loading bookings...",
+    "noBookings": "No bookings yet",
+    "noBookingsDesc": "Your bookings will appear here after you book a service.",
+    "browseServices": "Browse Services",
+    "order": "ORDER",
+    "vendor": "Vendor:",
+    "vendorAssigned": "Vendor assigned",
+    "rating": "Rating:",
+    "payment": "Payment:",
+    "workStarted": "Work started:",
+    "cancellationReason": "Cancellation reason:",
+    "receipt": "Receipt",
+    "writeReview": "Write Review",
+    "reviewed": "Reviewed",
+    "paymentLinkHint": "Use payment link from your email to pay securely.",
+    "rateExperience": "Rate your experience",
+    "reviewPlaceholder": "Tell us about your experience (optional)",
+    "submitReview": "Submit Review",
+    "cancel": "Cancel",
+    "selectRating": "Please select a rating",
+    "reviewSubmitted": "Review submitted! Thank you.",
+    "reviewFailed": "Failed to submit review",
+    "downloadFailed": "Failed to download receipt"
+  },
+  "settings": {
+    "title": "Account Settings",
+    "name": "Name",
+    "phone": "Phone number",
+    "email": "Email",
+    "change": "CHANGE"
+  },
+  "editPanel": {
+    "title": "Edit profile",
+    "uploading": "Uploading...",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "10-digit phone number",
+    "phoneDigits": "{{count}}/10 digits",
+    "emailLabel": "Email",
+    "emailCannotChange": "Email cannot be changed",
+    "phoneValidation": "Phone number must be exactly 10 digits",
+    "uploadingPhoto": "Uploading photo...",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated!",
+    "updateFailed": "Failed to update profile",
+    "photoUploadFailed": "Photo upload failed",
+    "waitForUpload": "Please wait until photo upload finishes"
+  },
+  "notSet": "Not set"
+}

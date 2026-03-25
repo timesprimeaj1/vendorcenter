@@ -1,0 +1,18 @@
+{
+  "cleaning": "Cleaning",
+  "plumbing": "Plumbing",
+  "electrical": "Electrical",
+  "salon": "Salon",
+  "painting": "Painting",
+  "carpentry": "Carpentry",
+  "acRepair": "AC Repair",
+  "pestControl": "Pest Control",
+  "applianceRepair": "Appliance Repair",
+  "moving": "Moving",
+  "photography": "Photography",
+  "catering": "Catering",
+  "other": "Other",
+  "mobileRepair": "Mobile/Computer Repair",
+  "tutoring": "Tutoring",
+  "fitness": "Fitness"
+}

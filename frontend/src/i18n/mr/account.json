@@ -1,0 +1,60 @@
+{
+  "editProfile": "प्रोफाइल संपादित करा",
+  "tabs": {
+    "bookings": "बुकिंग",
+    "settings": "सेटिंग्ज"
+  },
+  "bookings": {
+    "title": "तुमच्या बुकिंग",
+    "loading": "बुकिंग लोड होत आहेत...",
+    "noBookings": "अद्याप बुकिंग नाहीत",
+    "noBookingsDesc": "तुम्ही सेवा बुक केल्यानंतर तुमच्या बुकिंग येथे दिसतील.",
+    "browseServices": "सेवा शोधा",
+    "order": "ऑर्डर",
+    "vendor": "विक्रेता:",
+    "vendorAssigned": "विक्रेता नियुक्त",
+    "rating": "रेटिंग:",
+    "payment": "पेमेंट:",
+    "workStarted": "काम सुरू:",
+    "cancellationReason": "रद्दीकरणाचे कारण:",
+    "receipt": "पावती",
+    "writeReview": "रिव्ह्यू लिहा",
+    "reviewed": "रिव्ह्यू केले",
+    "paymentLinkHint": "सुरक्षितपणे पैसे भरण्यासाठी तुमच्या ईमेलमधील पेमेंट लिंक वापरा.",
+    "rateExperience": "तुमचा अनुभव रेट करा",
+    "reviewPlaceholder": "तुमच्या अनुभवाबद्दल सांगा (ऐच्छिक)",
+    "submitReview": "रिव्ह्यू सबमिट करा",
+    "cancel": "रद्द करा",
+    "selectRating": "कृपया रेटिंग निवडा",
+    "reviewSubmitted": "रिव्ह्यू सबमिट केला! धन्यवाद.",
+    "reviewFailed": "रिव्ह्यू सबमिट करता आला नाही",
+    "downloadFailed": "पावती डाउनलोड करता आली नाही"
+  },
+  "settings": {
+    "title": "खाते सेटिंग्ज",
+    "name": "नाव",
+    "phone": "फोन नंबर",
+    "email": "ईमेल",
+    "change": "बदला"
+  },
+  "editPanel": {
+    "title": "प्रोफाइल संपादित करा",
+    "uploading": "अपलोड होत आहे...",
+    "nameLabel": "नाव",
+    "namePlaceholder": "तुमचे नाव",
+    "phoneLabel": "फोन नंबर",
+    "phonePlaceholder": "10-अंकी फोन नंबर",
+    "phoneDigits": "{{count}}/10 अंक",
+    "emailLabel": "ईमेल",
+    "emailCannotChange": "ईमेल बदलता येत नाही",
+    "phoneValidation": "फोन नंबर नेमके 10 अंकी असावा",
+    "uploadingPhoto": "फोटो अपलोड होत आहे...",
+    "saving": "जतन होत आहे...",
+    "saveChanges": "बदल जतन करा",
+    "profileUpdated": "प्रोफाइल अपडेट केले!",
+    "updateFailed": "प्रोफाइल अपडेट करता आले नाही",
+    "photoUploadFailed": "फोटो अपलोड अयशस्वी",
+    "waitForUpload": "कृपया फोटो अपलोड पूर्ण होईपर्यंत थांबा"
+  },
+  "notSet": "सेट नाही"
+}

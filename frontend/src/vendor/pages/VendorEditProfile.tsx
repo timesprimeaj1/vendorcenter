@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2, Store, MapPin, Clock, LogOut, LocateFixed, AlertTriangle, Camera, ImagePlus, X as XIcon, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { MapErrorBoundary } from "@/vendor/components/MapErrorBoundary";
 import LocationPicker from "@/vendor/components/LocationPicker";
 import PlaceAutocompleteInput from "@/vendor/components/PlaceAutocompleteInput";
+import VendorHeader from "@/vendor/components/VendorHeader";
 
 const SERVICE_CATEGORIES = [
   "Cleaning", "Plumbing", "Electrical", "Painting",
@@ -70,6 +72,7 @@ const VendorEditProfile = () => {
   const [newPortfolioFiles, setNewPortfolioFiles] = useState<{ file: File; preview: string }[]>([]);
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
   const [savingPortfolio, setSavingPortfolio] = useState(false);
+  const { t } = useTranslation("vendor");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -174,10 +177,10 @@ const VendorEditProfile = () => {
       const savedUrl = updated.data?.profilePictureUrl || result.url;
       setProfilePicUrl(savedUrl);
       setProfilePicPreview(resolveProfileImageUrl(savedUrl));
-      toast.success("Profile picture updated!");
+      toast.success(t("editProfile.profilePicUpdated", { defaultValue: "Profile picture updated!" }));
     } catch {
       setProfilePicPreview(resolveProfileImageUrl(profilePicUrl));
-      toast.error("Failed to upload profile picture");
+      toast.error(t("editProfile.profilePicFailed", { defaultValue: "Failed to upload profile picture" }));
     } finally {
       URL.revokeObjectURL(localPreview);
       setUploadingPic(false);
@@ -220,9 +223,9 @@ const VendorEditProfile = () => {
       await api.updateVendorPortfolio(allUrls);
       setExistingPortfolio(allUrls);
       setNewPortfolioFiles([]);
-      toast.success("Portfolio updated!");
+      toast.success(t("editProfile.portfolioUpdated", { defaultValue: "Portfolio updated!" }));
     } catch {
-      toast.error("Failed to update portfolio");
+      toast.error(t("editProfile.portfolioFailed", { defaultValue: "Failed to update portfolio" }));
     } finally {
       setSavingPortfolio(false);
       setUploadingPortfolio(false);
@@ -233,38 +236,22 @@ const VendorEditProfile = () => {
   if (noProfile) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">V</span>
-              </div>
-              <span className="font-bold text-lg hidden sm:block">
-                Vendor<span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Portal</span>
-              </span>
-            </Link>
-            <Button variant="ghost" size="sm" onClick={async () => { await logout(); navigate("/login"); }}>
-              <LogOut className="w-4 h-4 mr-1.5" />
-              Logout
-            </Button>
-          </div>
-        </header>
+        <VendorHeader />
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
+            {t("bookings.backToDashboard")}
           </Button>
           <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <Store className="w-6 h-6 text-orange-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-orange-800 dark:text-orange-200 text-lg">Complete Onboarding First</p>
+                  <p className="font-semibold text-orange-800 dark:text-orange-200 text-lg">{t("editProfile.completeOnboardingFirst")}</p>
                   <p className="text-sm text-orange-700 dark:text-orange-300 mt-2">
                     {fetchTimedOut
-                      ? "Profile lookup timed out. Please continue onboarding and then revisit edit profile."
-                      : "You need to complete your business onboarding before you can edit your profile."}
-                    Set up your business details, location, and services first.
+                      ? t("editProfile.profileTimeout")
+                      : t("editProfile.needOnboarding")}
                   </p>
                   <Button
                     className="mt-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0"
@@ -272,7 +259,7 @@ const VendorEditProfile = () => {
                     onClick={() => navigate("/onboarding")}
                   >
                     <Store className="w-4 h-4 mr-1.5" />
-                    Go to Onboarding
+                    {t("editProfile.goToOnboarding")}
                   </Button>
                 </div>
               </div>
@@ -287,43 +274,27 @@ const VendorEditProfile = () => {
   if (profileEdited) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">V</span>
-              </div>
-              <span className="font-bold text-lg hidden sm:block">
-                Vendor<span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Portal</span>
-              </span>
-            </Link>
-            <Button variant="ghost" size="sm" onClick={async () => { await logout(); navigate("/login"); }}>
-              <LogOut className="w-4 h-4 mr-1.5" />
-              Logout
-            </Button>
-          </div>
-        </header>
+        <VendorHeader />
         <div className="max-w-2xl mx-auto px-4 py-8">
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
+            {t("bookings.backToDashboard")}
           </Button>
           <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-800">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-yellow-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-yellow-800 dark:text-yellow-200 text-lg">Profile Locked</p>
+                  <p className="font-semibold text-yellow-800 dark:text-yellow-200 text-lg">{t("editProfile.profileLocked")}</p>
                   <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
-                    You have already used your one-time profile edit. Your details are now permanent. If you need
-                    further changes, please contact admin support.
+                    {t("editProfile.profileLockedDesc")}
                   </p>
                   <div className="mt-4 space-y-2 text-sm">
-                    <p><strong>Business:</strong> {businessName}</p>
-                    <p><strong>Categories:</strong> {selectedCategories.join(", ")}</p>
-                    <p><strong>Zone:</strong> {zone}</p>
-                    <p><strong>Working Hours:</strong> {workingHours}</p>
-                    <p><strong>Service Radius:</strong> {serviceRadius} km</p>
+                    <p><strong>{t("editProfile.business")}</strong> {businessName}</p>
+                    <p><strong>{t("editProfile.categoriesLabel")}</strong> {selectedCategories.join(", ")}</p>
+                    <p><strong>{t("editProfile.zone")}</strong> {zone}</p>
+                    <p><strong>{t("editProfile.workingHours")}</strong> {workingHours}</p>
+                    <p><strong>{t("editProfile.serviceRadius")}</strong> {serviceRadius} km</p>
                   </div>
                 </div>
               </div>
@@ -401,7 +372,7 @@ const VendorEditProfile = () => {
                   </label>
                 )}
               </div>
-              {uploadingPortfolio && <p className="text-sm text-orange-500">Uploading photos...</p>}
+              {uploadingPortfolio && <p className="text-sm text-orange-500">{t("editProfile.uploadingPhotos")}</p>}
               <Button
                 size="sm"
                 variant="outline"
@@ -410,7 +381,7 @@ const VendorEditProfile = () => {
                 className="rounded-xl"
               >
                 {savingPortfolio ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Save Portfolio
+                {t("editProfile.savePortfolio")}
               </Button>
             </CardContent>
           </Card>
@@ -455,45 +426,30 @@ const VendorEditProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">V</span>
-            </div>
-            <span className="font-bold text-lg hidden sm:block">
-              Vendor<span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Portal</span>
-            </span>
-          </Link>
-          <Button variant="ghost" size="sm" onClick={async () => { await logout(); navigate("/login"); }}>
-            <LogOut className="w-4 h-4 mr-1.5" />
-            Logout
-          </Button>
-        </div>
-      </header>
+      <VendorHeader />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
+            {t("bookings.backToDashboard")}
           </Button>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Edit Profile</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("editProfile.title")}</h1>
           {isOnboardingIncomplete && (
             <Card className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800">
               <CardContent className="pt-4">
                 <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Your onboarding looks incomplete. You can finish the onboarding form first, then return here for one-time edits and portfolio updates.
+                  {t("editProfile.incompleteOnboardingWarning")}
                 </p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/onboarding")}>Go to Onboarding</Button>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/onboarding")}>{t("editProfile.goToOnboarding")}</Button>
               </CardContent>
             </Card>
           )}
           <div className="flex items-center gap-2 mb-8">
             <AlertTriangle className="w-4 h-4 text-yellow-500" />
             <p className="text-sm text-yellow-600 font-medium">
-              This is a one-time edit. Once saved, your profile details become permanent.
+              {t("editProfile.oneTimeWarning")}
             </p>
           </div>
 
@@ -503,7 +459,7 @@ const VendorEditProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <User className="w-5 h-5 text-indigo-500" />
-                  Profile Picture
+                  {t("editProfile.profilePicture")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center">
@@ -520,7 +476,7 @@ const VendorEditProfile = () => {
                     <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
                   </label>
                 </div>
-                {uploadingPic && <p className="text-xs text-muted-foreground mt-2">Uploading...</p>}
+                {uploadingPic && <p className="text-xs text-muted-foreground mt-2">{t("editProfile.uploadingPhotos")}</p>}
               </CardContent>
             </Card>
 
@@ -529,12 +485,12 @@ const VendorEditProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <ImagePlus className="w-5 h-5 text-purple-500" />
-                  Portfolio Photos
+                  {t("editProfile.portfolioPhotos")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Upload up to 6 photos showcasing your work. These are shown on your public profile.
+                  {t("editProfile.portfolioDesc")}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {existingPortfolio.map((url, idx) => (
@@ -569,7 +525,7 @@ const VendorEditProfile = () => {
                     </label>
                   )}
                 </div>
-                {uploadingPortfolio && <p className="text-sm text-orange-500">Uploading photos...</p>}
+                {uploadingPortfolio && <p className="text-sm text-orange-500">{t("editProfile.uploadingPhotos")}</p>}
                 <Button
                   size="sm"
                   variant="outline"
@@ -578,7 +534,7 @@ const VendorEditProfile = () => {
                   className="rounded-xl"
                 >
                   {savingPortfolio ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  Save Portfolio
+                  {t("editProfile.savePortfolio")}
                 </Button>
               </CardContent>
             </Card>
@@ -587,16 +543,16 @@ const VendorEditProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Store className="w-5 h-5 text-orange-500" />
-                  Business Details
+                  {t("editProfile.businessDetails")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Business Name *</label>
-                  <Input placeholder="e.g. SparkClean Services" className="h-11 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
+                  <label className="text-sm font-medium mb-1.5 block">{t("editProfile.businessNameLabel")}</label>
+                  <Input placeholder={t("editProfile.businessNamePlaceholder")} className="h-11 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Service Categories *</label>
+                  <label className="text-sm font-medium mb-1.5 block">{t("editProfile.serviceCategoriesLabel")}</label>
                   <div className="flex flex-wrap gap-2">
                     {SERVICE_CATEGORIES.map(cat => (
                       <button
@@ -621,12 +577,12 @@ const VendorEditProfile = () => {
                           : "bg-background border-border hover:border-orange-300"
                       }`}
                     >
-                      Other
+                      {t("editProfile.other")}
                     </button>
                   </div>
                   {selectedCategories.includes("Other") && (
                     <Input
-                      placeholder="Enter your custom category name"
+                      placeholder={t("editProfile.customCategoryPlaceholder")}
                       className="h-11 rounded-xl mt-2"
                       value={otherCategory}
                       onChange={e => setOtherCategory(e.target.value)}
@@ -640,7 +596,7 @@ const VendorEditProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MapPin className="w-5 h-5 text-blue-500" />
-                  Location
+                  {t("editProfile.locationTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -654,7 +610,7 @@ const VendorEditProfile = () => {
                       setLatitude(String(suggestion.lat));
                       setLongitude(String(suggestion.lng));
                     }}
-                    placeholder="Type 3+ chars (e.g. South Delhi)"
+                    placeholder={t("editProfile.zonePlaceholder")}
                     className="h-11 rounded-xl"
                   />
                 </div>
@@ -695,7 +651,7 @@ const VendorEditProfile = () => {
                 </Button>
 
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Service Radius (km)</label>
+                  <label className="text-sm font-medium mb-1.5 block">{t("editProfile.serviceRadiusKm")}</label>
                   <Input placeholder="10" className="h-11 rounded-xl" type="number" value={serviceRadius} onChange={e => setServiceRadius(e.target.value)} />
                 </div>
               </CardContent>
@@ -705,11 +661,11 @@ const VendorEditProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="w-5 h-5 text-green-500" />
-                  Working Hours
+                  {t("editProfile.workingHoursLabel")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Input placeholder="e.g. 9:00 AM - 6:00 PM" className="h-11 rounded-xl" value={workingHours} onChange={e => setWorkingHours(e.target.value)} />
+                <Input placeholder={t("editProfile.workingHoursPlaceholder")} className="h-11 rounded-xl" value={workingHours} onChange={e => setWorkingHours(e.target.value)} />
               </CardContent>
             </Card>
 
@@ -719,7 +675,7 @@ const VendorEditProfile = () => {
               className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-              Save Changes (One-Time Edit)
+              {t("editProfile.saveChanges")}
               {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>

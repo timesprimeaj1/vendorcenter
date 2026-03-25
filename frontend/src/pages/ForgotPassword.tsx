@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
@@ -12,6 +13,7 @@ const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 type Step = "email" | "otp" | "password";
 
 const ForgotPassword = () => {
+  const { t } = useTranslation("auth");
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otpId, setOtpId] = useState("");
@@ -22,41 +24,41 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
 
   const handleSendOtp = async () => {
-    if (!email) { toast.error("Enter your email"); return; }
+    if (!email) { toast.error(t("messages:error.fillAllFields")); return; }
     setLoading(true);
     try {
       const res = await api.requestOtp(email, "password_reset");
       if (res.data) {
         setOtpId(res.data.otpId);
         setStep("otp");
-        toast.success("OTP sent to your email");
+        toast.success(t("messages:success.otpSent"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || t("messages:error.failedSendOtp"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyAndProceed = () => {
-    if (!otpCode || otpCode.length < 6) { toast.error("Enter 6-digit OTP"); return; }
+    if (!otpCode || otpCode.length < 6) { toast.error(t("validation.enter6DigitOtp")); return; }
     setStep("password");
   };
 
   const handleResetPassword = async () => {
     if (!PASSWORD_RULE.test(newPassword)) {
-      toast.error("Password must be 8+ characters and include uppercase, lowercase, number, and special character"); return;
+      toast.error(t("register.passwordRule")); return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords don't match"); return;
+      toast.error(t("messages:error.generic")); return;
     }
     setLoading(true);
     try {
       await api.resetPassword({ email, otpId, code: otpCode, newPassword });
-      toast.success("Password reset successful! Please sign in.");
+      toast.success(t("messages:success.passwordReset"));
       navigate("/login");
     } catch (err: any) {
-      toast.error(err.message || "Failed to reset password");
+      toast.error(err.message || t("messages:error.generic"));
     } finally {
       setLoading(false);
     }
@@ -81,11 +83,11 @@ const ForgotPassword = () => {
             </span>
           </Link>
 
-          <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">Reset password</h1>
+          <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{t("forgotPassword.title")}</h1>
           <p className="text-muted-foreground mb-8">
-            {step === "email" && "Enter your email to receive a reset code"}
-            {step === "otp" && "Enter the verification code sent to your email"}
-            {step === "password" && "Set your new password"}
+            {step === "email" && t("forgotPassword.emailSubtitle")}
+            {step === "otp" && t("forgotPassword.otpSubtitle")}
+            {step === "password" && t("forgotPassword.passwordSubtitle")}
           </p>
 
           {/* Progress indicator */}
@@ -107,7 +109,7 @@ const ForgotPassword = () => {
               <div className="relative glow-focus rounded-xl">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Email address"
+                  placeholder={t("forgotPassword.emailPlaceholder")}
                   type="email"
                   className="pl-10 h-12 rounded-xl"
                   value={email}
@@ -121,7 +123,7 @@ const ForgotPassword = () => {
                 className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press shadow-lg hover:shadow-xl transition-all"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Send Reset Code
+                {t("forgotPassword.sendResetCode")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </motion.div>
@@ -130,7 +132,7 @@ const ForgotPassword = () => {
           {step === "otp" && (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <Input
-                placeholder="Enter 6-digit OTP"
+                placeholder={t("forgotPassword.otpPlaceholder")}
                 maxLength={6}
                 className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg"
                 value={otpCode}
@@ -138,18 +140,18 @@ const ForgotPassword = () => {
                 onKeyDown={e => e.key === "Enter" && handleVerifyAndProceed()}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Code sent to <span className="font-medium text-foreground">{email}</span>
+                {t("forgotPassword.codeSentTo")} <span className="font-medium text-foreground">{email}</span>
               </p>
               <Button
                 disabled={loading}
                 onClick={handleVerifyAndProceed}
                 className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
               >
-                Continue
+                {t("forgotPassword.continue")}
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
               <Button variant="ghost" className="w-full text-sm text-muted-foreground" onClick={handleSendOtp} disabled={loading}>
-                Resend code
+                {t("forgotPassword.resendCode")}
               </Button>
             </motion.div>
           )}
@@ -159,18 +161,18 @@ const ForgotPassword = () => {
               <div className="relative glow-focus rounded-xl">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="New password (min 8 characters)"
+                  placeholder={t("forgotPassword.newPasswordPlaceholder")}
                   type="password"
                   className="pl-10 h-12 rounded-xl"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                 />
               </div>
-              <p className="text-xs text-muted-foreground -mt-2">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
+              <p className="text-xs text-muted-foreground -mt-2">{t("register.passwordRule")}</p>
               <div className="relative glow-focus rounded-xl">
                 <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Confirm new password"
+                  placeholder={t("forgotPassword.confirmPasswordPlaceholder")}
                   type="password"
                   className="pl-10 h-12 rounded-xl"
                   value={confirmPassword}
@@ -184,7 +186,7 @@ const ForgotPassword = () => {
                 className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Reset Password
+                {t("forgotPassword.resetPassword")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </motion.div>
@@ -193,7 +195,7 @@ const ForgotPassword = () => {
           <div className="mt-8">
             <Link to="/login" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
-              Back to sign in
+              {t("forgotPassword.backToSignIn")}
             </Link>
           </div>
         </motion.div>
@@ -210,9 +212,9 @@ const ForgotPassword = () => {
           <div className="w-20 h-20 rounded-3xl gradient-bg flex items-center justify-center mx-auto mb-8 animate-pulse-glow">
             <Lock className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h2 className="font-display text-3xl font-bold mb-4">Secure Reset</h2>
+          <h2 className="font-display text-3xl font-bold mb-4">{t("forgotPassword.sideTitle")}</h2>
           <p className="text-white/65 leading-relaxed">
-            We'll send a verification code to your email to help you reset your password securely.
+            {t("forgotPassword.sideDescription")}
           </p>
         </div>
       </div>

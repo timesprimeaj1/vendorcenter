@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, MapPin, Star, BadgeCheck, X, Loader2, Sparkles, Package } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 const Services = () => {
+  const { t } = useTranslation("services");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCategory = searchParams.get("category");
@@ -138,13 +140,13 @@ const Services = () => {
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <h1 className="font-display text-2xl md:text-3xl font-bold">
-              Browse <span className="gradient-text">Services</span>
+              {t("titleStart")} <span className="gradient-text">{t("titleHighlight")}</span>
             </h1>
           </div>
           <div className="flex gap-3">
             <div className="flex-1 relative max-w-lg group">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-              <Input placeholder="Search services..." className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary/40" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <Input placeholder={t("searchPlaceholder")} className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary/40" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </div>
             <Button
               variant="outline"
@@ -152,7 +154,7 @@ const Services = () => {
               onClick={() => setShowFilters(!showFilters)}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Filters
+              {t("filters")}
               {minRating > 0 && (
                 <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   1
@@ -169,7 +171,7 @@ const Services = () => {
               className="mt-3 p-4 bg-card border rounded-xl"
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium">Minimum Rating</p>
+                <p className="text-sm font-medium">{t("minimumRating")}</p>
                 {minRating > 0 && (
                   <button
                     onClick={() => setMinRating(0)}
@@ -192,7 +194,7 @@ const Services = () => {
                   >
                     <span>{r}</span>
                     <Star className={`w-3.5 h-3.5 ${minRating === r ? "fill-amber-500 text-amber-500" : "text-amber-400"}`} />
-                    <span className="text-xs text-muted-foreground">& up</span>
+                    <span className="text-xs text-muted-foreground">{t("andUp")}</span>
                   </button>
                 ))}
               </div>
@@ -210,7 +212,7 @@ const Services = () => {
               !selectedCategory ? "gradient-bg text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-primary/10"
             }`}
           >
-            All
+            {t("all")}
           </button>
           {displayCategories.map((cat) => (
             <button
@@ -230,14 +232,14 @@ const Services = () => {
         {/* Results */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : `${filtered.length} services found`}
+            {isLoading ? "Loading..." : t("servicesFound", { count: filtered.length })}
           </p>
           {selectedCategory && (
             <button
               onClick={() => selectCategory(null)}
               className="flex items-center gap-1 text-xs text-primary hover:underline"
             >
-              <X className="w-3 h-3" /> Clear filter
+              <X className="w-3 h-3" /> {t("clearFilter")}
             </button>
           )}
         </div>
@@ -265,7 +267,7 @@ const Services = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   {vendor.verified && (
                     <Badge className="absolute top-3 left-3 bg-success text-success-foreground border-0 text-xs gap-1">
-                      <BadgeCheck className="w-3 h-3" /> Verified
+                      <BadgeCheck className="w-3 h-3" /> {t("common:status.verified")}
                     </Badge>
                   )}
                   <Badge variant="secondary" className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm text-xs">{vendor.distance}</Badge>
@@ -290,7 +292,7 @@ const Services = () => {
                       <span className="text-xs text-muted-foreground">From</span>
                       <div className="font-display font-bold text-lg text-primary">{vendor.price}</div>
                     </div>
-                    <Button size="sm" className="gradient-bg text-primary-foreground border-0 rounded-xl btn-press" onClick={(e) => { e.stopPropagation(); handleBook(vendor); }}>View Details</Button>
+                    <Button size="sm" className="gradient-bg text-primary-foreground border-0 rounded-xl btn-press" onClick={(e) => { e.stopPropagation(); handleBook(vendor); }}>{t("common:actions.viewAndBook")}</Button>
                   </div>
                 </div>
               </motion.div>
@@ -306,20 +308,20 @@ const Services = () => {
                 <Search className="w-4 h-4 text-primary/50" />
               </div>
             </div>
-            <h3 className="font-display text-xl font-semibold mb-2">No services found</h3>
+            <h3 className="font-display text-xl font-semibold mb-2">{t("noServicesTitle")}</h3>
             <p className="text-muted-foreground text-sm max-w-sm mb-6">
               {selectedCategory
-                ? `No vendors found for "${selectedCategory}" in your area. Try a different category or expand your search.`
-                : "No vendors found matching your criteria. Try adjusting your filters."}
+                ? t("noServicesCategory")
+                : t("noServicesGeneral")}
             </p>
             <div className="flex gap-3">
               {selectedCategory && (
                 <Button variant="outline" onClick={() => selectCategory(null)} className="rounded-xl">
-                  Clear Category
+                  {t("clearCategory")}
                 </Button>
               )}
               <Button onClick={() => navigate("/explore")} className="gradient-bg text-primary-foreground border-0 rounded-xl btn-press">
-                Explore Map
+                {t("exploreMap")}
               </Button>
             </div>
           </div>

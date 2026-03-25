@@ -1,0 +1,47 @@
+{
+  "terms": {
+    "badge": "Terms of Service",
+    "title": "Terms of Service",
+    "subtitle": "By using VendorCenter, you agree to use the platform lawfully and provide accurate account and booking details.",
+    "platformUsage": "Platform Usage",
+    "platformUsageBody": "Users must not abuse the platform, bypass security controls, or interfere with bookings, payments, or service operations.",
+    "vendorResponsibility": "Vendor Responsibility",
+    "vendorResponsibilityBody": "Vendors are responsible for accurate service information, lawful conduct, and professional service delivery.",
+    "customerResponsibility": "Customer Responsibility",
+    "customerResponsibilityBody": "Customers must provide correct booking details, be available for scheduled appointments, and follow platform payment and cancellation rules.",
+    "serviceAvailability": "Service Availability",
+    "serviceAvailabilityBody": "Availability, pricing, and timelines depend on vendor coverage area, service radius, and real-time booking conditions."
+  },
+  "privacy": {
+    "badge": "Privacy Policy",
+    "title": "Your Privacy Matters",
+    "subtitle": "Your account data is personal and private. We use your information only to run core platform features.",
+    "dataWeCollect": "Data We Collect",
+    "dataWeCollectBody": "Account details (name, email, phone), profile information, booking data, and service activity. For vendors, this can include business profile and portfolio media uploaded by the account owner.",
+    "howWeUseData": "How We Use Data",
+    "howWeUseDataBody": "Data is used to authenticate users, show relevant vendors by location, process bookings, manage dashboards, and improve service quality. We do not sell personal data.",
+    "accountPrivacy": "Account Privacy",
+    "accountPrivacyBody": "Profile updates are performed against the currently authenticated account. Access tokens and refresh tokens are scoped per user role and stored in the browser for session handling.",
+    "contact": "Contact",
+    "contactBody": "For privacy-related requests, contact support@vendorcenter.in."
+  },
+  "cookies": {
+    "badge": "Cookie Policy",
+    "title": "Cookie Policy",
+    "subtitle": "VendorCenter uses minimal cookies and relies mainly on browser local storage for session tokens.",
+    "functionalCookie": "Functional Cookie In Use",
+    "functionalCookieBody": "We use a functional cookie named sidebar:state to remember UI sidebar open or collapsed state. It is set at path / with a max age of 7 days.",
+    "outsideCookies": "What Is Stored Outside Cookies",
+    "outsideCookiesBody": "Authentication data is stored in browser local storage using role-specific keys such as customer_accessToken, customer_refreshToken, vendor_accessToken, and vendor_refreshToken. These are not cookie values.",
+    "whyWeUseThem": "Why We Use Them",
+    "whyWeUseThemBody": "This storage is used to keep users signed in, support token refresh, and preserve interface preferences. It helps maintain secure and consistent sessions across page navigation."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist or has been moved. Let's get you back on track.",
+    "goBack": "Go back",
+    "home": "Home",
+    "browseServices": "Browse services",
+    "lostHint": "Lost? Our AI assistant can help you find what you need."
+  }
+}

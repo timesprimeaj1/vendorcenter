@@ -2,9 +2,11 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/vendor/hooks/useVendorAuth";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
 import { toast } from "sonner";
@@ -20,6 +22,7 @@ const VendorLogin = () => {
   const [loading, setLoading] = useState(false);
   const { user, login, loginWithTokens, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation("vendor");
 
   const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
@@ -32,22 +35,22 @@ const VendorLogin = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { toast.error("Please fill all fields"); return; }
+    if (!email || !password) { toast.error(t("login.fillAllFields")); return; }
     setLoading(true);
     try {
       await ensureSwitchedAccount(email);
       await login({ email, password });
-      toast.success("Welcome back!");
+      toast.success(t("login.welcomeBack"));
       navigate("/dashboard");
     } catch (err: any) {
-      toast.error(err.message || "Login failed");
+      toast.error(err.message || t("login.signIn"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleSendOtp = async () => {
-    if (!otpEmail) { toast.error("Enter your email"); return; }
+    if (!otpEmail) { toast.error(t("login.fillAllFields")); return; }
     setLoading(true);
     try {
       await ensureSwitchedAccount(otpEmail);
@@ -55,23 +58,23 @@ const VendorLogin = () => {
       if (res.data) {
         setOtpId(res.data.otpId);
         setOtpSent(true);
-        toast.success("OTP sent to your email");
+        toast.success(t("login.otpSentToEmail"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || t("login.failedSendOtp"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) { toast.error("Enter 6-digit OTP"); return; }
+    if (!otpCode || otpCode.length < 6) { toast.error(t("login.otpCodePlaceholder")); return; }
     setLoading(true);
     try {
       const res = await api.verifyOtp(otpId, otpCode, "login");
       if (res.data?.accessToken && res.data?.refreshToken && res.data?.actor) {
         if (res.data.actor.role !== "vendor") {
-          toast.error("This portal is for vendors only.");
+          toast.error(t("login.vendorOnly"));
           return;
         }
         loginWithTokens({
@@ -79,13 +82,13 @@ const VendorLogin = () => {
           refreshToken: res.data.refreshToken,
           actor: res.data.actor,
         });
-        toast.success("Welcome back!");
+        toast.success(t("login.welcomeBack"));
         navigate("/dashboard");
       } else {
-        toast.error("OTP verified but login failed. Try email login.");
+        toast.error(t("login.otpLoginFailed"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      toast.error(err.message || t("login.invalidOtp"));
     } finally {
       setLoading(false);
     }
@@ -109,25 +112,26 @@ const VendorLogin = () => {
             </span>
           </Link>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Vendor Sign In</h1>
-          <p className="text-muted-foreground mb-8">Access your vendor dashboard</p>
+          <div className="flex justify-end mb-4"><LanguageSwitcher compact /></div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("login.title")}</h1>
+          <p className="text-muted-foreground mb-8">{t("login.subtitle")}</p>
 
           <Tabs defaultValue="email" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="phone">OTP Login</TabsTrigger>
+              <TabsTrigger value="email">{t("login.emailTab")}</TabsTrigger>
+              <TabsTrigger value="phone">{t("login.otpTab")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="email">
               <form className="space-y-4" onSubmit={handleEmailLogin}>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Email address" type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
+                  <Input placeholder={t("login.emailPlaceholder")} type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Password"
+                    placeholder={t("login.passwordPlaceholder")}
                     type={showPassword ? "text" : "password"}
                     className="pl-10 pr-10 h-12 rounded-xl"
                     value={password}
@@ -144,15 +148,15 @@ const VendorLogin = () => {
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="rounded border-border" />
-                    <span className="text-muted-foreground">Remember me</span>
+                    <span className="text-muted-foreground">{t("login.rememberMe")}</span>
                   </label>
                   <Link to="/forgot-password" className="text-primary hover:underline font-medium">
-                    Forgot password?
+                    {t("login.forgotPassword")}
                   </Link>
                 </div>
                 <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  Sign In
+                  {t("login.signIn")}
                   {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
                 </Button>
               </form>
@@ -162,12 +166,12 @@ const VendorLogin = () => {
               <form className="space-y-4" onSubmit={e => e.preventDefault()}>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Email for OTP" type="email" className="pl-10 h-12 rounded-xl" value={otpEmail} onChange={e => setOtpEmail(e.target.value)} />
+                  <Input placeholder={t("login.otpEmailPlaceholder")} type="email" className="pl-10 h-12 rounded-xl" value={otpEmail} onChange={e => setOtpEmail(e.target.value)} />
                 </div>
                 {otpSent && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-                    <Input placeholder="Enter 6-digit OTP" maxLength={6} className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg" value={otpCode} onChange={e => setOtpCode(e.target.value)} />
-                    <p className="text-xs text-muted-foreground mt-2 text-center">OTP sent! Check your email.</p>
+                    <Input placeholder={t("login.otpCodePlaceholder")} maxLength={6} className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg" value={otpCode} onChange={e => setOtpCode(e.target.value)} />
+                    <p className="text-xs text-muted-foreground mt-2 text-center">{t("login.otpSent")}</p>
                   </motion.div>
                 )}
                 <Button
@@ -177,7 +181,7 @@ const VendorLogin = () => {
                   className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  {otpSent ? "Verify & Sign In" : "Send OTP"}
+                  {otpSent ? t("login.verifyAndSignIn") : t("login.sendOtp")}
                   {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
                 </Button>
               </form>
@@ -185,9 +189,9 @@ const VendorLogin = () => {
           </Tabs>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Don't have a vendor account?{" "}
+            {t("login.noAccount")}{" "}
             <Link to="/register" className="text-primary hover:underline font-medium">
-              Register as Vendor
+              {t("login.registerAsVendor")}
             </Link>
           </p>
         </motion.div>
@@ -202,9 +206,9 @@ const VendorLogin = () => {
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center mx-auto mb-8">
             <span className="text-white font-bold text-3xl">V</span>
           </div>
-          <h2 className="text-3xl font-bold mb-4">Vendor Portal</h2>
+          <h2 className="text-3xl font-bold mb-4">{t("login.sideTitle")}</h2>
           <p className="text-white/70 leading-relaxed">
-            Manage your services, track bookings, and grow your business — all from one dashboard.
+            {t("login.sideDesc")}
           </p>
         </div>
       </div>

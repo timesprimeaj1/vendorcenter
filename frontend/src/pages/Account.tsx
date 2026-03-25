@@ -7,6 +7,7 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -38,6 +39,7 @@ const Account = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, logout, updateUser, loading: authLoading } = useAuth();
+  const { t } = useTranslation("account");
   const queryClient = useQueryClient();
   const initialTab = (searchParams.get("tab") as Tab) || "bookings";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
@@ -94,35 +96,35 @@ const Account = () => {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error("Failed to download receipt");
+      toast.error(t("bookings.downloadFailed"));
     }
   };
 
   const submitReview = async (bookingId: string) => {
-    if (reviewRating < 1) { toast.error("Please select a rating"); return; }
+    if (reviewRating < 1) { toast.error(t("bookings.selectRating")); return; }
     setSubmittingReview(true);
     try {
       await api.createReview({ bookingId, rating: reviewRating, reviewText: reviewText.trim() || undefined });
-      toast.success("Review submitted! Thank you.");
+      toast.success(t("bookings.reviewSubmitted"));
       refetchReviewed();
       setReviewBookingId(null);
       setReviewRating(0);
       setReviewText("");
     } catch (err: any) {
-      toast.error(err.message || "Failed to submit review");
+      toast.error(err.message || t("bookings.reviewFailed"));
     } finally {
       setSubmittingReview(false);
     }
   };
 
   const displayName = profile?.name || user.name || user.email.split("@")[0];
-  const displayPhone = profile?.phone || user.phone || "Not set";
+  const displayPhone = profile?.phone || user.phone || t("notSet");
   const displayEmail = profile?.email || user.email;
   const profilePicUrl = resolveProfileImageUrl((profile as any)?.profilePictureUrl);
 
   const tabs = [
-    { key: "bookings" as Tab, label: "Bookings", icon: <ClipboardList className="w-5 h-5" /> },
-    { key: "settings" as Tab, label: "Settings", icon: <Settings className="w-5 h-5" /> },
+    { key: "bookings" as Tab, label: t("tabs.bookings"), icon: <ClipboardList className="w-5 h-5" /> },
+    { key: "settings" as Tab, label: t("tabs.settings"), icon: <Settings className="w-5 h-5" /> },
   ];
 
   return (
@@ -136,9 +138,9 @@ const Account = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {profilePicUrl ? (
-                <img src={profilePicUrl} alt={displayName} className="w-18 h-18 rounded-full object-cover border-2 border-white/20 shadow-lg" />
+                <img src={profilePicUrl} alt={displayName} className="w-[4.5rem] h-[4.5rem] rounded-full object-cover border-2 border-white/20 shadow-lg" />
               ) : (
-                <div className="w-18 h-18 rounded-full bg-white/[0.08] backdrop-blur-md flex items-center justify-center border border-white/[0.12]">
+                <div className="w-[4.5rem] h-[4.5rem] rounded-full bg-white/[0.08] backdrop-blur-md flex items-center justify-center border border-white/[0.12]">
                   <User className="w-8 h-8 text-white/70" />
                 </div>
               )}
@@ -154,7 +156,7 @@ const Account = () => {
               className="border-white/20 text-white bg-white/[0.08] backdrop-blur-md hover:bg-white/[0.14] rounded-xl transition-all"
               onClick={() => setEditOpen(true)}
             >
-              EDIT PROFILE
+              {t("editProfile")}
             </Button>
           </div>
         </div>
@@ -186,11 +188,11 @@ const Account = () => {
           <main className="flex-1 min-w-0">
             {activeTab === "bookings" && (
               <div>
-                <h2 className="text-xl font-bold mb-4">Your Bookings</h2>
+                <h2 className="text-xl font-bold mb-4">{t("bookings.title")}</h2>
                 {bookingsLoading ? (
                   <div className="flex items-center gap-3 py-8 text-muted-foreground">
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Loading bookings...
+                    {t("bookings.loading")}
                   </div>
                 ) : !bookings || bookings.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
@@ -200,10 +202,10 @@ const Account = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-lg font-medium">No bookings yet</p>
-                      <p className="text-sm mt-1">Your bookings will appear here after you book a service.</p>
+                      <p className="text-lg font-medium">{t("bookings.noBookings")}</p>
+                      <p className="text-sm mt-1">{t("bookings.noBookingsDesc")}</p>
                       <Button className="mt-4 rounded-xl gradient-bg text-primary-foreground border-0 btn-press" onClick={() => navigate("/services")}>
-                        <Sparkles className="w-4 h-4 mr-1.5" /> Browse Services
+                        <Sparkles className="w-4 h-4 mr-1.5" /> {t("bookings.browseServices")}
                       </Button>
                     </motion.div>
                   </div>
@@ -221,8 +223,8 @@ const Account = () => {
                             </p>
                             {(booking.vendorName || booking.vendorRating != null) && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                {booking.vendorName ? `Vendor: ${booking.vendorName}` : "Vendor assigned"}
-                                {booking.vendorRating != null ? ` • Rating: ${Number(booking.vendorRating).toFixed(1)}` : ""}
+                                {booking.vendorName ? `${t("bookings.vendor")} ${booking.vendorName}` : t("bookings.vendorAssigned")}
+                                {booking.vendorRating != null ? ` • ${t("bookings.rating")} ${Number(booking.vendorRating).toFixed(1)}` : ""}
                               </p>
                             )}
                           </div>
@@ -241,21 +243,21 @@ const Account = () => {
                               </span>
                             )}
                             <span className="text-xs text-muted-foreground">
-                              Payment: {booking.paymentStatus}
+                              {t("bookings.payment")} {booking.paymentStatus}
                             </span>
                             {booking.workStartedAt && (
                               <span className="text-xs text-green-700 block">
-                                Work started: {new Date(booking.workStartedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
+                                {t("bookings.workStarted")} {new Date(booking.workStartedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}
                               </span>
                             )}
                             {booking.rejectionReason && (
-                              <span className="text-xs text-red-600 block">Cancellation reason: {booking.rejectionReason}</span>
+                              <span className="text-xs text-red-600 block">{t("bookings.cancellationReason")} {booking.rejectionReason}</span>
                             )}
                           </div>
                           {(booking.status === "confirmed" || booking.status === "completed") && (
                             <div className="flex items-center gap-2">
                               <Button size="sm" variant="outline" className="text-xs rounded-lg" onClick={() => downloadReceipt(booking.id)}>
-                                <Download className="w-3 h-3 mr-1" /> Receipt
+                                <Download className="w-3 h-3 mr-1" /> {t("bookings.receipt")}
                               </Button>
                               {booking.status === "completed" && !reviewedBookings.has(booking.id) && reviewBookingId !== booking.id && (
                                 <Button
@@ -263,19 +265,19 @@ const Account = () => {
                                   className="text-xs rounded-lg"
                                   onClick={() => { setReviewBookingId(booking.id); setReviewRating(0); setReviewText(""); }}
                                 >
-                                  <Star className="w-3 h-3 mr-1" /> Write Review
+                                  <Star className="w-3 h-3 mr-1" /> {t("bookings.writeReview")}
                                 </Button>
                               )}
                               {reviewedBookings.has(booking.id) && (
                                 <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" /> Reviewed
+                                  <CheckCircle2 className="w-3 h-3" /> {t("bookings.reviewed")}
                                 </span>
                               )}
                             </div>
                           )}
                           {booking.status === "in_progress" && booking.paymentStatus !== "success" && (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">Use payment link from your email to pay securely.</span>
+                              <span className="text-xs text-muted-foreground">{t("bookings.paymentLinkHint")}</span>
                             </div>
                           )}
                         </div>
@@ -284,7 +286,7 @@ const Account = () => {
                         {reviewBookingId === booking.id && (
                           <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
                             <div>
-                              <p className="text-sm font-medium mb-1">Rate your experience</p>
+                              <p className="text-sm font-medium mb-1">{t("bookings.rateExperience")}</p>
                               <div className="flex gap-1">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <button
@@ -302,7 +304,7 @@ const Account = () => {
                             </div>
                             <div>
                               <textarea
-                                placeholder="Tell us about your experience (optional)"
+                                placeholder={t("bookings.reviewPlaceholder")}
                                 className="w-full text-sm border border-border rounded-lg p-2.5 resize-none bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                                 rows={3}
                                 value={reviewText}
@@ -318,7 +320,7 @@ const Account = () => {
                                 disabled={submittingReview || reviewRating < 1}
                               >
                                 {submittingReview ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                                Submit Review
+                                {t("bookings.submitReview")}
                               </Button>
                               <Button
                                 size="sm"
@@ -326,7 +328,7 @@ const Account = () => {
                                 className="text-xs rounded-lg"
                                 onClick={() => { setReviewBookingId(null); setReviewRating(0); setReviewText(""); }}
                               >
-                                Cancel
+                                {t("bookings.cancel")}
                               </Button>
                             </div>
                           </div>
@@ -340,29 +342,29 @@ const Account = () => {
 
             {activeTab === "settings" && (
               <div>
-                <h2 className="text-xl font-bold mb-4">Account Settings</h2>
+                <h2 className="text-xl font-bold mb-4">{t("settings.title")}</h2>
                 <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl divide-y divide-border/50">
                   <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
-                      <p className="text-sm font-semibold">Name</p>
+                      <p className="text-sm font-semibold">{t("settings.name")}</p>
                       <p className="text-sm text-muted-foreground">{displayName}</p>
                     </div>
                     <button onClick={() => setEditOpen(true)} className="text-sm font-semibold text-primary hover:underline">
-                      CHANGE
+                      {t("settings.change")}
                     </button>
                   </div>
                   <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
-                      <p className="text-sm font-semibold">Phone number</p>
+                      <p className="text-sm font-semibold">{t("settings.phone")}</p>
                       <p className="text-sm text-muted-foreground">{displayPhone}</p>
                     </div>
                     <button onClick={() => setEditOpen(true)} className="text-sm font-semibold text-primary hover:underline">
-                      CHANGE
+                      {t("settings.change")}
                     </button>
                   </div>
                   <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                     <div>
-                      <p className="text-sm font-semibold">Email</p>
+                      <p className="text-sm font-semibold">{t("settings.email")}</p>
                       <p className="text-sm text-muted-foreground">{displayEmail}</p>
                     </div>
                   </div>
@@ -414,6 +416,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [newPicUrl, setNewPicUrl] = useState<string | null>(null);
+  const { t } = useTranslation("account");
 
   useEffect(() => {
     if (!open) return;
@@ -434,7 +437,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
       setNewPicUrl(result.url);
     } catch {
       setPreviewUrl(resolveProfileImageUrl(profile.profilePictureUrl));
-      toast.error("Photo upload failed");
+      toast.error(t("editPanel.photoUploadFailed"));
     } finally {
       URL.revokeObjectURL(localPreview);
       setUploading(false);
@@ -443,11 +446,11 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
 
   const handleSave = async () => {
     if (uploading) {
-      toast.error("Please wait until photo upload finishes");
+      toast.error(t("editPanel.waitForUpload"));
       return;
     }
     if (phone && !/^\d{10}$/.test(phone)) {
-      setPhoneError("Phone number must be exactly 10 digits");
+      setPhoneError(t("editPanel.phoneValidation"));
       return;
     }
     setPhoneError("");
@@ -459,11 +462,11 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
         profilePictureUrl: newPicUrl || undefined,
       });
       setPreviewUrl(resolveProfileImageUrl(updated.data?.profilePictureUrl || newPicUrl || profile.profilePictureUrl));
-      toast.success("Profile updated!");
+      toast.success(t("editPanel.profileUpdated"));
       onSaved();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update profile");
+      toast.error(err.message || t("editPanel.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -491,7 +494,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
               <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary">
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-lg font-bold">Edit profile</h2>
+              <h2 className="text-lg font-bold">{t("editPanel.title")}</h2>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
@@ -510,22 +513,22 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
                     <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
                   </label>
                 </div>
-                {uploading && <p className="text-xs text-muted-foreground mt-2">Uploading...</p>}
+                {uploading && <p className="text-xs text-muted-foreground mt-2">{t("editPanel.uploading")}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Name</label>
+                <label className="block text-sm font-semibold mb-2">{t("editPanel.nameLabel")}</label>
                 <div className="glow-focus rounded-lg">
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t("editPanel.namePlaceholder")}
                     className="h-12 rounded-lg"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Phone number</label>
+                <label className="block text-sm font-semibold mb-2">{t("editPanel.phoneLabel")}</label>
                 <div className="glow-focus rounded-lg">
                   <Input
                     value={phone}
@@ -534,7 +537,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
                       setPhone(val);
                       setPhoneError("");
                     }}
-                    placeholder="10-digit phone number"
+                    placeholder={t("editPanel.phonePlaceholder")}
                     className={`h-12 rounded-lg ${phoneError ? "border-red-500" : ""}`}
                     maxLength={10}
                     inputMode="numeric"
@@ -542,17 +545,17 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
                 </div>
                 {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
                 {phone && phone.length < 10 && !phoneError && (
-                  <p className="text-xs text-muted-foreground mt-1">{phone.length}/10 digits</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("editPanel.phoneDigits", { count: phone.length })}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Email</label>
+                <label className="block text-sm font-semibold mb-2">{t("editPanel.emailLabel")}</label>
                 <Input
                   value={profile.email}
                   disabled
                   className="h-12 rounded-lg bg-secondary/50"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("editPanel.emailCannotChange")}</p>
               </div>
             </div>
 
@@ -562,7 +565,7 @@ function EditProfilePanel({ open, onClose, profile, onSaved }: {
                 disabled={saving || uploading}
                 className="w-full h-12 rounded-xl gradient-bg text-primary-foreground font-semibold btn-press shadow-lg hover:shadow-xl transition-shadow"
               >
-                {uploading ? "Uploading photo..." : saving ? "Saving..." : "Save Changes"}
+                {uploading ? t("editPanel.uploadingPhoto") : saving ? t("editPanel.saving") : t("editPanel.saveChanges")}
               </Button>
             </div>
           </motion.div>

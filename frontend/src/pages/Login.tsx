@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, ShieldAlert } from "lucide-react";
@@ -10,6 +11,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 const Login = () => {
+  const { t } = useTranslation("auth");
   const [showPassword, setShowPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [email, setEmail] = useState("");
@@ -65,7 +67,7 @@ const Login = () => {
       localStorage.setItem("vendor_accessToken", result.accessToken);
       localStorage.setItem("vendor_refreshToken", result.refreshToken);
       localStorage.setItem("vendor_user", JSON.stringify(result.actor));
-      toast.info("Redirecting to Vendor Portal...");
+      toast.info(t("messages:success.loginSuccess"));
       window.location.href = "/vendor/dashboard";
       return;
     }
@@ -76,7 +78,7 @@ const Login = () => {
       localStorage.setItem("adminAccessToken", result.accessToken);
       localStorage.setItem("adminRefreshToken", result.refreshToken);
       localStorage.setItem("adminUser", JSON.stringify(result.actor));
-      toast.info("Redirecting to Admin Portal...");
+      toast.info(t("messages:success.loginSuccess"));
       window.location.href = "/company/dashboard";
       return;
     }
@@ -90,7 +92,7 @@ const Login = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please fill all fields");
+      toast.error(t("validation.fillAllFields"));
       return;
     }
 
@@ -100,20 +102,20 @@ const Login = () => {
       if (!res.data?.accessToken || !res.data?.refreshToken || !res.data?.actor) {
         throw new Error("Login failed");
       }
-      toast.success("Welcome back!");
+      toast.success(t("messages:success.loginSuccess"));
       routeByRole({
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
         actor: res.data.actor,
       });
     } catch (err: any) {
-      const msg = err.message || "Login failed";
+      const msg = err.message || t("messages:error.loginFailed");
       const isRateLimit = msg.toLowerCase().includes("too many") || err.status === 429;
       if (isRateLimit) {
         setRateLimited(true);
         setOtpEmail(email);
         setActiveTab("phone");
-        toast.error("Too many attempts. Try OTP login instead.", { duration: 5000 });
+        toast.error(t("login.rateLimitBanner"), { duration: 5000 });
       } else {
         toast.error(msg);
       }
@@ -124,7 +126,7 @@ const Login = () => {
 
   const handleSendOtp = async () => {
     if (!otpEmail) {
-      toast.error("Enter your email");
+      toast.error(t("messages:error.fillAllFields"));
       return;
     }
 
@@ -134,10 +136,10 @@ const Login = () => {
       if (res.data) {
         setOtpId(res.data.otpId);
         setOtpSent(true);
-        toast.success("OTP sent to your email");
+        toast.success(t("messages:success.otpSent"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || t("messages:error.failedSendOtp"));
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ const Login = () => {
 
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length < 6) {
-      toast.error("Enter 6-digit OTP");
+      toast.error(t("validation.enter6DigitOtp"));
       return;
     }
 
@@ -153,18 +155,18 @@ const Login = () => {
     try {
       const res = await api.verifyOtp(otpId, otpCode, "login");
       if (!res.data?.accessToken || !res.data?.refreshToken || !res.data?.actor) {
-        toast.error("OTP verified but login failed. Please try email login.");
+        toast.error(t("messages:error.loginFailed"));
         return;
       }
 
-      toast.success("Welcome back!");
+      toast.success(t("messages:success.loginSuccess"));
       routeByRole({
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
         actor: res.data.actor,
       });
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      toast.error(err.message || t("messages:error.invalidOtp"));
     } finally {
       setLoading(false);
     }
@@ -191,8 +193,8 @@ const Login = () => {
             </span>
           </Link>
 
-          <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">Welcome back</h1>
-          <p className="text-muted-foreground mb-8">Sign in to your account to continue</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">{t("login.welcome")}</h1>
+          <p className="text-muted-foreground mb-8">{t("login.subtitle")}</p>
 
           {/* Rate limit banner */}
           {rateLimited && activeTab === "phone" && (
@@ -203,16 +205,16 @@ const Login = () => {
             >
               <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="text-amber-700 dark:text-amber-300">
-                Too many login attempts. Use OTP to sign in securely.
+                {t("login.rateLimitBanner")}
               </span>
             </motion.div>
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="email">{t("login.emailTab")}</TabsTrigger>
               <TabsTrigger value="phone" className="gap-1.5">
-                OTP Login
+                {t("login.otpTab")}
                 {rateLimited && <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />}
               </TabsTrigger>
             </TabsList>
@@ -222,7 +224,7 @@ const Login = () => {
                 <div className="relative group">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
-                    placeholder="Email address"
+                    placeholder={t("login.emailPlaceholder")}
                     type="email"
                     className="pl-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={email}
@@ -232,7 +234,7 @@ const Login = () => {
                 <div className="relative group">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
-                    placeholder="Password"
+                    placeholder={t("login.passwordPlaceholder")}
                     type={showPassword ? "text" : "password"}
                     className="pl-10 pr-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={password}
@@ -250,10 +252,10 @@ const Login = () => {
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="rounded border-border" />
-                    <span className="text-muted-foreground">Remember me</span>
+                    <span className="text-muted-foreground">{t("login.rememberMe")}</span>
                   </label>
                   <Link to="/forgot-password" className="text-primary hover:underline font-medium">
-                    Forgot password?
+                    {t("login.forgotPassword")}
                   </Link>
                 </div>
 
@@ -263,7 +265,7 @@ const Login = () => {
                   className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press glow-focus"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  Sign In
+                  {t("login.signIn")}
                   {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
                 </Button>
               </form>
@@ -274,7 +276,7 @@ const Login = () => {
                 <div className="relative group">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <Input
-                    placeholder="Email address for OTP"
+                    placeholder={t("login.otpEmailPlaceholder")}
                     type="email"
                     className="pl-10 h-12 rounded-xl border-border/60 focus:border-primary/40 transition-colors"
                     value={otpEmail}
@@ -285,13 +287,13 @@ const Login = () => {
                 {otpSent && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
                     <Input
-                      placeholder="Enter 6-digit OTP"
+                      placeholder={t("login.otpCodePlaceholder")}
                       maxLength={6}
                       className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg border-border/60 focus:border-primary/40"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground mt-2 text-center">OTP sent! Check your email.</p>
+                    <p className="text-xs text-muted-foreground mt-2 text-center">{t("login.otpSent")}</p>
                   </motion.div>
                 )}
 
@@ -302,7 +304,7 @@ const Login = () => {
                   className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press glow-focus"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                  {otpSent ? "Verify OTP" : "Send OTP"}
+                  {otpSent ? t("login.verifyOtp") : t("login.sendOtp")}
                   {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
                 </Button>
               </form>
@@ -310,9 +312,9 @@ const Login = () => {
           </Tabs>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Don't have an account?{" "}
+            {t("login.noAccount")}{" "}
             <Link to="/register" className="text-primary hover:underline font-medium">
-              Sign up
+              {t("login.signUp")}
             </Link>
           </p>
         </motion.div>
@@ -343,7 +345,7 @@ const Login = () => {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="font-display text-3xl font-bold mb-4"
           >
-            Your Local Marketplace
+            {t("login.sideTitle")}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -351,7 +353,7 @@ const Login = () => {
             transition={{ duration: 0.6, delay: 0.7 }}
             className="text-background/70 leading-relaxed"
           >
-            Connect with thousands of verified service providers. Book, manage, and review — all in one place.
+            {t("login.sideDescription")}
           </motion.p>
 
           {/* Trust indicators */}
@@ -363,12 +365,12 @@ const Login = () => {
           >
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span>Verified Vendors</span>
+              <span>{t("login.verifiedVendors")}</span>
             </div>
             <div className="w-px h-4 bg-background/20" />
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span>Secure Payments</span>
+              <span>{t("login.securePayments")}</span>
             </div>
           </motion.div>
         </div>

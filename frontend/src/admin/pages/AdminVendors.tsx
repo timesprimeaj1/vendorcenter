@@ -67,7 +67,7 @@ const AdminVendors = () => {
             <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-lg hidden sm:block">
+            <span translate="no" className="notranslate font-bold text-lg hidden sm:block">
               VendorCenter
               <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">ADMIN</span>
             </span>

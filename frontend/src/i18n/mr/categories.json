@@ -1,0 +1,18 @@
+{
+  "cleaning": "स्वच्छता",
+  "plumbing": "प्लंबिंग",
+  "electrical": "इलेक्ट्रिकल",
+  "salon": "सलून",
+  "painting": "रंगकाम",
+  "carpentry": "सुतारकाम",
+  "acRepair": "एसी दुरुस्ती",
+  "pestControl": "कीटक नियंत्रण",
+  "applianceRepair": "उपकरण दुरुस्ती",
+  "moving": "स्थलांतर",
+  "photography": "छायाचित्रण",
+  "catering": "केटरिंग",
+  "other": "इतर",
+  "mobileRepair": "मोबाइल/संगणक दुरुस्ती",
+  "tutoring": "शिकवणी",
+  "fitness": "फिटनेस"
+}

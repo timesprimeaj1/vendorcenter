@@ -5,8 +5,10 @@ import { api } from "@/lib/api";
 import { useLocation } from "@/hooks/useLocation";
 import { Link } from "react-router-dom";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
+import { useTranslation } from "react-i18next";
 
 const FeaturedVendors = () => {
+  const { t } = useTranslation("home");
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { location: userLoc } = useLocation();
@@ -46,9 +48,9 @@ const FeaturedVendors = () => {
         <div ref={headerRef} className="flex items-end justify-between mb-10">
           <div>
             <h2 className="font-display text-2xl md:text-3xl font-bold">
-              Top Rated <span className="gradient-text">Vendors</span>
+              {t("featured.titleStart")} <span className="gradient-text">{t("featured.titleHighlight")}</span>
             </h2>
-            <p className="text-muted-foreground mt-2">Handpicked professionals near you</p>
+            <p className="text-muted-foreground mt-2">{t("featured.subtitle")}</p>
           </div>
           <Link to="/services" className="hidden md:flex items-center gap-1 text-sm font-medium text-primary link-underline">
             View All <ArrowRight className="w-3.5 h-3.5" />
@@ -61,7 +63,7 @@ const FeaturedVendors = () => {
           </div>
         ) : vendors.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>{hasLocation ? "No nearby vendors found for your location yet." : "Enable location to see nearby vendors."}</p>
+            <p>{hasLocation ? t("featured.noVendorsWithLocation") : t("featured.noVendorsNoLocation")}</p>
           </div>
         ) : (
         <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -95,7 +97,7 @@ const FeaturedVendors = () => {
                   <div className="mt-3">
                     <Badge className="bg-success text-success-foreground border-0 text-xs gap-1">
                       <BadgeCheck className="w-3 h-3" />
-                      Verified
+                      {t("common:status.verified")}
                     </Badge>
                   </div>
                 )}
@@ -105,7 +107,7 @@ const FeaturedVendors = () => {
                     to={`/vendor/${vendor.id}`}
                     className="px-4 py-2 rounded-xl gradient-bg text-primary-foreground text-sm font-medium hover:shadow-md transition-all btn-press inline-block"
                   >
-                    View & Book
+                    {t("common:actions.viewAndBook")}
                   </Link>
                 </div>
               </div>

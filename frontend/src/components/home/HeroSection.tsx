@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Search, MapPin, ArrowRight, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { api, type PublicStats } from "@/lib/api";
 import { useCountUp } from "@/hooks/useScrollAnimation";
 
 const HeroSection = () => {
+  const { t } = useTranslation("home");
   const { cityName, fullAddress, loading, error, refresh } = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -36,10 +38,10 @@ const HeroSection = () => {
   }, []);
 
   const stats = [
-    { label: "Active Vendors", value: liveStats?.activeVendors ?? null, icon: "🏪" },
-    { label: "Happy Customers", value: liveStats?.happyCustomers ?? null, icon: "😊" },
-    { label: "Services Completed", value: liveStats?.servicesCompleted ?? null, icon: "✅" },
-    { label: "Cities Covered", value: liveStats?.citiesCovered ?? null, icon: "🌆" },
+    { label: t("hero.stats.activeVendors"), value: liveStats?.activeVendors ?? null, icon: "🏪" },
+    { label: t("hero.stats.happyCustomers"), value: liveStats?.happyCustomers ?? null, icon: "😊" },
+    { label: t("hero.stats.servicesCompleted"), value: liveStats?.servicesCompleted ?? null, icon: "✅" },
+    { label: t("hero.stats.citiesCovered"), value: liveStats?.citiesCovered ?? null, icon: "🌆" },
   ];
 
   const formatCount = (value: number | null) => {
@@ -123,7 +125,7 @@ const HeroSection = () => {
           >
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.15] mb-6 shadow-[0_0_20px_rgba(249,115,22,0.12)]">
               <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-              <span className="text-xs font-semibold tracking-widest uppercase text-white/90">AI-Powered Service Discovery</span>
+              <span className="text-xs font-semibold tracking-widest uppercase text-white/90">{t("hero.badge")}</span>
               <Shield className="w-3.5 h-3.5 text-orange-400" />
             </div>
           </motion.div>
@@ -135,13 +137,13 @@ const HeroSection = () => {
             transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 tracking-tight"
           >
-            Find the Best{" "}
+            {t("hero.titleLine1")}{" "}
             <span className="gradient-text relative">
-              Local Services
+              {t("hero.titleHighlight")}
               <span className="absolute -bottom-1 left-0 right-0 h-1 rounded-full gradient-bg opacity-60" />
             </span>
             <br />
-            Near You
+            {t("hero.titleLine2")}
           </motion.h1>
 
           {/* Subtitle */}
@@ -151,7 +153,7 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
             className="text-lg md:text-xl text-white/65 mb-10 max-w-xl mx-auto leading-relaxed"
           >
-            From home cleaning to salon services — book trusted professionals in minutes.
+            {t("hero.subtitle")}
           </motion.p>
 
           {/* Search bar */}
@@ -164,7 +166,7 @@ const HeroSection = () => {
             <div className="flex-1 relative glow-focus rounded-xl" ref={wrapperRef}>
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
               <Input
-                placeholder="What service do you need?"
+                placeholder={t("hero.searchPlaceholder")}
                 className="pl-10 h-12 rounded-xl bg-background text-foreground border-0 shadow-lg transition-shadow focus:shadow-xl"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -197,7 +199,7 @@ const HeroSection = () => {
               className="h-12 px-6 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all btn-press"
               onClick={handleSearch}
             >
-              Search
+              {t("hero.searchButton", "Search")}
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </motion.div>
@@ -211,10 +213,10 @@ const HeroSection = () => {
           >
             <MapPin className="w-3.5 h-3.5 text-orange-400" />
             {loading ? (
-              <span className="text-sm text-white/55">Detecting your location...</span>
+              <span className="text-sm text-white/55">{t("hero.detectingLocation", "Detecting your location...")}</span>
             ) : error ? (
               <button onClick={refresh} className="text-sm text-white/55 underline hover:text-white/80 transition-colors">
-                Enable location access
+                {t("hero.enableLocation", "Enable location access")}
               </button>
             ) : (
               <span className="text-sm text-white/75">{fullAddress || cityName}</span>

@@ -2,8 +2,10 @@ import { ArrowRight, Store, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
+import { useTranslation } from "react-i18next";
 
 const CTASection = () => {
+  const { t } = useTranslation("home");
   const navigate = useNavigate();
   const leftRef = useScrollReveal<HTMLDivElement>({ preset: "fadeLeft" });
   const rightRef = useScrollReveal<HTMLDivElement>({ preset: "fadeRight", delay: 0.15 });
@@ -19,16 +21,16 @@ const CTASection = () => {
           >
             <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/20 blur-2xl transition-transform duration-500 group-hover:scale-150" />
             <Users className="w-10 h-10 text-primary mb-4" />
-            <h3 className="font-display text-2xl font-bold mb-2">Looking for a Service?</h3>
+            <h3 className="font-display text-2xl font-bold mb-2">{t("cta.lookingForService")}</h3>
             <p className="text-background/70 mb-6 text-sm leading-relaxed">
-              Browse thousands of verified vendors, compare prices, and book in seconds. Your perfect service provider is just a tap away.
+              {t("cta.customerDesc")}
             </p>
             <Button
               onClick={() => navigate("/services")}
               size="lg"
               className="gradient-bg text-primary-foreground border-0 rounded-xl font-semibold btn-press"
             >
-              Explore Services
+              {t("cta.exploreServices")}
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </div>
@@ -40,9 +42,9 @@ const CTASection = () => {
           >
             <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
             <Store className="w-10 h-10 text-primary mb-4" />
-            <h3 className="font-display text-2xl font-bold mb-2">Grow Your Business</h3>
+            <h3 className="font-display text-2xl font-bold mb-2">{t("cta.growBusiness")}</h3>
             <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-              Join VendorCenter and reach thousands of customers in your area. Set up your profile, manage bookings, and watch your business grow.
+              {t("cta.vendorDesc")}
             </p>
             <Button
               onClick={() => { window.location.href = "/vendor/register"; }}
@@ -50,7 +52,7 @@ const CTASection = () => {
               size="lg"
               className="rounded-xl font-semibold border-primary text-primary hover:bg-primary hover:text-primary-foreground btn-press"
             >
-              Register as Vendor
+              {t("cta.registerAsVendor")}
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </div>

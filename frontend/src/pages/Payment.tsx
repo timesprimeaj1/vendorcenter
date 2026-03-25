@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const Payment = () => {
+  const { t } = useTranslation("common");
   const { bookingId = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,16 +49,16 @@ const Payment = () => {
   const handleDummyPayment = async () => {
     if (!bookingId) return;
     if (!paymentToken) {
-      toast.error("Invalid payment link");
+      toast.error(t("payment.invalidPaymentLink"));
       return;
     }
     setPaying(true);
     try {
       await api.payBooking(bookingId, paymentToken);
-      toast.success("Payment successful. OTP sent to your email.");
+      toast.success(t("payment.paymentSuccess"));
       navigate("/account?tab=bookings");
     } catch (err: any) {
-      toast.error(err.message || "Payment failed");
+      toast.error(err.message || t("payment.paymentFailed"));
     } finally {
       setPaying(false);
     }
@@ -78,14 +80,14 @@ const Payment = () => {
         <div className="container py-10 max-w-xl">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Invalid Payment Link</CardTitle>
+              <CardTitle className="text-xl">{t("payment.invalidLink")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                This payment link is missing security token. Ask vendor to resend payment request.
+                {t("payment.missingToken")}
               </p>
               <Button asChild variant="outline">
-                <Link to="/account?tab=bookings">Go To Bookings</Link>
+                <Link to="/account?tab=bookings">{t("payment.goToBookings")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -101,14 +103,14 @@ const Payment = () => {
         <div className="container py-10 max-w-xl">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Login Required</CardTitle>
+              <CardTitle className="text-xl">{t("payment.loginRequired")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Please login with your customer account to continue this payment securely.
+                {t("payment.loginDesc")}
               </p>
               <Button asChild>
-                <Link to={`/login?redirect=${encodeURIComponent(redirect)}`}>Login to Continue</Link>
+                <Link to={`/login?redirect=${encodeURIComponent(redirect)}`}>{t("payment.loginToContinue")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -133,14 +135,14 @@ const Payment = () => {
         <div className="container py-10 max-w-xl">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Access Denied</CardTitle>
+              <CardTitle className="text-xl">{t("payment.accessDenied")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                This payment link does not belong to your account.
+                {t("payment.notYourBooking")}
               </p>
               <Button asChild variant="outline">
-                <Link to="/account?tab=bookings">Go To Your Bookings</Link>
+                <Link to="/account?tab=bookings">{t("payment.goToYourBookings")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -160,29 +162,29 @@ const Payment = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <CreditCard className="w-5 h-5 text-primary" />
-              Dummy Payment Confirmation
+              {t("payment.confirmationTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg border p-4 bg-secondary/30 space-y-2">
-              <p className="text-sm"><span className="text-muted-foreground">Booking ID:</span> {bookingId}</p>
-              <p className="text-sm"><span className="text-muted-foreground">Transaction ID:</span> {txn}</p>
-              <p className="text-sm"><span className="text-muted-foreground">Amount:</span> INR {amountInr}</p>
+            <div translate="no" className="notranslate rounded-lg border p-4 bg-secondary/30 space-y-2">
+              <p className="text-sm"><span className="text-muted-foreground">{t("payment.bookingIdLabel")}</span> {bookingId}</p>
+              <p className="text-sm"><span className="text-muted-foreground">{t("payment.transactionIdLabel")}</span> {txn}</p>
+              <p className="text-sm"><span className="text-muted-foreground">{t("payment.amountLabel")}</span> INR {amountInr}</p>
             </div>
 
             <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800 flex gap-2 items-start">
               <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
-                Security: payment is accepted only for the logged-in booking owner. OTP is generated server-side and sent to your email only.
+                {t("payment.securityNote")}
               </span>
             </div>
 
             <Button className="w-full" onClick={handleDummyPayment} disabled={paying || !bookingId}>
               {paying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Confirm Dummy Payment
+              {t("payment.confirmPayment")}
             </Button>
             <p className="text-xs text-muted-foreground">
-              After confirmation, OTP is sent to your email. Share OTP with vendor to complete booking.
+              {t("payment.otpNote")}
             </p>
           </CardContent>
         </Card>

@@ -3,13 +3,16 @@ import { Link, useNavigate, useLocation as useRouterLocation } from "react-route
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Compass, Menu, X, ChevronDown, User, LogOut, ClipboardList, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "@/hooks/useLocation";
 import { api } from "@/lib/api";
 import LocationPicker from "@/components/LocationPicker";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 const Header = () => {
+  const { t } = useTranslation("common");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -117,10 +120,10 @@ const Header = () => {
             }}
           >
             <div className={`rounded-lg gradient-bg flex items-center justify-center transition-all duration-300 ${scrolled ? "w-7 h-7" : "w-9 h-9"}`}>
-              <span className={`text-primary-foreground font-display font-bold transition-all duration-300 ${scrolled ? "text-sm" : "text-lg"}`}>V</span>
+              <span translate="no" className={`notranslate text-primary-foreground font-display font-bold transition-all duration-300 ${scrolled ? "text-sm" : "text-lg"}`}>{t("brandLogo")}</span>
             </div>
-            <span className="font-display font-bold text-xl hidden sm:block">
-              Vendor<span className="gradient-text">Center</span>
+            <span translate="no" className="notranslate font-display font-bold text-xl hidden sm:block">
+              {t("brandName")}
             </span>
           </Link>
 
@@ -130,7 +133,7 @@ const Header = () => {
             className="hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg hover:bg-secondary transition-colors shrink-0"
           >
             <MapPin className="w-4 h-4 text-primary" />
-            <span className="font-medium">{locationLoading ? "Detecting..." : cityName || "Set location"}</span>
+            <span className="font-medium">{locationLoading ? t("location.detecting") : cityName || t("location.setLocation")}</span>
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </button>
 
@@ -143,19 +146,20 @@ const Header = () => {
               onClick={() => navigate("/explore")}
             >
               <Compass className="w-4 h-4 text-primary" />
-              Explore
+              {t("nav.explore")}
             </Button>
           </div>
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-2">
+            <LanguageSwitcher />
             <Button
               variant="ghost"
               size="sm"
               className="text-sm font-medium"
               onClick={() => { window.location.href = "/vendor/register"; }}
             >
-              Become a Vendor
+              {t("nav.becomeVendor")}
             </Button>
             {user ? (
               <div className="relative" ref={dropdownRef}>
@@ -176,21 +180,21 @@ const Header = () => {
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3"
                     >
                       <User className="w-4 h-4 text-muted-foreground" />
-                      Profile
+                      {t("nav.profile")}
                     </button>
                     <button
                       onClick={() => { navigate("/account?tab=bookings"); setProfileDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3"
                     >
                       <ClipboardList className="w-4 h-4 text-muted-foreground" />
-                      Bookings
+                      {t("nav.bookings")}
                     </button>
                     <button
                       onClick={() => { navigate("/account?tab=settings"); setProfileDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center gap-3"
                     >
                       <Settings className="w-4 h-4 text-muted-foreground" />
-                      Settings
+                      {t("nav.settings")}
                     </button>
                     <div className="border-t border-border my-1" />
                     <button
@@ -198,7 +202,7 @@ const Header = () => {
                       className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-secondary transition-colors flex items-center gap-3"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      {t("nav.logout")}
                     </button>
                   </div>
                 )}
@@ -210,7 +214,7 @@ const Header = () => {
                 onClick={() => navigate("/login")}
               >
                 <User className="w-4 h-4 mr-1.5" />
-                Login
+                {t("nav.login")}
               </Button>
             )}
           </div>
@@ -234,7 +238,7 @@ const Header = () => {
               to="/services"
               className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap"
             >
-              All Services
+              {t("nav.allServices")}
             </Link>
             <div className="relative" ref={topCategoriesRef}>
               <button
@@ -243,7 +247,7 @@ const Header = () => {
                 title="Top categories near your selected location"
                 onClick={() => setTopCategoriesOpen((prev) => !prev)}
               >
-                Top Categories
+                {t("nav.topCategories")}
                 <ChevronDown className={`w-3 h-3 transition-transform ${topCategoriesOpen ? "rotate-180" : ""}`} />
               </button>
 
@@ -287,7 +291,7 @@ const Header = () => {
                 className="flex items-center gap-2 text-sm px-3 py-2.5 rounded-lg hover:bg-secondary transition-colors"
               >
                 <MapPin className="w-4 h-4 text-primary" />
-                <span>{locationLoading ? "Detecting..." : cityName || "Set location"}</span>
+                <span>{locationLoading ? t("location.detecting") : cityName || t("location.setLocation")}</span>
                 <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
               <div className="flex flex-wrap gap-2">
@@ -303,28 +307,29 @@ const Header = () => {
                 ))}
               </div>
               <div className="flex flex-col gap-1 pt-2">
+                <LanguageSwitcher compact />
                 <Button variant="outline" size="sm" className="rounded-xl justify-start" onClick={() => { window.location.href = "/vendor/register"; setMobileMenuOpen(false); }}>
-                  Become a Vendor
+                  {t("nav.becomeVendor")}
                 </Button>
                 {user ? (
                   <>
                     <Button size="sm" variant="ghost" className="rounded-xl justify-start" onClick={() => { navigate("/account"); setMobileMenuOpen(false); }}>
                       <User className="w-4 h-4 mr-1.5" />
-                      Profile
+                      {t("nav.profile")}
                     </Button>
                     <Button size="sm" variant="ghost" className="rounded-xl justify-start" onClick={() => { navigate("/account?tab=bookings"); setMobileMenuOpen(false); }}>
                       <ClipboardList className="w-4 h-4 mr-1.5" />
-                      Bookings
+                      {t("nav.bookings")}
                     </Button>
                     <Button size="sm" variant="outline" className="rounded-xl justify-start text-destructive" onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>
                       <LogOut className="w-4 h-4 mr-1.5" />
-                      Logout
+                      {t("nav.logout")}
                     </Button>
                   </>
                 ) : (
                   <Button size="sm" className="flex-1 gradient-bg text-primary-foreground border-0 rounded-xl" onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}>
                     <User className="w-4 h-4 mr-1.5" />
-                    Login
+                    {t("nav.login")}
                   </Button>
                 )}
               </div>

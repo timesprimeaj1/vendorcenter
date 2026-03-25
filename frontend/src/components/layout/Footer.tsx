@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Mail, Phone, Instagram, Twitter, Facebook, Linkedin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const socialLinks = [
   { Icon: Instagram, href: "https://instagram.com" },
@@ -8,20 +9,22 @@ const socialLinks = [
   { Icon: Linkedin, href: "https://linkedin.com" },
 ];
 
-const companyLinks: { label: string; to: string }[] = [
-  { label: "About Us", to: "/about" },
-  { label: "Services", to: "/services" },
-  { label: "Explore", to: "/explore" },
-];
-
-const vendorLinks: { label: string; href?: string; to?: string }[] = [
-  { label: "Register", to: "/register" },
-  { label: "Vendor Dashboard", href: "/vendor/dashboard" },
-  { label: "Login", to: "/login" },
-  { label: "Support", href: "mailto:support@vendorcenter.in" },
-];
-
 const Footer = () => {
+  const { t } = useTranslation("common");
+
+  const companyLinks: { label: string; to: string }[] = [
+    { label: t("nav.about"), to: "/about" },
+    { label: t("nav.services"), to: "/services" },
+    { label: t("nav.explore"), to: "/explore" },
+  ];
+
+  const vendorLinks: { label: string; href?: string; to?: string }[] = [
+    { label: t("nav.register"), to: "/register" },
+    { label: t("footer.vendorDashboard"), href: "/vendor/dashboard" },
+    { label: t("nav.login"), to: "/login" },
+    { label: t("footer.support"), href: "mailto:support@vendorcenter.in" },
+  ];
+
   return (
     <footer className="bg-foreground text-background/80">
       <div className="container py-12 md:py-16">
@@ -30,14 +33,14 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center">
-                <span className="text-primary-foreground font-display font-bold text-lg">V</span>
+                <span translate="no" className="notranslate text-primary-foreground font-display font-bold text-lg">{t("brandLogo")}</span>
               </div>
-              <span className="font-display font-bold text-xl text-background">
-                VendorCenter
+              <span translate="no" className="notranslate font-display font-bold text-xl text-background">
+                {t("brandName")}
               </span>
             </Link>
             <p className="text-sm text-background/60 leading-relaxed mb-4">
-              India's trusted marketplace for local services. Find verified vendors near you.
+              {t("footer.tagline")}
             </p>
             <div className="flex gap-3">
               {socialLinks.map(({ Icon, href }, i) => (
@@ -56,7 +59,7 @@ const Footer = () => {
 
           {/* Company Links */}
           <div>
-            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">Company</h4>
+            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">{t("footer.company")}</h4>
             <ul className="space-y-2.5">
               {companyLinks.map((item) => (
                 <li key={item.label}>
@@ -68,7 +71,7 @@ const Footer = () => {
 
           {/* Vendor Links */}
           <div>
-            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">For Vendors</h4>
+            <h4 className="font-display font-semibold text-background mb-4 text-sm uppercase tracking-wider">{t("footer.forVendors")}</h4>
             <ul className="space-y-2.5">
               {vendorLinks.map((item) => (
                 <li key={item.label}>
@@ -101,7 +104,7 @@ const Footer = () => {
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  Ratnagiri, Maharashtra
+                  {t("footer.location")}
                 </a>
               </li>
             </ul>
@@ -109,11 +112,11 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-background/10 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-background/40">© 2026 VendorCenter. All rights reserved.</p>
+          <p className="text-xs text-background/40">{t("footer.copyright")}</p>
           <div className="flex gap-4">
-            <Link to="/privacy" className="text-xs text-background/40 hover:text-background/70 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-xs text-background/40 hover:text-background/70 transition-colors">Terms of Service</Link>
-            <Link to="/cookies" className="text-xs text-background/40 hover:text-background/70 transition-colors">Cookie Policy</Link>
+            <Link to="/privacy" className="text-xs text-background/40 hover:text-background/70 transition-colors">{t("footer.privacyPolicy")}</Link>
+            <Link to="/terms" className="text-xs text-background/40 hover:text-background/70 transition-colors">{t("footer.termsOfService")}</Link>
+            <Link to="/cookies" className="text-xs text-background/40 hover:text-background/70 transition-colors">{t("footer.cookiePolicy")}</Link>
           </div>
         </div>
       </div>

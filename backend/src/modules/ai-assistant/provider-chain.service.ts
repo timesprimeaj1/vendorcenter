@@ -7,7 +7,7 @@ const clientCache = new Map<string, GoogleGenerativeAI>();
 const keyCooldownUntil = new Map<number, number>();
 let preferredKeyIndex = 0;
 
-const CHAT_MODE_PATTERNS = /\b(hi|hello|hey|hii|hlo|yo|hola|namaste|ok|okay|good\s+(morning|afternoon|evening)|how are you|what'?s up|sup|thanks|thank you|bye|goodbye|no|yes|ya|yep|nope|hmm|ohh?|great|nice|cool|awesome|sure)\b/i;
+const CHAT_MODE_PATTERNS = /\b(hi|hello|hey|hii|hlo|yo|hola|namaste|ok|okay|good\s+(morning|afternoon|evening)|how are you|what'?s up|sup|thanks|thank you|bye|goodbye|no|yes|ya|yep|nope|hmm|ohh?|great|nice|cool|awesome|sure|नमस्कार|नमस्ते|धन्यवाद|हो|नाही|बरोबर|ठीक|चालेल|आभार|शुभ\s*(सकाळ|दुपार|संध्याकाळ)|कसे\s*आहात|बाय|हॅलो|अरे)\b/i;
 const MAX_HISTORY = 20;
 const conversations = new Map<string, ConversationTurn[]>();
 
@@ -22,6 +22,23 @@ const systemDecisionSchema = z.object({
 });
 
 const SYSTEM_PROMPT = `You are the AI assistant for VendorCenter — a trusted platform where customers discover, compare, and book verified local service professionals.
+
+═══ BILINGUAL SUPPORT — ENGLISH & MARATHI ═══
+
+You are fluent in both English and Marathi (मराठी). Follow these rules strictly:
+
+1. A [Language: mr] or [Language: en] tag will appear in the user instruction. Use this as the PRIMARY language signal.
+2. If no [Language: ...] tag is present, auto-detect from the user's message:
+   - If the user writes in Marathi/Devanagari script → respond in Marathi.
+   - If the user writes in English → respond in English.
+   - If mixed, match the dominant language.
+3. When responding in Marathi:
+   - Write entirely in natural, conversational Marathi (Devanagari script). Do NOT use transliterated English.
+   - Keep the SAME warm, friendly personality and emoji usage.
+   - Use Marathi equivalents for service names when natural (e.g., "प्लंबर", "इलेक्ट्रिशियन", "स्वच्छता सेवा", "एसी दुरुस्ती", "सलून").
+   - Technical terms like "VendorCenter" stay in English.
+   - JSON field values ("intent", "action", "service", "navigateTo") stay in English — only the "message" field should be in Marathi.
+4. Keep the same JSON schema regardless of language. The "message" field carries the user-facing text in the detected language.
 
 ═══ PERSONALITY & VOICE ═══
 
@@ -236,12 +253,13 @@ function shouldUseChatMode(userMessage: string): boolean {
   return CHAT_MODE_PATTERNS.test(userMessage.trim());
 }
 
-function buildUserInstruction(userMessage: string, chatMode: boolean): string {
+function buildUserInstruction(userMessage: string, chatMode: boolean, lang?: string): string {
+  const langTag = lang ? `\n[Language: ${lang}]` : "";
   if (chatMode) {
-    return `MODE: CHAT\nUSER_INPUT: ${userMessage}\nReturn only short friendly plain text. Do not return JSON.`;
+    return `MODE: CHAT${langTag}\nUSER_INPUT: ${userMessage}\nReturn only short friendly plain text. Do not return JSON.`;
   }
 
-  return `MODE: SYSTEM\nUSER_INPUT: ${userMessage}\nReturn only strict JSON. No markdown. No code fences.`;
+  return `MODE: SYSTEM${langTag}\nUSER_INPUT: ${userMessage}\nReturn only strict JSON. No markdown. No code fences.`;
 }
 
 function stripCodeFences(text: string): string {
@@ -357,7 +375,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-async function callGeminiProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean): Promise<string> {
+async function callGeminiProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean, lang?: string): Promise<string> {
   const candidateKeyIndices = getCandidateKeyIndices();
   if (candidateKeyIndices.length === 0) {
     throw new Error("Gemini API key not configured");
@@ -380,7 +398,7 @@ async function callGeminiProvider(userMessage: string, history: ConversationTurn
         history: history.map((turn) => ({ role: turn.role, parts: turn.parts })),
       });
 
-      const result = await chat.sendMessage(buildUserInstruction(userMessage, chatMode));
+      const result = await chat.sendMessage(buildUserInstruction(userMessage, chatMode, lang));
       const text = result.response.text();
       preferredKeyIndex = keyIndex;
       keyCooldownUntil.delete(keyIndex);
@@ -401,7 +419,7 @@ async function callGeminiProvider(userMessage: string, history: ConversationTurn
   throw lastError ?? new Error("All Gemini API keys failed");
 }
 
-async function callGroqProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean): Promise<string> {
+async function callGroqProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean, lang?: string): Promise<string> {
   if (!env.groqApiKey) {
     throw new Error("Groq API key not configured");
   }
@@ -419,7 +437,7 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...mapHistoryForGroq(history),
-        { role: "user", content: buildUserInstruction(userMessage, chatMode) },
+        { role: "user", content: buildUserInstruction(userMessage, chatMode, lang) },
       ],
     }),
   });
@@ -435,14 +453,14 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
     : "";
 }
 
-export async function callAssistantModel(userMessage: string, history: ConversationTurn[]): Promise<AssistantDecision> {
+export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
   const chatMode = shouldUseChatMode(userMessage);
   let lastError: unknown;
 
   // Try Gemini first
   if (getGeminiApiKeys().length > 0) {
     try {
-      const rawText = await callGeminiProvider(userMessage, history, chatMode);
+      const rawText = await callGeminiProvider(userMessage, history, chatMode, lang);
       return normalizeResponse(rawText, "gemini", chatMode);
     } catch (error) {
       lastError = error;
@@ -453,7 +471,7 @@ export async function callAssistantModel(userMessage: string, history: Conversat
   // Groq fallback
   if (env.groqApiKey) {
     try {
-      const rawText = await callGroqProvider(userMessage, history, chatMode);
+      const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
       return normalizeResponse(rawText, "groq", chatMode);
     } catch (error) {
       lastError = error;
@@ -463,6 +481,7 @@ export async function callAssistantModel(userMessage: string, history: Conversat
 
   // Final safety fallback — never let the user see a raw error
   console.error("[assistant-ai] All providers failed. Returning graceful fallback.");
+  const isMr = lang === "mr";
   return {
     mode: chatMode ? "CHAT" : "SYSTEM",
     intent: chatMode ? "GREETING" : "UNKNOWN",
@@ -470,8 +489,8 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     location: "",
     action: "NONE",
     message: chatMode
-      ? "Hey there! How can I help you today? You can ask me about services, vendors, or bookings."
-      : "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!",
+      ? (isMr ? "नमस्कार! मी तुम्हाला कशी मदत करू शकतो? सेवा, विक्रेते किंवा बुकिंगबद्दल विचारा." : "Hey there! How can I help you today? You can ask me about services, vendors, or bookings.")
+      : (isMr ? "सध्या कनेक्ट करण्यात थोडी अडचण येत आहे. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा किंवा थेट सेवा ब्राउझ करा!" : "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!"),
     confidence: 0.5,
     provider: "gemini",
     rawText: "",

@@ -1,0 +1,39 @@
+{
+  "success": {
+    "accountCreated": "खाते तयार! तुमचा ईमेल सत्यापित करा.",
+    "emailVerified": "ईमेल सत्यापित!",
+    "otpSent": "तुमच्या ईमेलवर OTP पाठवला",
+    "loginSuccess": "पुन्हा स्वागत!",
+    "profileUpdated": "प्रोफाइल यशस्वीरित्या अपडेट केले",
+    "serviceAdded": "सेवा जोडली!",
+    "serviceDeleted": "सेवा हटवली आणि इतिहासात जोडली",
+    "bookingAccepted": "बुकिंग स्वीकारली",
+    "bookingDeclined": "बुकिंग नाकारली आणि ग्राहकाला कळवले",
+    "workVerified": "काम सत्यापित आणि पूर्ण!",
+    "amountUpdated": "रक्कम अपडेट केली",
+    "paymentRequestSent": "पेमेंट विनंती पाठवली",
+    "passwordReset": "पासवर्ड यशस्वीरित्या रीसेट केला",
+    "reviewSubmitted": "पुनरावलोकन सबमिट केले",
+    "portfolioSaved": "पोर्टफोलिओ जतन केला",
+    "priceScheduled": "किंमत अपडेट शेड्यूल केले"
+  },
+  "error": {
+    "generic": "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा.",
+    "networkError": "नेटवर्क त्रुटी. तुमचे कनेक्शन तपासा.",
+    "loginFailed": "लॉगिन अयशस्वी. तुमची माहिती तपासा.",
+    "registrationFailed": "नोंदणी अयशस्वी",
+    "invalidOtp": "अवैध OTP",
+    "otpExpired": "OTP कालबाह्य. कृपया नवीन विनंती करा.",
+    "failedSendOtp": "OTP पाठवता आला नाही",
+    "failedLoadBookings": "बुकिंग लोड करता आल्या नाहीत",
+    "failedDownloadReceipt": "पावती डाउनलोड करता आली नाही",
+    "enterValidAmount": "वैध रक्कम प्रविष्ट करा",
+    "enterValidPrice": "वैध किंमत प्रविष्ट करा",
+    "enterServiceName": "सेवा नाव प्रविष्ट करा",
+    "fillAllFields": "कृपया सर्व आवश्यक फील्ड भरा",
+    "vendorOnly": "हे पोर्टल फक्त विक्रेत्यांसाठी आहे.",
+    "cancellationReasonMin": "रद्दीकरणाचे कारण किमान 5 अक्षरांचे असावे",
+    "uploadFailed": "अपलोड अयशस्वी",
+    "sessionExpired": "सत्र कालबाह्य. कृपया पुन्हा लॉगिन करा."
+  }
+}

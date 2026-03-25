@@ -3,6 +3,7 @@ import { testimonials } from "@/data/mockData";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
+import { useTranslation } from "react-i18next";
 
 function toInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -18,6 +19,7 @@ function clampWords(text: string, maxWords = 20) {
 }
 
 const TestimonialsSection = () => {
+  const { t } = useTranslation("home");
   const { data: publicReviews } = useQuery({
     queryKey: ["public-reviews"],
     queryFn: async () => {
@@ -30,11 +32,11 @@ const TestimonialsSection = () => {
   const reviewCards = (publicReviews && publicReviews.length > 0)
     ? publicReviews.map((r) => ({
         id: r.id,
-        text: clampWords(r.reviewText || "Great service experience.", 20),
+        text: clampWords(r.reviewText || t("testimonials.fallbackReview"), 20),
         rating: Math.max(1, Math.min(5, Number(r.rating) || 5)),
         avatar: toInitials(r.customerName || "Customer"),
-        name: r.customerName || "Verified Customer",
-        service: r.serviceName || "Service",
+        name: r.customerName || t("testimonials.verifiedCustomer"),
+        service: r.serviceName || t("testimonials.fallbackService"),
       }))
     : testimonials;
 
@@ -46,9 +48,9 @@ const TestimonialsSection = () => {
       <div className="container">
         <div ref={headerRef} className="text-center mb-12">
           <h2 className="font-display text-2xl md:text-3xl font-bold">
-            What Our <span className="gradient-text">Customers</span> Say
+            {t("testimonials.titleStart")} <span className="gradient-text">{t("testimonials.titleHighlight")}</span> {t("testimonials.titleEnd")}
           </h2>
-          <p className="text-muted-foreground mt-2">Real reviews from real people</p>
+          <p className="text-muted-foreground mt-2">{t("testimonials.subtitle")}</p>
         </div>
 
         <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">

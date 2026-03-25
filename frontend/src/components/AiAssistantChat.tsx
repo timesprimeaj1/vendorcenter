@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocation as useGeoLocation } from "@/hooks/useLocation";
 import { useNavigate, useLocation as useRouteLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ async function queryAssistant(
   lng?: number,
   conversationId?: string,
   currentPage?: string,
+  lang?: string,
 ): Promise<AssistantResponse> {
   const API_BASE = resolveApiBase();
   const body: Record<string, unknown> = { message };
@@ -82,6 +84,7 @@ async function queryAssistant(
   if (lng != null) body.lng = lng;
   if (conversationId) body.conversationId = conversationId;
   if (currentPage) body.currentPage = currentPage;
+  if (lang) body.lang = lang;
 
   const res = await fetch(`${API_BASE}/ai-assistant/query`, {
     method: "POST",
@@ -108,12 +111,13 @@ async function clearConversation(conversationId: string): Promise<void> {
   }).catch(() => {});
 }
 
-async function getSuggestions(): Promise<string[]> {
+async function getSuggestions(lang?: string): Promise<string[]> {
   const API_BASE = resolveApiBase();
   const headers: Record<string, string> = {};
   const token = localStorage.getItem("customer_accessToken");
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}/ai-assistant/suggestions`, { headers });
+  const url = lang ? `${API_BASE}/ai-assistant/suggestions?lang=${lang}` : `${API_BASE}/ai-assistant/suggestions`;
+  const res = await fetch(url, { headers });
   const json = await res.json();
   return json.data ?? [];
 }
@@ -223,7 +227,7 @@ function VendorCenterAiLogo({ size = 40 }: { size?: number }) {
 
 // ─── Sub-components ──────────────────────────────────────────
 
-function TypingIndicator() {
+function TypingIndicator({ label }: { label: string }) {
   return (
     <div className="mr-auto flex items-center gap-3 rounded-2xl rounded-bl-sm bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] px-4 py-3 shadow-sm">
       <div className="flex items-center gap-1.5">
@@ -231,12 +235,13 @@ function TypingIndicator() {
         <span className="h-2 w-2 rounded-full bg-gradient-to-br from-primary to-[hsl(340,82%,52%)] animate-bounce [animation-delay:150ms] shadow-sm shadow-primary/30" />
         <span className="h-2 w-2 rounded-full bg-gradient-to-br from-primary to-[hsl(340,82%,52%)] animate-bounce [animation-delay:300ms] shadow-sm shadow-primary/30" />
       </div>
-      <span className="text-xs text-muted-foreground/70 font-medium">Thinking...</span>
+      <span className="text-xs text-muted-foreground/70 font-medium">{label}</span>
     </div>
   );
 }
 
 function WelcomeCard({ onSuggestionClick, suggestions }: { onSuggestionClick: (s: string) => void; suggestions: string[] }) {
+  const { t } = useTranslation("chat");
   return (
     <div className="space-y-4">
       {/* Welcome hero */}
@@ -248,19 +253,19 @@ function WelcomeCard({ onSuggestionClick, suggestions }: { onSuggestionClick: (s
           <div className="flex items-center gap-3 mb-3">
             <VendorCenterAiLogo size={44} />
             <div>
-              <p className="text-sm font-bold text-foreground tracking-tight">VendorCenter AI</p>
-              <p className="text-[11px] text-muted-foreground/70">Your personal service finder</p>
+              <p className="text-sm font-bold text-foreground tracking-tight">{t("title")}</p>
+              <p className="text-[11px] text-muted-foreground/70">{t("tagline")}</p>
             </div>
           </div>
           <p className="text-[13px] text-foreground/75 leading-relaxed">
-            I can help you discover and book trusted local service providers. Try asking me anything!
+            {t("welcomeMessage")}
           </p>
           {/* Feature pills */}
           <div className="mt-3.5 flex flex-wrap gap-2">
             {[
-              { icon: Search, label: "Find services" },
-              { icon: Star, label: "Top rated" },
-              { icon: CalendarCheck, label: "Book instantly" },
+              { icon: Search, label: t("features.findServices") },
+              { icon: Star, label: t("features.topRated") },
+              { icon: CalendarCheck, label: t("features.bookInstantly") },
             ].map(({ icon: Icon, label }) => (
               <span key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] backdrop-blur-sm px-3 py-1.5 text-[11px] font-medium text-muted-foreground/80 border border-white/[0.08] shadow-sm">
                 <Icon className="h-3 w-3 text-primary" />
@@ -274,7 +279,7 @@ function WelcomeCard({ onSuggestionClick, suggestions }: { onSuggestionClick: (s
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div className="space-y-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 px-1">Try asking</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 px-1">{t("tryAsking")}</p>
           <div className="flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
               <button
@@ -296,6 +301,7 @@ function WelcomeCard({ onSuggestionClick, suggestions }: { onSuggestionClick: (s
 }
 
 function VendorCard({ vendor, rank, onClick }: { vendor: VendorResult; rank: number; onClick: () => void }) {
+  const { t } = useTranslation("chat");
   const ratingNum = parseFloat(vendor.rating) || 0;
   const ratingPct = Math.min((ratingNum / 5) * 100, 100);
 
@@ -352,7 +358,7 @@ function VendorCard({ vendor, rank, onClick }: { vendor: VendorResult; rank: num
         {vendor.completedBookings != null && vendor.completedBookings > 0 && (
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3 text-green-500" />
-            {vendor.completedBookings} completed
+            {vendor.completedBookings} {t("completed")}
           </span>
         )}
         {vendor.rankScore != null && vendor.rankScore > 0 && (
@@ -496,6 +502,7 @@ function loadSavedMessages(scope: string): ChatMessage[] {
 }
 
 export default function AiAssistantChat() {
+  const { t, i18n } = useTranslation("chat");
   const [authScope, setAuthScope] = useState<string>(() => getAuthScope());
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages(getAuthScope()));
@@ -537,9 +544,16 @@ export default function AiAssistantChat() {
 
   useEffect(() => {
     if (open && suggestions.length === 0) {
-      getSuggestions().then(setSuggestions).catch(() => {});
+      getSuggestions(i18n.language).then(setSuggestions).catch(() => {});
     }
-  }, [open, suggestions.length]);
+  }, [open, suggestions.length, i18n.language]);
+
+  // Reload suggestions when language changes
+  useEffect(() => {
+    if (open) {
+      getSuggestions(i18n.language).then(setSuggestions).catch(() => {});
+    }
+  }, [i18n.language]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -623,6 +637,7 @@ export default function AiAssistantChat() {
           location?.longitude,
           conversationId,
           routeLocation.pathname,
+          i18n.language,
         );
 
         if (result.conversationId) setConversationId(result.conversationId);
@@ -644,7 +659,7 @@ export default function AiAssistantChat() {
           {
             id: `error-${Date.now()}`,
             role: "assistant",
-            text: "Sorry, something went wrong. Please try again in a moment.",
+            text: t("errorMessage"),
             timestamp: new Date(),
           },
         ]);
@@ -676,7 +691,7 @@ export default function AiAssistantChat() {
           "active:scale-95",
         )}
         style={{ right: "1.5rem", bottom: "1.5rem", left: "auto" }}
-        aria-label={open ? "Close assistant" : "Open assistant"}
+        aria-label={open ? t("closeAssistant") : t("openAssistant")}
       >
         {!open && (
           <span className="absolute inset-0 rounded-full animate-ping bg-primary/25" style={{ animationDuration: "2.5s" }} />
@@ -706,30 +721,30 @@ export default function AiAssistantChat() {
             <div className="absolute inset-x-0 bottom-0 h-px bg-black/20" />
             <VendorCenterAiLogo size={32} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold leading-tight">VendorCenter AI</p>
+              <p className="text-sm font-semibold leading-tight">{t("title")}</p>
               <p className="text-[11px] opacity-75 leading-tight">
-                {loading ? "Thinking..." : location ? "Connected" : "Ready to help"}
+                {loading ? t("thinking") : location ? t("connected") : t("readyToHelp")}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               {location && (
                 <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px]">
                   <MapPin className="h-2.5 w-2.5" />
-                  Live
+                  {t("live")}
                 </span>
               )}
               <button
                 onClick={startNewChat}
                 className="rounded-lg p-1.5 transition-colors hover:bg-white/20 active:bg-white/30"
-                title="New conversation"
+                title={t("newConversation")}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={handleClose}
                 className="rounded-lg p-1.5 transition-colors hover:bg-white/20 active:bg-white/30"
-                title="Close assistant"
-                aria-label="Close assistant"
+                title={t("closeAssistant")}
+                aria-label={t("closeAssistant")}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -788,15 +803,15 @@ export default function AiAssistantChat() {
                     {/* Quick service browse for SHOW_CATEGORIES actions */}
                     {msg.action === "SHOW_CATEGORIES" && msg.role === "assistant" && (
                       <div className="mt-2.5 mr-auto max-w-[95%] flex flex-wrap gap-1.5">
-                        {["Cleaning", "Plumbing", "Electrical", "AC Repair", "Salon", "Painting"].map((cat) => (
+                        {(["cleaning", "plumbing", "electrical", "acRepair", "salon", "painting"] as const).map((catKey) => (
                           <button
-                            key={cat}
-                            onClick={() => send(`Find ${cat.toLowerCase()} vendors near me`)}
+                            key={catKey}
+                            onClick={() => send(t("findNearMe", { category: t(`quickCategories.${catKey}`).toLowerCase() }))}
                             className="group rounded-full border border-white/[0.1] bg-white/[0.05] backdrop-blur-sm px-3 py-1.5 text-[11px] font-semibold text-foreground/80 transition-all hover:border-primary/30 hover:bg-primary/[0.08] hover:text-foreground hover:shadow-md hover:shadow-primary/5 active:scale-95"
                           >
                             <span className="flex items-center gap-1.5">
                               <ChevronRight className="h-3 w-3 text-primary/40 group-hover:text-primary transition-colors" />
-                              {cat}
+                              {t(`quickCategories.${catKey}`)}
                             </span>
                           </button>
                         ))}
@@ -814,7 +829,7 @@ export default function AiAssistantChat() {
                           className="flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.05] backdrop-blur-sm px-3.5 py-2 text-xs font-semibold text-primary/90 transition-all hover:bg-primary/[0.08] hover:border-primary/25 hover:shadow-md hover:shadow-primary/8 active:scale-95"
                         >
                           <Package className="h-3.5 w-3.5" />
-                          View all bookings
+                          {t("viewAllBookings")}
                           <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -831,7 +846,7 @@ export default function AiAssistantChat() {
                           className="flex items-center gap-2 rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-2.5 text-xs font-semibold text-primary transition-all hover:from-primary/15 hover:to-primary/10 hover:border-primary/40 hover:shadow-md hover:shadow-primary/10 active:scale-95"
                         >
                           <ArrowRight className="h-4 w-4" />
-                          Go to {msg.navigateTo === "/" ? "Home" : msg.navigateTo === "/services" ? "Services" : msg.navigateTo === "/account" ? "My Account" : msg.navigateTo === "/about" ? "About" : msg.navigateTo === "/login" ? "Login" : msg.navigateTo === "/register" ? "Register" : "Page"}
+                          {t("navigation.goTo", { page: msg.navigateTo === "/" ? t("navigation.home") : msg.navigateTo === "/services" ? t("navigation.services") : msg.navigateTo === "/account" ? t("navigation.myAccount") : msg.navigateTo === "/about" ? t("navigation.about") : msg.navigateTo === "/login" ? t("navigation.login") : msg.navigateTo === "/register" ? t("navigation.register") : t("navigation.page") })}
                           <ChevronRight className="h-3.5 w-3.5 opacity-60" />
                         </button>
                       </div>
@@ -871,7 +886,7 @@ export default function AiAssistantChat() {
             )}
 
             {/* Typing indicator */}
-            {loading && <TypingIndicator />}
+            {loading && <TypingIndicator label={t("thinking")} />}
           </div>
 
           {/* ── Input bar ── */}
@@ -884,7 +899,7 @@ export default function AiAssistantChat() {
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about services, bookings..."
+                placeholder={t("inputPlaceholder")}
                 disabled={loading}
                 className="w-full rounded-2xl border border-white/[0.1] bg-white/[0.05] px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 disabled:opacity-50 transition-all focus:border-primary/30 focus:bg-white/[0.08] focus:shadow-[0_0_0_3px_rgba(239,108,0,0.08)]"
                 maxLength={500}

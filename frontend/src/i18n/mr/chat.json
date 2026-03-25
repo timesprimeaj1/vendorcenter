@@ -1,0 +1,41 @@
+{
+  "title": "VendorCenter AI",
+  "tagline": "तुमचा वैयक्तिक सेवा शोधक",
+  "welcomeMessage": "मी तुम्हाला विश्वसनीय स्थानिक सेवा प्रदाते शोधण्यात आणि बुक करण्यात मदत करू शकतो. मला काहीही विचारून पहा!",
+  "features": {
+    "findServices": "सेवा शोधा",
+    "topRated": "उच्च रेटिंग",
+    "bookInstantly": "लगेच बुक करा"
+  },
+  "tryAsking": "विचारून पहा",
+  "thinking": "विचार करत आहे...",
+  "readyToHelp": "मदतीसाठी तयार",
+  "connected": "जोडलेले",
+  "live": "लाइव्ह",
+  "newConversation": "नवीन संवाद",
+  "closeAssistant": "सहाय्यक बंद करा",
+  "openAssistant": "सहाय्यक उघडा",
+  "inputPlaceholder": "सेवा, बुकिंगबद्दल विचारा...",
+  "errorMessage": "क्षमस्व, काहीतरी चूक झाली. कृपया काही क्षणांनी पुन्हा प्रयत्न करा.",
+  "viewAllBookings": "सर्व बुकिंग पहा",
+  "quickCategories": {
+    "cleaning": "स्वच्छता",
+    "plumbing": "प्लंबिंग",
+    "electrical": "इलेक्ट्रिकल",
+    "acRepair": "एसी दुरुस्ती",
+    "salon": "सलून",
+    "painting": "रंगकाम"
+  },
+  "navigation": {
+    "home": "मुख्यपृष्ठ",
+    "services": "सेवा",
+    "myAccount": "माझे खाते",
+    "about": "आमच्याबद्दल",
+    "login": "लॉगिन",
+    "register": "नोंदणी करा",
+    "goTo": "{{page}} वर जा",
+    "page": "पृष्ठ"
+  },
+  "findNearMe": "जवळचे {{category}} विक्रेते शोधा",
+  "completed": "पूर्ण"
+}

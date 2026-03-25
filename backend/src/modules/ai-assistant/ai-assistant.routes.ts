@@ -12,6 +12,7 @@ const querySchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
   conversationId: z.string().uuid().optional(),
   currentPage: z.string().max(200).optional(),
+  lang: z.enum(["en", "mr"]).optional(),
 });
 
 // POST /api/ai-assistant/query — public endpoint, optional auth for user-aware features
@@ -22,14 +23,14 @@ aiAssistantRouter.post("/query", async (req: Request, res: Response) => {
     return;
   }
 
-  const { message, lat, lng, conversationId, currentPage } = parsed.data;
+  const { message, lat, lng, conversationId, currentPage, lang } = parsed.data;
 
   // Extract optional user identity from Bearer token (no 401 if missing)
   const actor = getActorFromBearerToken(req.header("authorization"));
   const userId = actor?.id;
 
   try {
-    const result = await processAssistantQuery(message, lat, lng, conversationId, userId, currentPage);
+    const result = await processAssistantQuery(message, lat, lng, conversationId, userId, currentPage, lang);
     res.json({ success: true, data: result });
   } catch (err) {
     console.error("[ai-assistant] query error:", err);
@@ -52,19 +53,32 @@ aiAssistantRouter.post("/clear", (req: Request, res: Response) => {
 // GET /api/ai-assistant/suggestions — returns quick-action suggestions
 aiAssistantRouter.get("/suggestions", (req: Request, res: Response) => {
   const actor = getActorFromBearerToken(req.header("authorization"));
+  const lang = req.query.lang === "mr" ? "mr" : "en";
 
-  const baseSuggestions = [
-    "Find a plumber near me",
-    "Best electrician",
-    "Book AC repair",
-    "How does booking work?",
-    "Top-rated cleaning services",
-    "What services are available?",
-  ];
+  const suggestions: Record<string, string[]> = {
+    en: [
+      "Find a plumber near me",
+      "Best electrician",
+      "Book AC repair",
+      "How does booking work?",
+      "Top-rated cleaning services",
+      "What services are available?",
+    ],
+    mr: [
+      "जवळचा प्लंबर शोधा",
+      "सर्वोत्तम इलेक्ट्रिशियन",
+      "एसी दुरुस्ती बुक करा",
+      "बुकिंग कसे काम करते?",
+      "सर्वोत्तम स्वच्छता सेवा",
+      "कोणत्या सेवा उपलब्ध आहेत?",
+    ],
+  };
+
+  const baseSuggestions = [...suggestions[lang]];
 
   // Add booking-related suggestions for logged-in users
   if (actor?.id) {
-    baseSuggestions.unshift("Show my bookings");
+    baseSuggestions.unshift(lang === "mr" ? "माझ्या बुकिंग दाखवा" : "Show my bookings");
   }
 
   res.json({ success: true, data: baseSuggestions });

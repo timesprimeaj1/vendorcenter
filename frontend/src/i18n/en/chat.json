@@ -1,0 +1,41 @@
+{
+  "title": "VendorCenter AI",
+  "tagline": "Your personal service finder",
+  "welcomeMessage": "I can help you discover and book trusted local service providers. Try asking me anything!",
+  "features": {
+    "findServices": "Find services",
+    "topRated": "Top rated",
+    "bookInstantly": "Book instantly"
+  },
+  "tryAsking": "Try asking",
+  "thinking": "Thinking...",
+  "readyToHelp": "Ready to help",
+  "connected": "Connected",
+  "live": "Live",
+  "newConversation": "New conversation",
+  "closeAssistant": "Close assistant",
+  "openAssistant": "Open assistant",
+  "inputPlaceholder": "Ask about services, bookings...",
+  "errorMessage": "Sorry, something went wrong. Please try again in a moment.",
+  "viewAllBookings": "View all bookings",
+  "quickCategories": {
+    "cleaning": "Cleaning",
+    "plumbing": "Plumbing",
+    "electrical": "Electrical",
+    "acRepair": "AC Repair",
+    "salon": "Salon",
+    "painting": "Painting"
+  },
+  "navigation": {
+    "home": "Home",
+    "services": "Services",
+    "myAccount": "My Account",
+    "about": "About",
+    "login": "Login",
+    "register": "Register",
+    "goTo": "Go to {{page}}",
+    "page": "Page"
+  },
+  "findNearMe": "Find {{category}} vendors near me",
+  "completed": "completed"
+}

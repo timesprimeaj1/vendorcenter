@@ -10,7 +10,6 @@ const Index = () => {
   return (
     <Layout>
       <HeroSection />
-      <div className="section-divider" />
       <CategoriesSection />
       <div className="section-divider" />
       <FeaturedVendors />

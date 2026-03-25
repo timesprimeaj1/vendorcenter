@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ShieldCheck, CalendarCheck, Sparkles, Star } from "lucide-react";
@@ -34,6 +35,7 @@ const steps = [
 ];
 
 const ScrollStorySection = () => {
+  const { t } = useTranslation("home");
   const sectionRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<HTMLDivElement[]>([]);
   const visualRefs = useRef<HTMLDivElement[]>([]);
@@ -105,13 +107,12 @@ const ScrollStorySection = () => {
         <div className="container grid lg:grid-cols-[0.9fr_1.1fr] gap-12 items-center">
           <div className="space-y-8 max-w-xl">
             <div className="space-y-3">
-              <p className="text-sm uppercase tracking-[0.3em] text-white/60">Story</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-white/60">{t("scrollStory.label")}</p>
               <h2 className="font-display text-4xl md:text-5xl font-semibold leading-tight text-white">
-                A calm, premium booking flow built around one clear action.
+                {t("scrollStory.heading")}
               </h2>
               <p className="text-base text-white/70">
-                Scroll to move through the narrative—trust signal, booking preview, and a focused CTA—
-                without breaking the visual rhythm.
+                {t("scrollStory.subtitle")}
               </p>
             </div>
 
@@ -126,10 +127,10 @@ const ScrollStorySection = () => {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-xs font-semibold tracking-[0.2em] text-white/60">
-                      {step.label}
+                      {t(`scrollStory.${step.id}.label`)}
                     </span>
                     <div className="h-0.5 w-8 bg-white/15" />
-                    <span className="text-sm font-medium text-white/80">{step.badge}</span>
+                    <span className="text-sm font-medium text-white/80">{t(`scrollStory.${step.id}.badge`)}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white">
@@ -138,8 +139,8 @@ const ScrollStorySection = () => {
                       {index === 2 && <Sparkles className="w-4 h-4" />}
                     </div>
                     <div>
-                      <h3 className="font-display text-lg text-white">{step.title}</h3>
-                      <p className="text-sm text-white/60 leading-relaxed">{step.description}</p>
+                      <h3 className="font-display text-lg text-white">{t(`scrollStory.${step.id}.title`)}</h3>
+                      <p className="text-sm text-white/60 leading-relaxed">{t(`scrollStory.${step.id}.description`)}</p>
                     </div>
                   </div>
                 </div>
@@ -164,20 +165,20 @@ const ScrollStorySection = () => {
                         <ShieldCheck className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm text-white/60">Customer trust</p>
-                        <p className="text-2xl font-semibold text-white">4.9 / 5.0</p>
+                        <p className="text-sm text-white/60">{t("scrollStory.trust.customerTrust")}</p>
+                        <p className="text-2xl font-semibold text-white">{t("scrollStory.trust.ratingDisplay")}</p>
                       </div>
                     </div>
                     <div className="mt-6 flex items-center gap-2">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star key={i} className="w-4 h-4 fill-warning text-warning" />
                       ))}
-                      <span className="text-sm text-white/60">Based on verified bookings</span>
+                      <span className="text-sm text-white/60">{t("scrollStory.trust.basedOn")}</span>
                     </div>
                     <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/50">Trust layer</p>
-                        <p className="text-base text-white">Background checks & live quality scoring</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/50">{t("scrollStory.trust.trustLayer")}</p>
+                        <p className="text-base text-white">{t("scrollStory.trust.implementation")}</p>
                       </div>
                       <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-white font-semibold">
                         ✓
@@ -191,23 +192,23 @@ const ScrollStorySection = () => {
                     <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-accent/25 blur-3xl rounded-full" />
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/50">Booking preview</p>
-                        <p className="text-xl font-semibold text-white">Premium Deep Clean</p>
-                        <p className="text-sm text-white/60">Tomorrow · 10:00 - 12:00</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/50">{t("scrollStory.booking.preview")}</p>
+                        <p className="text-xl font-semibold text-white">{t("scrollStory.booking.serviceName")}</p>
+                        <p className="text-sm text-white/60">{t("scrollStory.booking.serviceTime")}</p>
                       </div>
                       <div className="px-3 py-1 rounded-full bg-white/10 text-xs text-white/80 border border-white/10">
-                        Live slots
+                        {t("scrollStory.booking.liveSlots")}
                       </div>
                     </div>
                     <div className="mt-6 space-y-3">
                       <div className="flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 p-4">
                         <div>
-                          <p className="text-xs text-white/50">Home size</p>
-                          <p className="text-base text-white">2 BHK</p>
+                          <p className="text-xs text-white/50">{t("scrollStory.booking.homeSize")}</p>
+                          <p className="text-base text-white">{t("scrollStory.booking.homeSizeValue")}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-white/50">Est. price</p>
-                          <p className="text-base text-white">₹2,900</p>
+                          <p className="text-xs text-white/50">{t("scrollStory.booking.estPrice")}</p>
+                          <p className="text-base text-white">{t("scrollStory.booking.priceValue")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-4">
@@ -215,18 +216,18 @@ const ScrollStorySection = () => {
                           +
                         </div>
                         <div>
-                          <p className="text-sm text-white">Add upholstery care</p>
-                          <p className="text-xs text-white/50">Optional add-on</p>
+                          <p className="text-sm text-white">{t("scrollStory.booking.addUpholstery")}</p>
+                          <p className="text-xs text-white/50">{t("scrollStory.booking.optionalAddon")}</p>
                         </div>
                       </div>
                     </div>
                     <div className="mt-6 flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-white/50">Total</p>
-                        <p className="text-2xl font-semibold text-white">₹3,400</p>
+                        <p className="text-xs text-white/50">{t("scrollStory.booking.total")}</p>
+                        <p className="text-2xl font-semibold text-white">{t("scrollStory.booking.totalValue")}</p>
                       </div>
                       <Button size="lg" className="rounded-xl px-6 bg-white text-slate-900 hover:bg-white/90">
-                        Continue
+                        {t("scrollStory.booking.continue")}
                       </Button>
                     </div>
                   </div>
@@ -237,28 +238,28 @@ const ScrollStorySection = () => {
                     <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-white/20 blur-[120px] rounded-full" />
                     <div className="space-y-4 relative">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs text-white/80 border border-white/10">
-                        Priority concierge
+                        {t("scrollStory.cta.priorityConcierge")}
                       </div>
                       <h3 className="text-2xl font-semibold text-white">
-                        Finish your booking with a single, focused CTA.
+                        {t("scrollStory.cta.ctaMessage")}
                       </h3>
                       <p className="text-sm text-white/60">
-                        No extra cards or distractions—just the path to confirm with assurance and support.
+                        {t("scrollStory.cta.ctaDescription")}
                       </p>
                       <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
                         <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-white font-semibold">
-                          24/7
+                          {t("scrollStory.cta.support247")}
                         </div>
                         <div>
-                          <p className="text-sm text-white">Human support on standby</p>
-                          <p className="text-xs text-white/50">Instant help if anything changes</p>
+                          <p className="text-sm text-white">{t("scrollStory.cta.humanSupport")}</p>
+                          <p className="text-xs text-white/50">{t("scrollStory.cta.supportNote")}</p>
                         </div>
                       </div>
                       <Button
                         size="lg"
                         className="w-full rounded-xl bg-white text-slate-900 hover:bg-white/90 shadow-lg"
                       >
-                        Book with confidence
+                        {t("scrollStory.cta.bookWithConfidence")}
                       </Button>
                     </div>
                   </div>

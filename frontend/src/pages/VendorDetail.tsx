@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
@@ -18,6 +19,7 @@ const VendorDetail = () => {
   const { vendorId } = useParams<{ vendorId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation("services");
 
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [scheduledDate, setScheduledDate] = useState("");
@@ -62,14 +64,14 @@ const VendorDetail = () => {
     }));
 
   const handleBooking = async () => {
-    if (!user) { toast.error("Please log in to book"); return; }
+    if (!user) { toast.error(t("vendorDetail.loginToBook")); return; }
     if (user.role !== "customer") {
-      toast.error("Bookings can be requested only from a customer account. Please log in as customer.");
+      toast.error(t("vendorDetail.customerOnly"));
       return;
     }
-    if (!selectedService) { toast.error("Please select a service"); return; }
-    if (!scheduledDate) { toast.error("Please select a date"); return; }
-    if (!scheduledTime) { toast.error("Please select a time"); return; }
+    if (!selectedService) { toast.error(t("vendorDetail.selectService")); return; }
+    if (!scheduledDate) { toast.error(t("vendorDetail.selectDate")); return; }
+    if (!scheduledTime) { toast.error(t("vendorDetail.selectTime")); return; }
 
     setBooking(true);
     try {
@@ -80,13 +82,13 @@ const VendorDetail = () => {
         scheduledTime,
         notes: notes || undefined,
       });
-      toast.success("Booking request sent! The vendor will confirm shortly.");
+      toast.success(t("vendorDetail.bookingSent"));
       setScheduledDate("");
       setScheduledTime("");
       setNotes("");
       setSelectedService(null);
     } catch (err: any) {
-      toast.error(err.message || "Booking failed");
+      toast.error(err.message || t("vendorDetail.bookingFailed"));
     } finally {
       setBooking(false);
     }
@@ -106,8 +108,8 @@ const VendorDetail = () => {
     return (
       <Layout>
         <div className="container py-12 text-center">
-          <h2 className="text-xl font-semibold mb-2">Vendor not found</h2>
-          <Button variant="outline" onClick={() => navigate("/services")}>Back to Services</Button>
+          <h2 className="text-xl font-semibold mb-2">{t("vendorDetail.vendorNotFound")}</h2>
+          <Button variant="outline" onClick={() => navigate("/services")}>{t("vendorDetail.backToServices")}</Button>
         </div>
       </Layout>
     );
@@ -135,7 +137,7 @@ const VendorDetail = () => {
       <div className="bg-card/60 backdrop-blur-md border-b border-border/40">
         <div className="container py-3">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> Back
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> {t("vendorDetail.back")}
           </button>
         </div>
       </div>
@@ -156,7 +158,7 @@ const VendorDetail = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {i === 3 && photos.length > 4 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
-                  <span className="text-white font-semibold text-lg">+{photos.length - 4} more</span>
+                  <span className="text-white font-semibold text-lg">{t("vendorDetail.morePhotos", { count: photos.length - 4 })}</span>
                 </div>
               )}
             </motion.div>
@@ -205,7 +207,7 @@ const VendorDetail = () => {
                   <h1 className="font-display text-2xl md:text-3xl font-bold">{vendorName}</h1>
                   {isVerified && (
                     <Badge className="bg-success text-success-foreground border-0 text-xs gap-1">
-                      <BadgeCheck className="w-3 h-3" /> Verified
+                      <BadgeCheck className="w-3 h-3" /> {t("vendorDetail.verified")}
                     </Badge>
                   )}
                 </div>
@@ -224,7 +226,7 @@ const VendorDetail = () => {
             {/* Services offered */}
             <div ref={servicesRef}>
               <h2 className="font-display font-semibold text-lg mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" /> Services Offered
+                <Sparkles className="w-5 h-5 text-primary" /> {t("vendorDetail.servicesOffered")}
               </h2>
               {services.length > 0 ? (
                 <div className="space-y-2.5">
@@ -249,7 +251,7 @@ const VendorDetail = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-sm">No services listed yet.</p>
+                <p className="text-muted-foreground text-sm">{t("vendorDetail.noServicesListed")}</p>
               )}
             </div>
           </div>
@@ -257,7 +259,7 @@ const VendorDetail = () => {
           {/* Right: Booking form */}
           <div className="lg:col-span-1" ref={bookingRef}>
             <div className="sticky top-24 bg-card/80 backdrop-blur-xl border border-border/40 rounded-2xl p-5 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
-              <h3 className="font-display font-semibold text-lg">Book a Service</h3>
+              <h3 className="font-display font-semibold text-lg">{t("vendorDetail.bookService")}</h3>
 
               {/* Selected service */}
               {selectedService ? (
@@ -266,13 +268,13 @@ const VendorDetail = () => {
                   <button onClick={() => setSelectedService(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Select a service from the list</p>
+                <p className="text-sm text-muted-foreground">{t("vendorDetail.selectFromList")}</p>
               )}
 
               {/* Date picker */}
               <div>
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-primary" /> Date
+                  <Calendar className="w-4 h-4 text-primary" /> {t("vendorDetail.date")}
                 </label>
                 <div className="glow-focus rounded-xl">
                   <Input
@@ -288,7 +290,7 @@ const VendorDetail = () => {
               {/* Time picker */}
               <div>
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-primary" /> Time
+                  <Clock className="w-4 h-4 text-primary" /> {t("vendorDetail.time")}
                 </label>
                 <div className="glow-focus rounded-xl">
                   <Input
@@ -303,7 +305,7 @@ const VendorDetail = () => {
               {/* Notes */}
               <div>
                 <label className="text-sm font-medium mb-1 flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-primary" /> Notes (optional)
+                  <MessageSquare className="w-4 h-4 text-primary" /> {t("vendorDetail.notesOptional")}
                 </label>
                 <div className="glow-focus rounded-xl">
                   <textarea
@@ -311,7 +313,7 @@ const VendorDetail = () => {
                     onChange={e => setNotes(e.target.value)}
                     maxLength={500}
                     className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Any special requirements..."
+                    placeholder={t("vendorDetail.notesPlaceholder")}
                   />
                 </div>
               </div>
@@ -321,14 +323,14 @@ const VendorDetail = () => {
                 disabled={!selectedService || !scheduledDate || !scheduledTime || booking}
                 onClick={handleBooking}
               >
-                {booking ? "Sending..." : "Request Booking"}
+                {booking ? t("vendorDetail.sending") : t("vendorDetail.requestBooking")}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
-                Select a service, date, and time before submitting your booking request.
+                {t("vendorDetail.selectBeforeSubmit")}
               </p>
               <p className="text-xs text-muted-foreground text-center">
-                The vendor will review and confirm your booking
+                {t("vendorDetail.vendorWillReview")}
               </p>
             </div>
           </div>

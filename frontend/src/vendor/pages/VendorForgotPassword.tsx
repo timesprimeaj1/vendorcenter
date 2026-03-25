@@ -2,8 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
 import { toast } from "sonner";
 
@@ -20,43 +22,44 @@ const VendorForgotPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation("vendor");
 
   const handleSendOtp = async () => {
-    if (!email) { toast.error("Enter your email"); return; }
+    if (!email) { toast.error(t("forgotPassword.enterEmail")); return; }
     setLoading(true);
     try {
       const res = await api.requestOtp(email, "password_reset");
       if (res.data) {
         setOtpId(res.data.otpId);
         setStep("otp");
-        toast.success("OTP sent to your email");
+        toast.success(t("forgotPassword.otpSent"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || t("forgotPassword.failedSendOtp"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyAndProceed = () => {
-    if (!otpCode || otpCode.length < 6) { toast.error("Enter 6-digit OTP"); return; }
+    if (!otpCode || otpCode.length < 6) { toast.error(t("forgotPassword.enter6DigitOtp")); return; }
     setStep("password");
   };
 
   const handleResetPassword = async () => {
     if (!PASSWORD_RULE.test(newPassword)) {
-      toast.error("Password must be 8+ characters and include uppercase, lowercase, number, and special character"); return;
+      toast.error(t("forgotPassword.passwordRequirements")); return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords don't match"); return;
+      toast.error(t("forgotPassword.passwordsDontMatch")); return;
     }
     setLoading(true);
     try {
       await api.resetPassword({ email, otpId, code: otpCode, newPassword });
-      toast.success("Password reset successful! Please sign in.");
+      toast.success(t("forgotPassword.resetSuccess"));
       navigate("/login");
     } catch (err: any) {
-      toast.error(err.message || "Failed to reset password");
+      toast.error(err.message || t("forgotPassword.resetFailed"));
     } finally {
       setLoading(false);
     }
@@ -80,11 +83,12 @@ const VendorForgotPassword = () => {
             </span>
           </Link>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Reset password</h1>
+          <div className="flex justify-end mb-4"><LanguageSwitcher compact /></div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("forgotPassword.title")}</h1>
           <p className="text-muted-foreground mb-8">
-            {step === "email" && "Enter your email to receive a reset code"}
-            {step === "otp" && "Enter the verification code sent to your email"}
-            {step === "password" && "Set your new password"}
+            {step === "email" && t("forgotPassword.stepEmail")}
+            {step === "otp" && t("forgotPassword.stepOtp")}
+            {step === "password" && t("forgotPassword.stepPassword")}
           </p>
 
           <div className="flex gap-2 mb-8">
@@ -104,11 +108,11 @@ const VendorForgotPassword = () => {
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Email address" type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSendOtp()} />
+                <Input placeholder={t("forgotPassword.emailPlaceholder")} type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSendOtp()} />
               </div>
               <Button disabled={loading} onClick={handleSendOtp} className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Send Reset Code
+                {t("forgotPassword.sendResetCode")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </motion.div>
@@ -116,14 +120,14 @@ const VendorForgotPassword = () => {
 
           {step === "otp" && (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <Input placeholder="Enter 6-digit OTP" maxLength={6} className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg" value={otpCode} onChange={e => setOtpCode(e.target.value)} onKeyDown={e => e.key === "Enter" && handleVerifyAndProceed()} />
+              <Input placeholder={t("forgotPassword.enter6DigitOtp")} maxLength={6} className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg" value={otpCode} onChange={e => setOtpCode(e.target.value)} onKeyDown={e => e.key === "Enter" && handleVerifyAndProceed()} />
               <p className="text-xs text-muted-foreground text-center">
-                Code sent to <span className="font-medium text-foreground">{email}</span>
+                {t("forgotPassword.codeSentTo")} <span className="font-medium text-foreground">{email}</span>
               </p>
               <Button disabled={loading} onClick={handleVerifyAndProceed} className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base">
-                Continue <ArrowRight className="w-4 h-4 ml-1.5" />
+                {t("forgotPassword.continue")} <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
-              <Button variant="ghost" className="w-full text-sm text-muted-foreground" onClick={handleSendOtp} disabled={loading}>Resend code</Button>
+              <Button variant="ghost" className="w-full text-sm text-muted-foreground" onClick={handleSendOtp} disabled={loading}>{t("forgotPassword.resendCode")}</Button>
             </motion.div>
           )}
 
@@ -131,16 +135,16 @@ const VendorForgotPassword = () => {
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="New password (min 8 characters)" type="password" className="pl-10 h-12 rounded-xl" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <Input placeholder={t("forgotPassword.newPasswordPlaceholder")} type="password" className="pl-10 h-12 rounded-xl" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
               </div>
-              <p className="text-xs text-muted-foreground -mt-2">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
+              <p className="text-xs text-muted-foreground -mt-2">{t("forgotPassword.passwordRule")}</p>
               <div className="relative">
                 <CheckCircle2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Confirm new password" type="password" className="pl-10 h-12 rounded-xl" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleResetPassword()} />
+                <Input placeholder={t("forgotPassword.confirmPasswordPlaceholder")} type="password" className="pl-10 h-12 rounded-xl" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleResetPassword()} />
               </div>
               <Button disabled={loading} onClick={handleResetPassword} className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Reset Password
+                {t("forgotPassword.resetPassword")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </motion.div>
@@ -148,7 +152,7 @@ const VendorForgotPassword = () => {
 
           <div className="mt-8">
             <Link to="/login" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back to sign in
+              <ArrowLeft className="w-4 h-4" /> {t("forgotPassword.backToSignIn")}
             </Link>
           </div>
         </motion.div>
@@ -163,9 +167,9 @@ const VendorForgotPassword = () => {
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center mx-auto mb-8">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold mb-4">Secure Reset</h2>
+          <h2 className="text-3xl font-bold mb-4">{t("forgotPassword.sideTitle")}</h2>
           <p className="text-white/70 leading-relaxed">
-            We'll send a verification code to help you reset your password securely.
+            {t("forgotPassword.sideDesc")}
           </p>
         </div>
       </div>

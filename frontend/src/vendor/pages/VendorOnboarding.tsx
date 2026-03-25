@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowLeft, Loader2, Store, MapPin, Clock, LogOut, LocateFixed, ImagePlus, X as XIcon } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Store, MapPin, Clock, LocateFixed, ImagePlus, X as XIcon } from "lucide-react";
+import VendorHeader from "@/vendor/components/VendorHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +42,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 const VendorOnboarding = () => {
+  const { t } = useTranslation("vendor");
   const { user, logout, loading: authLoading, setOnboardingStatus } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -178,9 +181,9 @@ const VendorOnboarding = () => {
     const finalCategories = selectedCategories.includes("Other") && otherCategory.trim()
       ? [...selectedCategories.filter(c => c !== "Other"), otherCategory.trim()]
       : selectedCategories.filter(c => c !== "Other");
-    if (!businessName) { toast.error("Enter your business name"); return; }
-    if (finalCategories.length === 0) { toast.error("Select at least one service category"); return; }
-    if (!zone) { toast.error("Enter your zone/area"); return; }
+    if (!businessName) { toast.error(t("onboarding.enterBusinessName", { defaultValue: "Enter your business name" })); return; }
+    if (finalCategories.length === 0) { toast.error(t("onboarding.selectCategory", { defaultValue: "Select at least one service category" })); return; }
+    if (!zone) { toast.error(t("onboarding.enterZone", { defaultValue: "Enter your zone/area" })); return; }
 
     setLoading(true);
     try {
@@ -192,7 +195,7 @@ const VendorOnboarding = () => {
           const result = await api.uploadFiles(portfolioFiles.map(p => p.file));
           uploadedUrls = result.urls;
         } catch {
-          toast.error("Failed to upload portfolio photos");
+          toast.error(t("onboarding.uploadFailed", { defaultValue: "Failed to upload portfolio photos" }));
           setLoading(false);
           setUploadingPhotos(false);
           return;
@@ -212,10 +215,10 @@ const VendorOnboarding = () => {
       });
       localStorage.removeItem(VENDOR_SIGNUP_PREFILL_KEY);
       setOnboardingStatus("complete");
-      toast.success("Onboarding submitted! Your profile is under review.");
+      toast.success(t("onboarding.submitted", { defaultValue: "Onboarding submitted! Your profile is under review." }));
       navigate("/dashboard");
     } catch (err: any) {
-      toast.error(err.message || "Onboarding failed");
+      toast.error(err.message || t("onboarding.failed", { defaultValue: "Onboarding failed" }));
     } finally {
       setLoading(false);
     }
@@ -223,56 +226,41 @@ const VendorOnboarding = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">V</span>
-            </div>
-            <span className="font-bold text-lg hidden sm:block">
-              Vendor<span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Portal</span>
-            </span>
-          </Link>
-          <Button variant="ghost" size="sm" onClick={async () => { await logout(); navigate("/login"); }}>
-            <LogOut className="w-4 h-4 mr-1.5" />
-            Logout
-          </Button>
-        </div>
-      </header>
+      <VendorHeader />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
+            {t("onboarding.backToDashboard")}
           </Button>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Set Up Your Service Area</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("onboarding.title")}</h1>
           <p className="text-muted-foreground mb-8">
-            Tell us where you operate so customers can find you.
+            {t("onboarding.subtitle")}
           </p>
 
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Signup Details</CardTitle>
+                <CardTitle className="text-lg">{t("onboarding.signupDetails")}</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm font-medium">{accountName || "Not provided"}</p>
+                  <p className="text-xs text-muted-foreground">{t("onboarding.name")}</p>
+                  <p className="text-sm font-medium">{accountName || t("onboarding.notProvided")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-xs text-muted-foreground">{t("onboarding.email", { defaultValue: "Email" })}</p>
                   <p className="text-sm font-medium break-all">{accountEmail || user.email}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="text-sm font-medium">{accountPhone || "Not provided"}</p>
+                  <p className="text-xs text-muted-foreground">{t("onboarding.phone", { defaultValue: "Phone" })}</p>
+                  <p className="text-sm font-medium">{accountPhone || t("onboarding.notProvided")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Business Name</p>
-                  <p className="text-sm font-medium">{businessName || "Not provided"}</p>
+                  <p className="text-xs text-muted-foreground">{t("onboarding.businessNameLabel", { defaultValue: "Business Name" })}</p>
+                  <p className="text-sm font-medium">{businessName || t("onboarding.notProvided")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -281,18 +269,18 @@ const VendorOnboarding = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Store className="w-5 h-5 text-orange-500" />
-                  {businessNameFromSignup ? "Service Categories" : "Business Details"}
+                  {businessNameFromSignup ? t("onboarding.serviceCategories", { defaultValue: "Service Categories" }) : t("onboarding.businessDetails", { defaultValue: "Business Details" })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!businessNameFromSignup && (
                   <div>
-                    <label className="text-sm font-medium mb-1.5 block">Business Name *</label>
-                    <Input placeholder="e.g. SparkClean Services" className="h-11 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
+                    <label className="text-sm font-medium mb-1.5 block">{t("onboarding.businessNameRequired", { defaultValue: "Business Name *" })}</label>
+                    <Input placeholder={t("onboarding.businessNamePlaceholder", { defaultValue: "e.g. SparkClean Services" })} className="h-11 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Service Categories *</label>
+                  <label className="text-sm font-medium mb-1.5 block">{t("onboarding.serviceCategoriesRequired", { defaultValue: "Service Categories *" })}</label>
                   <div className="flex flex-wrap gap-2">
                     {SERVICE_CATEGORIES.map(cat => (
                       <button
@@ -322,7 +310,7 @@ const VendorOnboarding = () => {
                   </div>
                   {selectedCategories.includes("Other") && (
                     <Input
-                      placeholder="Enter your custom category name"
+                      placeholder={t("onboarding.customCategoryPlaceholder", { defaultValue: "Enter your custom category name" })}
                       className="h-11 rounded-xl mt-2"
                       value={otherCategory}
                       onChange={e => setOtherCategory(e.target.value)}
@@ -336,12 +324,12 @@ const VendorOnboarding = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MapPin className="w-5 h-5 text-blue-500" />
-                  Location
+                  {t("onboarding.location", { defaultValue: "Location" })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Zone / Area *</label>
+                  <label className="text-sm font-medium mb-1.5 block">{t("onboarding.zoneRequired", { defaultValue: "Zone / Area *" })}</label>
                   <PlaceAutocompleteInput
                     value={zone}
                     onChange={setZone}
@@ -350,7 +338,7 @@ const VendorOnboarding = () => {
                       setLatitude(String(suggestion.lat));
                       setLongitude(String(suggestion.lng));
                     }}
-                    placeholder="Type 3+ chars (e.g. South Delhi)"
+                    placeholder={t("onboarding.zonePlaceholder", { defaultValue: "Type 3+ chars (e.g. South Delhi)" })}
                     className="h-11 rounded-xl"
                   />
                 </div>
@@ -374,26 +362,26 @@ const VendorOnboarding = () => {
                   className="w-full rounded-xl gap-2"
                   disabled={detectingLocation}
                   onClick={async () => {
-                    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+                    if (!navigator.geolocation) { toast.error(t("onboarding.geolocationNotSupported", { defaultValue: "Geolocation not supported" })); return; }
                     setDetectingLocation(true);
                     navigator.geolocation.getCurrentPosition(
                       async (pos) => {
                         const lat = pos.coords.latitude;
                         const lng = pos.coords.longitude;
                         await setLocationAndGeocode(lat, lng);
-                        toast.success("Location detected!");
+                        toast.success(t("onboarding.locationDetected", { defaultValue: "Location detected!" }));
                         setDetectingLocation(false);
                       },
-                      () => { toast.error("Could not detect location"); setDetectingLocation(false); }
+                      () => { toast.error(t("onboarding.locationFailed", { defaultValue: "Could not detect location" })); setDetectingLocation(false); }
                     );
                   }}
                 >
                   {detectingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
-                  {detectingLocation ? "Detecting..." : "Detect My Location"}
+                  {detectingLocation ? t("onboarding.detecting", { defaultValue: "Detecting..." }) : t("onboarding.detectMyLocation", { defaultValue: "Detect My Location" })}
                 </Button>
 
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Service Radius (km)</label>
+                  <label className="text-sm font-medium mb-1.5 block">{t("onboarding.serviceRadiusKm", { defaultValue: "Service Radius (km)" })}</label>
                   <Input placeholder="10" className="h-11 rounded-xl" type="number" value={serviceRadius} onChange={e => setServiceRadius(e.target.value)} />
                 </div>
               </CardContent>
@@ -403,11 +391,11 @@ const VendorOnboarding = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="w-5 h-5 text-green-500" />
-                  Working Hours
+                  {t("onboarding.workingHours", { defaultValue: "Working Hours" })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Input placeholder="e.g. 9:00 AM - 6:00 PM" className="h-11 rounded-xl" value={workingHours} onChange={e => setWorkingHours(e.target.value)} />
+                <Input placeholder={t("onboarding.workingHoursPlaceholder", { defaultValue: "e.g. 9:00 AM - 6:00 PM" })} className="h-11 rounded-xl" value={workingHours} onChange={e => setWorkingHours(e.target.value)} />
               </CardContent>
             </Card>
 
@@ -416,12 +404,12 @@ const VendorOnboarding = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <ImagePlus className="w-5 h-5 text-purple-500" />
-                  Portfolio Photos (optional)
+                  {t("onboarding.portfolioPhotos", { defaultValue: "Portfolio Photos (optional)" })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Upload up to 6 photos showcasing your work. These will be shown on your profile.
+                  {t("onboarding.portfolioDesc", { defaultValue: "Upload up to 6 photos showcasing your work. These will be shown on your profile." })}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {portfolioFiles.map((pf, idx) => (
@@ -439,12 +427,12 @@ const VendorOnboarding = () => {
                   {portfolioFiles.length < 6 && (
                     <label className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-orange-300 flex flex-col items-center justify-center cursor-pointer transition-colors">
                       <ImagePlus className="w-6 h-6 text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground">Add photo</span>
+                      <span className="text-xs text-muted-foreground">{t("onboarding.addPhoto", { defaultValue: "Add photo" })}</span>
                       <input type="file" accept="image/*" multiple className="hidden" onChange={handlePortfolioAdd} />
                     </label>
                   )}
                 </div>
-                {uploadingPhotos && <p className="text-sm text-orange-500">Uploading photos...</p>}
+                {uploadingPhotos && <p className="text-sm text-orange-500">{t("onboarding.uploadingPhotos", { defaultValue: "Uploading photos..." })}</p>}
               </CardContent>
             </Card>
 
@@ -454,7 +442,7 @@ const VendorOnboarding = () => {
               className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-              Submit for Review
+              {t("onboarding.submitForReview", { defaultValue: "Submit for Review" })}
               {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>

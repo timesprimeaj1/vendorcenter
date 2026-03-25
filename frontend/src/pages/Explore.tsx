@@ -12,6 +12,8 @@ import { MapPin, Search, Loader2, LocateFixed, AlertCircle, MousePointerClick, S
 import { toast } from "sonner";
 import { forwardGeocode, reverseGeocode } from "@/services/locationService";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n/i18n";
 
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -21,7 +23,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
     if (this.state.hasError) {
       return (
         <div className="w-full h-[400px] rounded-xl bg-muted flex items-center justify-center">
-          <p className="text-muted-foreground">Map failed to load. Please refresh the page.</p>
+          <p className="text-muted-foreground">{i18n.t("explore.mapFailedToLoad", { ns: "services" })}</p>
         </div>
       );
     }
@@ -30,6 +32,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 }
 
 export default function Explore() {
+  const { t } = useTranslation("services");
   const navigate = useNavigate();
   const { location, error: locError, loading: locLoading, refresh, setManualLocation } = useUserLocation();
   const [vendors, setVendors] = useState<VendorMapData[]>([]);
@@ -84,16 +87,16 @@ export default function Explore() {
     setSearchQuery(s.display.split(",").slice(0, 2).join(","));
     setShowSuggestions(false);
     setSuggestions([]);
-    toast.success(`Location set to ${s.display.split(",")[0]}`);
+    toast.success(t("explore.locationSetTo", { name: s.display.split(",")[0] }));
   }, [setManualLocation]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setManualLocation(lat, lng);
     reverseGeocode(lat, lng).then((address) => {
       setSearchQuery(address.split(",").slice(0, 2).join(",").trim());
-      toast.success(`Location set to ${address.split(",")[0]}`);
+      toast.success(t("explore.locationSetTo", { name: address.split(",")[0] }));
     }).catch(() => {
-      toast.success("Location set from map");
+      toast.success(t("explore.locationSetFromMap"));
     });
   }, [setManualLocation]);
 
@@ -106,7 +109,7 @@ export default function Explore() {
       .then((res) => {
         if (res.success) setVendors(res.data);
       })
-      .catch(() => toast.error("Failed to load vendors"))
+      .catch(() => toast.error(t("explore.failedToLoadVendors")))
       .finally(() => setLoadingVendors(false));
   }, [location, radiusKm]);
 
@@ -139,12 +142,12 @@ export default function Explore() {
       const results = await forwardGeocode(searchQuery);
       if (results.length > 0) {
         setManualLocation(results[0].lat, results[0].lng);
-        toast.success(`Location set to ${results[0].display.split(",")[0]}`);
+        toast.success(t("explore.locationSetTo", { name: results[0].display.split(",")[0] }));
       } else {
-        toast.error("Location not found");
+        toast.error(t("explore.locationNotFound"));
       }
     } catch {
-      toast.error("Search failed");
+      toast.error(t("explore.searchFailed"));
     } finally {
       setSearching(false);
     }
@@ -167,8 +170,8 @@ export default function Explore() {
               <Compass className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display text-xl font-bold">Explore Services</h1>
-              <p className="text-sm text-muted-foreground">Find verified vendors near you</p>
+              <h1 className="font-display text-xl font-bold">{t("explore.title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("explore.subtitle")}</p>
             </div>
           </div>
 
@@ -178,7 +181,7 @@ export default function Explore() {
               <div className="relative flex-1 group" ref={searchWrapperRef}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 transition-colors group-focus-within:text-primary" />
                 <Input
-                  placeholder="Search location (e.g. Koramangala, Bangalore)"
+                  placeholder={t("explore.searchPlaceholder")}
                   className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary/40"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,20 +227,20 @@ export default function Explore() {
                 )}
               </div>
               <Button onClick={handleSearch} disabled={searching} className="h-11 rounded-xl btn-press">
-                {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+                {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : t("explore.search")}
               </Button>
             </div>
 
             {/* Locate me button */}
             <Button variant="outline" onClick={refresh} disabled={locLoading} className="h-11 rounded-xl gap-2 btn-press">
               {locLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
-              My Location
+              {t("explore.myLocation")}
             </Button>
           </div>
 
           {/* Radius slider */}
           <div className="mt-3 flex items-center gap-4">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Radius: {radiusKm} km</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{t("explore.radius", { km: radiusKm })}</span>
             <Slider
               value={[radiusKm]}
               onValueChange={([v]) => setRadiusKm(v)}
@@ -252,7 +255,7 @@ export default function Explore() {
               ) : (
                 vendors.length
               )}{" "}
-              vendors found
+              {t("explore.vendorsFound")}
             </span>
           </div>
         </div>
@@ -265,8 +268,8 @@ export default function Explore() {
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span className="text-amber-700 dark:text-amber-300">
               {locError.code === "PERMISSION_DENIED"
-                ? "Location access denied. Search for your location above instead."
-                : "Could not detect your location. Please search for it above."}
+                ? t("explore.locationDenied")
+                : t("explore.locationFailed")}
             </span>
           </div>
         </div>
@@ -276,7 +279,7 @@ export default function Explore() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
           <MousePointerClick className="w-3.5 h-3.5" />
-          <span>Click anywhere on the map to set your location</span>
+          <span>{t("explore.clickMapHint")}</span>
         </div>
         <MapErrorBoundary>
         <MapView center={mapCenter} zoom={location ? 13 : 5} className="w-full h-[calc(100vh-280px)] min-h-[400px] rounded-xl overflow-hidden shadow-lg border border-border/40" onMapClick={handleMapClick}>
@@ -295,7 +298,7 @@ export default function Explore() {
         {/* Vendor cards list below map */}
         {vendors.length > 0 ? (
           <div className="mt-8">
-            <h2 className="font-display text-lg font-semibold mb-4">Nearby Vendors</h2>
+            <h2 className="font-display text-lg font-semibold mb-4">{t("explore.nearbyVendors")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {vendors.map((v) => (
                 <div
@@ -327,14 +330,14 @@ export default function Explore() {
                     </div>
                   )}
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/40 text-sm">
-                    <span className="text-muted-foreground">{Number(v.distanceKm).toFixed(1)} km away</span>
+                    <span className="text-muted-foreground">{t("explore.kmAway", { km: Number(v.distanceKm).toFixed(1) })}</span>
                     <Button
                       size="sm"
                       variant="outline"
                       className="rounded-lg text-xs h-7 gap-1 group-hover:gradient-bg group-hover:text-primary-foreground group-hover:border-0 transition-all"
                       onClick={(e) => { e.stopPropagation(); navigate(`/vendor/${encodeURIComponent(v.vendorId)}`); }}
                     >
-                      View <ArrowRight className="w-3 h-3" />
+                      {t("explore.view")} <ArrowRight className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
@@ -346,9 +349,9 @@ export default function Explore() {
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
               <MapPin className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <h3 className="font-display text-lg font-semibold mb-2">No vendors nearby</h3>
+            <h3 className="font-display text-lg font-semibold mb-2">{t("explore.noVendorsNearby")}</h3>
             <p className="text-muted-foreground text-sm max-w-sm">
-              Try increasing the search radius or searching a different location to find service providers.
+              {t("explore.noVendorsHint")}
             </p>
           </div>
         ) : null}

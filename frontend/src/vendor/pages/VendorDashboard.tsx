@@ -5,11 +5,13 @@ import {
   LayoutDashboard, Calendar, Settings, LogOut, ClipboardList,
   TrendingUp, Clock, CheckCircle2, AlertCircle, Store, Pencil, User
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/vendor/hooks/useVendorAuth";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
 import { isVendorProfileComplete } from "@/vendor/lib/profileCompletion";
+import VendorHeader from "@/vendor/components/VendorHeader";
 
 function resolveProfileImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -24,6 +26,7 @@ const VendorDashboard = () => {
   const [hasProfile, setHasProfile] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
+  const { t } = useTranslation("vendor");
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -70,49 +73,21 @@ const VendorDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">V</span>
-            </div>
-            <span className="font-bold text-lg hidden sm:block">
-              Vendor<span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Portal</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-              {user.verified ? "Verified" : "Pending Verification"}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-1.5" />
-              Logout
-            </Button>
-            <button onClick={() => navigate("/edit-profile")} className="w-9 h-9 rounded-full overflow-hidden border-2 border-orange-300 flex items-center justify-center bg-muted hover:ring-2 hover:ring-orange-400 transition">
-              {profilePicUrl ? (
-                <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-5 h-5 text-muted-foreground" />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      <VendorHeader showProfile profilePicUrl={profilePicUrl} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back!</h1>
-          <p className="text-muted-foreground mb-8">Here's an overview of your vendor account.</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("dashboard.welcome")}</h1>
+          <p className="text-muted-foreground mb-8">{t("dashboard.overview")}</p>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { title: "Total Bookings", value: String(stats.total), icon: Calendar, color: "text-blue-500" },
-            { title: "Pending", value: String(stats.pending), icon: Clock, color: "text-yellow-500" },
-            { title: "Completed", value: String(stats.completed), icon: CheckCircle2, color: "text-green-500" },
-            { title: "Revenue", value: `₹${(stats.completed * 1000).toLocaleString("en-IN")}`, icon: TrendingUp, color: "text-purple-500" },
+            { title: t("dashboard.totalBookings"), value: String(stats.total), icon: Calendar, color: "text-blue-500" },
+            { title: t("dashboard.pending"), value: String(stats.pending), icon: Clock, color: "text-yellow-500" },
+            { title: t("dashboard.completed"), value: String(stats.completed), icon: CheckCircle2, color: "text-green-500" },
+            { title: t("dashboard.revenue"), value: `₹${(stats.completed * 1000).toLocaleString("en-IN")}`, icon: TrendingUp, color: "text-purple-500" },
           ].map((stat, i) => (
             <motion.div key={stat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
               <Card>
@@ -136,15 +111,15 @@ const VendorDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Pencil className="w-5 h-5 text-violet-500" />
-                Edit Profile
+                {t("dashboard.editProfile")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Edit your business details once. Changes become permanent after saving.
+                {t("dashboard.editProfileDesc")}
               </p>
               <Button variant="outline" size="sm" onClick={() => navigate("/edit-profile")}>
-                Edit Details
+                {t("dashboard.editDetails")}
               </Button>
             </CardContent>
           </Card>
@@ -154,17 +129,17 @@ const VendorDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Store className="w-5 h-5 text-orange-500" />
-                  {hasProfile ? "Continue Onboarding" : "Complete Onboarding"}
+                  {hasProfile ? t("dashboard.continueOnboarding") : t("dashboard.completeOnboarding")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
                   {hasProfile
-                    ? "Your onboarding is incomplete. Finish business details to publish your vendor profile."
-                    : "Set up your business profile, add service details, and submit for verification."}
+                    ? t("dashboard.onboardingIncomplete")
+                    : t("dashboard.onboardingSetup")}
                 </p>
                 <Button variant="outline" size="sm" onClick={() => navigate("/onboarding")}>
-                  Get Started
+                  {t("dashboard.getStarted")}
                 </Button>
               </CardContent>
             </Card>
@@ -174,15 +149,15 @@ const VendorDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <ClipboardList className="w-5 h-5 text-blue-500" />
-                Manage Services
+                {t("dashboard.manageServices")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Add, edit, or remove services you offer to customers.
+                {t("dashboard.manageServicesDesc")}
               </p>
               <Button variant="outline" size="sm" onClick={() => navigate("/services")}>
-                View Services
+                {t("dashboard.viewServices")}
               </Button>
             </CardContent>
           </Card>
@@ -191,15 +166,15 @@ const VendorDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Calendar className="w-5 h-5 text-green-500" />
-                View Bookings
+                {t("dashboard.viewBookings")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Track and manage customer bookings and appointments.
+                {t("dashboard.viewBookingsDesc")}
               </p>
               <Button variant="outline" size="sm" onClick={() => navigate("/bookings")}>
-                View Bookings
+                {t("dashboard.viewBookings")}
               </Button>
             </CardContent>
           </Card>
@@ -213,9 +188,9 @@ const VendorDashboard = () => {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-yellow-800 dark:text-yellow-200">Email Verification Required</p>
+                    <p className="font-medium text-yellow-800 dark:text-yellow-200">{t("dashboard.emailVerificationRequired")}</p>
                     <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                      Please verify your email address to start receiving bookings. Check your inbox for a verification link or OTP.
+                      {t("dashboard.emailVerificationDesc")}
                     </p>
                   </div>
                 </div>

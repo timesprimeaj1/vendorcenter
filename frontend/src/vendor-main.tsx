@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import VendorApp from "./vendor/VendorApp";
+import "./i18n/i18n";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
 

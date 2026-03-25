@@ -35,6 +35,15 @@ const CATEGORY_MAP: Record<string, string> = {
   toilet: "Plumbing",
   bathroom: "Plumbing",
   water: "Plumbing",
+  // Plumbing - Marathi
+  "प्लंबर": "Plumbing",
+  "नळ": "Plumbing",
+  "पाइप": "Plumbing",
+  "गळती": "Plumbing",
+  "नळकाम": "Plumbing",
+  "शौचालय": "Plumbing",
+  "बाथरूम": "Plumbing",
+  "पाणी": "Plumbing",
   // Electrical
   electrician: "Electrical",
   electrical: "Electrical",
@@ -44,6 +53,14 @@ const CATEGORY_MAP: Record<string, string> = {
   light: "Electrical",
   inverter: "Electrical",
   mcb: "Electrical",
+  // Electrical - Marathi
+  "इलेक्ट्रिशियन": "Electrical",
+  "वीज": "Electrical",
+  "वायरिंग": "Electrical",
+  "पंखा": "Electrical",
+  "दिवा": "Electrical",
+  "लाइट": "Electrical",
+  "विजेचे काम": "Electrical",
   // AC Repair
   ac: "AC Repair",
   "ac repair": "AC Repair",
@@ -53,6 +70,12 @@ const CATEGORY_MAP: Record<string, string> = {
   hvac: "AC Repair",
   "ac service": "AC Repair",
   "ac installation": "AC Repair",
+  // AC Repair - Marathi
+  "एसी": "AC Repair",
+  "एसी दुरुस्ती": "AC Repair",
+  "एसी सर्व्हिस": "AC Repair",
+  "वातानुकूलन": "AC Repair",
+  "कूलिंग": "AC Repair",
   // Cleaning
   clean: "Cleaning",
   cleaning: "Cleaning",
@@ -62,12 +85,25 @@ const CATEGORY_MAP: Record<string, string> = {
   "deep cleaning": "Cleaning",
   "home cleaning": "Cleaning",
   sanitization: "Cleaning",
+  // Cleaning - Marathi
+  "स्वच्छता": "Cleaning",
+  "सफाई": "Cleaning",
+  "स्वच्छता सेवा": "Cleaning",
+  "घर स्वच्छता": "Cleaning",
+  "मोलकरीण": "Cleaning",
+  "झाडू": "Cleaning",
   // Painting
   paint: "Painting",
   painting: "Painting",
   painter: "Painting",
   wall: "Painting",
   whitewash: "Painting",
+  // Painting - Marathi
+  "रंगकाम": "Painting",
+  "पेंटिंग": "Painting",
+  "रंगारी": "Painting",
+  "भिंत": "Painting",
+  "रंग": "Painting",
   // Carpentry
   carpenter: "Carpentry",
   carpentry: "Carpentry",
@@ -76,6 +112,13 @@ const CATEGORY_MAP: Record<string, string> = {
   cupboard: "Carpentry",
   wardrobe: "Carpentry",
   door: "Carpentry",
+  // Carpentry - Marathi
+  "सुतार": "Carpentry",
+  "सुतारकाम": "Carpentry",
+  "फर्निचर": "Carpentry",
+  "लाकूड": "Carpentry",
+  "कपाट": "Carpentry",
+  "दरवाजा": "Carpentry",
   // Pest Control
   pest: "Pest Control",
   termite: "Pest Control",
@@ -84,6 +127,14 @@ const CATEGORY_MAP: Record<string, string> = {
   rats: "Pest Control",
   mosquito: "Pest Control",
   bedbugs: "Pest Control",
+  // Pest Control - Marathi
+  "कीटक नियंत्रण": "Pest Control",
+  "कीटक": "Pest Control",
+  "झुरळ": "Pest Control",
+  "उंदीर": "Pest Control",
+  "डास": "Pest Control",
+  "ढेकूण": "Pest Control",
+  "वाळवी": "Pest Control",
   // Salon
   salon: "Salon",
   haircut: "Salon",
@@ -94,6 +145,14 @@ const CATEGORY_MAP: Record<string, string> = {
   makeup: "Salon",
   bridal: "Salon",
   mehndi: "Salon",
+  // Salon - Marathi
+  "सलून": "Salon",
+  "केशकर्तन": "Salon",
+  "ब्युटी": "Salon",
+  "सौंदर्य": "Salon",
+  "मेकअप": "Salon",
+  "फेशियल": "Salon",
+  "मेहंदी": "Salon",
   // Appliance Repair
   appliance: "Appliance Repair",
   fridge: "Appliance Repair",
@@ -102,6 +161,12 @@ const CATEGORY_MAP: Record<string, string> = {
   "washing machine": "Appliance Repair",
   refrigerator: "Appliance Repair",
   geyser: "Appliance Repair",
+  // Appliance Repair - Marathi
+  "उपकरण दुरुस्ती": "Appliance Repair",
+  "फ्रिज": "Appliance Repair",
+  "वॉशिंग मशीन": "Appliance Repair",
+  "मायक्रोवेव्ह": "Appliance Repair",
+  "गिझर": "Appliance Repair",
   // Moving
   moving: "Moving",
   packers: "Moving",
@@ -110,12 +175,23 @@ const CATEGORY_MAP: Record<string, string> = {
   shifting: "Moving",
   "packers and movers": "Moving",
   transport: "Moving",
+  // Moving - Marathi
+  "स्थलांतर": "Moving",
+  "पॅकर्स": "Moving",
+  "मूव्हर्स": "Moving",
+  "घर बदलणे": "Moving",
+  "वाहतूक": "Moving",
   // Photography
   photography: "Photography",
   photographer: "Photography",
   photo: "Photography",
   "photo shoot": "Photography",
   videography: "Photography",
+  // Photography - Marathi
+  "फोटोग्राफी": "Photography",
+  "फोटोग्राफर": "Photography",
+  "छायाचित्रण": "Photography",
+  "व्हिडिओग्राफी": "Photography",
   // Catering
   catering: "Catering",
   caterer: "Catering",
@@ -123,6 +199,12 @@ const CATEGORY_MAP: Record<string, string> = {
   cook: "Catering",
   chef: "Catering",
   tiffin: "Catering",
+  // Catering - Marathi
+  "केटरिंग": "Catering",
+  "स्वयंपाकी": "Catering",
+  "जेवण": "Catering",
+  "डबा": "Catering",
+  "शेफ": "Catering",
   // Mobile / Electronics
   mobile: "Mobile Repair",
   "mobile repair": "Mobile Repair",
@@ -133,17 +215,34 @@ const CATEGORY_MAP: Record<string, string> = {
   computer: "Computer Repair",
   "laptop repair": "Computer Repair",
   printer: "Computer Repair",
+  // Mobile / Electronics - Marathi
+  "मोबाइल": "Mobile Repair",
+  "मोबाइल दुरुस्ती": "Mobile Repair",
+  "फोन दुरुस्ती": "Mobile Repair",
+  "स्क्रीन दुरुस्ती": "Mobile Repair",
+  "लॅपटॉप": "Computer Repair",
+  "कम्प्युटर": "Computer Repair",
   // Tutoring / Education
   tutor: "Tutoring",
   tutoring: "Tutoring",
   tuition: "Tutoring",
   teacher: "Tutoring",
   coaching: "Tutoring",
+  // Tutoring - Marathi
+  "शिकवणी": "Tutoring",
+  "ट्यूशन": "Tutoring",
+  "शिक्षक": "Tutoring",
+  "कोचिंग": "Tutoring",
   // Fitness
   fitness: "Fitness",
   "personal trainer": "Fitness",
   yoga: "Fitness",
   gym: "Fitness",
+  // Fitness - Marathi
+  "फिटनेस": "Fitness",
+  "योगा": "Fitness",
+  "व्यायाम": "Fitness",
+  "जिम": "Fitness",
 };
 
 function normalizeCategory(value: string): string | null {
@@ -317,6 +416,7 @@ async function resolveDecision(
   history: Array<{ role: "user" | "model"; parts: { text: string }[] }>,
   lat?: number,
   lng?: number,
+  lang?: string,
 ): Promise<AssistantResponse> {
   // Only infer from history for explicit follow-up requests, not new queries
   const isFollowUp = isFollowUpRequest(originalMessage);
@@ -408,11 +508,16 @@ async function resolveDecision(
   }
 
   if ((needsLocation(decision, originalMessage) || (effectiveAction === "SHOW_RESULTS" && lat == null && lng == null)) && (lat == null || lng == null)) {
+    const locationMsg = lang === "mr"
+      ? (effectiveService
+          ? `कृपया तुमचे स्थान शेअर करा जेणेकरून मी जवळचे ${effectiveService.toLowerCase()} विक्रेते दाखवू शकेन.`
+          : decision.message)
+      : (effectiveService
+          ? `Please share your location so I can show nearby ${effectiveService.toLowerCase()} vendors.`
+          : decision.message);
     return {
       intent: decision.intent,
-      message: effectiveService
-        ? `Please share your location so I can show nearby ${effectiveService.toLowerCase()} vendors.`
-        : decision.message,
+      message: locationMsg,
       vendors: [],
       action: "ASK_LOCATION",
       service: effectiveService,
@@ -450,9 +555,13 @@ async function resolveDecision(
   if (vendors.length === 0) {
     // Use the current query's service, NOT stale history
     const serviceName = currentService || decision.service || "";
-    const fallbackMessage = serviceName
-      ? `I couldn't find ${serviceName.toLowerCase()} vendors near you right now. Try a different area or a related service — I'm happy to help!`
-      : "I couldn't find matching vendors right now. Could you tell me exactly what service you're looking for?";
+    const fallbackMessage = lang === "mr"
+      ? (serviceName
+          ? `सध्या तुमच्या जवळ ${serviceName.toLowerCase()} विक्रेते सापडले नाहीत. वेगळ्या भागात किंवा संबंधित सेवेसाठी प्रयत्न करा — मी मदत करायला तयार आहे!`
+          : "सध्या जुळणारे विक्रेते सापडले नाहीत. तुम्हाला नक्की कोणती सेवा हवी आहे ते सांगाल का?")
+      : (serviceName
+          ? `I couldn't find ${serviceName.toLowerCase()} vendors near you right now. Try a different area or a related service — I'm happy to help!`
+          : "I couldn't find matching vendors right now. Could you tell me exactly what service you're looking for?");
 
     return {
       intent: decision.intent,
@@ -491,6 +600,7 @@ export async function processAssistantQuery(
   conversationId?: string,
   userId?: string,
   currentPage?: string,
+  lang?: string,
 ): Promise<AssistantResponse & { conversationId: string }> {
   const sessionId = conversationId || randomUUID();
 
@@ -499,7 +609,9 @@ export async function processAssistantQuery(
   if (!isAssistantAvailable()) {
     return {
       intent: "UNKNOWN",
-      message: "AI assistant is temporarily unavailable. Please try again later.",
+      message: lang === "mr"
+        ? "AI सहाय्यक सध्या तात्पुरते अनुपलब्ध आहे. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा."
+        : "AI assistant is temporarily unavailable. Please try again later.",
       vendors: [],
       action: "NONE",
       conversationId: sessionId,
@@ -527,8 +639,8 @@ export async function processAssistantQuery(
     }
 
     const enrichedMessage = contextParts.length > 0 ? `${contextParts.join(" ")} ${message}` : message;
-    const decision = await callAssistantModel(enrichedMessage, history);
-    const resolved = await resolveDecision(decision, message, history, lat, lng);
+    const decision = await callAssistantModel(enrichedMessage, history, lang);
+    const resolved = await resolveDecision(decision, message, history, lat, lng, lang);
 
     addToConversation(sessionId, { role: "user", parts: [{ text: message }] });
     addToConversation(sessionId, { role: "model", parts: [{ text: resolved.message }] });
@@ -541,7 +653,9 @@ export async function processAssistantQuery(
     console.error("[ai-assistant] Provider chain failed:", error);
     return {
       intent: "UNKNOWN",
-      message: "Sorry, something went wrong. Please try again in a moment.",
+      message: lang === "mr"
+        ? "माफ करा, काहीतरी चूक झाली. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा."
+        : "Sorry, something went wrong. Please try again in a moment.",
       vendors: [],
       action: "NONE",
       conversationId: sessionId,

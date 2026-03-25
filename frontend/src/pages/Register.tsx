@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, User, Phone, Eye, EyeOff, ArrowRight, Store, Users, Loader2, ShieldCheck } from "lucide-react";
@@ -14,6 +15,7 @@ const PHONE_RULE = /^\d{10}$/;
 const VENDOR_SIGNUP_PREFILL_KEY = "vendor_signup_prefill";
 
 const Register = () => {
+  const { t } = useTranslation("auth");
   const [searchParams] = useSearchParams();
   const initialRole = searchParams.get("role") === "vendor" ? "vendor" : "customer";
   const [showPassword, setShowPassword] = useState(false);
@@ -39,16 +41,16 @@ const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) { toast.error("Email and password are required"); return; }
+    if (!email || !password) { toast.error(t("messages:error.fillAllFields")); return; }
     if (!PASSWORD_RULE.test(password)) {
-      toast.error("Password must be 8+ characters and include uppercase, lowercase, number, and special character");
+      toast.error(t("register.passwordRule"));
       return;
     }
     if (phone && !PHONE_RULE.test(phone)) {
-      toast.error("Phone number must be exactly 10 digits");
+      toast.error(t("validation.phone10Digits"));
       return;
     }
-    if (!agreed) { toast.error("Please accept the terms"); return; }
+    if (!agreed) { toast.error(t("messages:error.fillAllFields")); return; }
     setLoading(true);
     try {
       if (role === "vendor") {
@@ -79,24 +81,24 @@ const Register = () => {
       if (otpRes.data) {
         setOtpId(otpRes.data.otpId);
         setStep("otp");
-        toast.success("Account created! Check your email for the OTP.");
+        toast.success(t("messages:success.accountCreated"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Signup failed");
+      toast.error(err.message || t("messages:error.registrationFailed"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) { toast.error("Enter the 6-digit OTP"); return; }
+    if (!otpCode || otpCode.length < 6) { toast.error(t("validation.enter6DigitOtp")); return; }
     setLoading(true);
     try {
       await api.verifyOtp(otpId, otpCode, "signup");
-      toast.success("Email verified! You can now log in.");
+      toast.success(t("messages:success.emailVerified"));
       navigate("/login");
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      toast.error(err.message || t("messages:error.invalidOtp"));
     } finally {
       setLoading(false);
     }
@@ -109,10 +111,10 @@ const Register = () => {
       if (otpRes.data) {
         setOtpId(otpRes.data.otpId);
         setOtpCode("");
-        toast.success("New OTP sent to your email");
+        toast.success(t("messages:success.otpSent"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to resend OTP");
+      toast.error(err.message || t("messages:error.failedSendOtp"));
     } finally {
       setLoading(false);
     }
@@ -138,10 +140,10 @@ const Register = () => {
           </Link>
 
           <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">
-            {step === "otp" ? "Verify your email" : "Create account"}
+            {step === "otp" ? t("register.verifyEmail") : t("register.createAccount")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {step === "otp" ? `We sent a 6-digit code to ${email}` : "Join VendorCenter today"}
+            {step === "otp" ? t("register.otpSentTo", { email }) : t("register.joinSubtitle")}
           </p>
 
           {step === "otp" ? (
@@ -153,7 +155,7 @@ const Register = () => {
                 </div>
               </div>
               <Input
-                placeholder="Enter 6-digit OTP"
+                placeholder={t("register.otpPlaceholder")}
                 maxLength={6}
                 className="h-14 rounded-xl text-center tracking-[0.5em] font-mono text-xl"
                 value={otpCode}
@@ -166,13 +168,13 @@ const Register = () => {
                 className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Verify & Continue
+                {t("register.verifyAndContinue")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Didn't receive the code?{" "}
+                {t("register.didntReceive")}{" "}
                 <button onClick={handleResendOtp} disabled={loading} className="text-primary hover:underline font-medium">
-                  Resend OTP
+                  {t("register.resendOtp")}
                 </button>
               </p>
             </div>
@@ -187,8 +189,8 @@ const Register = () => {
               }`}
             >
               <Users className={`w-5 h-5 mb-2 ${role === "customer" ? "text-primary" : "text-muted-foreground"}`} />
-              <div className="font-semibold text-sm">Customer</div>
-              <div className="text-xs text-muted-foreground">Book services</div>
+              <div className="font-semibold text-sm">{t("register.roleCustomer")}</div>
+              <div className="text-xs text-muted-foreground">{t("register.roleCustomerDesc")}</div>
             </button>
             <button
               onClick={() => setRole("vendor")}
@@ -197,29 +199,29 @@ const Register = () => {
               }`}
             >
               <Store className={`w-5 h-5 mb-2 ${role === "vendor" ? "text-primary" : "text-muted-foreground"}`} />
-              <div className="font-semibold text-sm">Vendor</div>
-              <div className="text-xs text-muted-foreground">Offer services</div>
+              <div className="font-semibold text-sm">{t("register.roleVendor")}</div>
+              <div className="text-xs text-muted-foreground">{t("register.roleVendorDesc")}</div>
             </button>
           </div>
 
           <form className="space-y-4" onSubmit={handleRegister}>
             <div className="relative glow-focus rounded-xl">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Full name" className="pl-10 h-12 rounded-xl" value={name} onChange={e => setName(e.target.value)} />
+              <Input placeholder={t("register.fullName")} className="pl-10 h-12 rounded-xl" value={name} onChange={e => setName(e.target.value)} />
             </div>
             <div className="relative glow-focus rounded-xl">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Email address" type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
+              <Input placeholder={t("register.emailPlaceholder")} type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             <div className="relative glow-focus rounded-xl">
               <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Phone number" type="tel" inputMode="numeric" maxLength={10} className="pl-10 h-12 rounded-xl" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} />
+              <Input placeholder={t("register.phonePlaceholder")} type="tel" inputMode="numeric" maxLength={10} className="pl-10 h-12 rounded-xl" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} />
             </div>
-            <p className="text-xs text-muted-foreground -mt-2">Phone number should be exactly 10 digits.</p>
+            <p className="text-xs text-muted-foreground -mt-2">{t("register.phoneValidation")}</p>
             <div className="relative glow-focus rounded-xl">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Create password (min 8 chars)"
+                placeholder={t("register.passwordPlaceholder")}
                 type={showPassword ? "text" : "password"}
                 className="pl-10 pr-10 h-12 rounded-xl"
                 value={password}
@@ -233,13 +235,13 @@ const Register = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground -mt-2">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
+            <p className="text-xs text-muted-foreground -mt-2">{t("register.passwordRule")}</p>
 
             {role === "vendor" && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4">
-                <Input placeholder="Business name" className="h-12 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
+                <Input placeholder={t("register.businessName")} className="h-12 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
                 <div>
-                  <p className="text-sm font-medium mb-2">Select your service categories</p>
+                  <p className="text-sm font-medium mb-2">{t("register.selectCategories")}</p>
                   <div className="flex flex-wrap gap-2">
                     {SERVICE_CATEGORIES.map((cat) => {
                       const active = selectedCategories.includes(cat.key);
@@ -276,36 +278,36 @@ const Register = () => {
                   </div>
                   {showOther && (
                     <Input
-                      placeholder="Specify your category name"
+                      placeholder={t("register.specifyCategory")}
                       className="h-10 rounded-xl mt-2"
                       value={otherCategory}
                       onChange={(e) => setOtherCategory(e.target.value)}
                     />
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">You'll set your work location during onboarding after approval.</p>
+                <p className="text-xs text-muted-foreground">{t("register.vendorLocationNote")}</p>
               </motion.div>
             )}
 
             <div className="flex items-start gap-2">
               <input type="checkbox" className="rounded border-border mt-1" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
               <span className="text-xs text-muted-foreground">
-                I agree to the{" "}
-                <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and{" "}
-                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                {t("register.agreeToTerms")}{" "}
+                <Link to="/terms" className="text-primary hover:underline">{t("register.termsOfService")}</Link> and{" "}
+                <Link to="/privacy" className="text-primary hover:underline">{t("register.privacyPolicy")}</Link>
               </span>
             </div>
 
             <Button type="submit" disabled={loading} className="w-full h-12 gradient-bg text-primary-foreground border-0 rounded-xl font-semibold text-base btn-press shadow-lg hover:shadow-xl transition-all">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-              Create Account
+              {t("register.createAccountBtn")}
               {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+            {t("register.haveAccount")}{" "}
+            <Link to="/login" className="text-primary hover:underline font-medium">{t("register.signIn")}</Link>
           </p>
           </>
           )}
@@ -325,12 +327,12 @@ const Register = () => {
             <span className="text-primary-foreground font-display font-bold text-3xl">V</span>
           </div>
           <h2 className="font-display text-3xl font-bold mb-4">
-            {role === "vendor" ? "Grow Your Business" : "Find Services Fast"}
+            {role === "vendor" ? t("register.sideVendorTitle") : t("register.sideCustomerTitle")}
           </h2>
           <p className="text-white/65 leading-relaxed">
             {role === "vendor"
-              ? "Reach thousands of customers, manage bookings, and scale your business with VendorCenter."
-              : "Discover verified professionals near you. Book trusted services in just a few taps."}
+              ? t("register.sideVendorDesc")
+              : t("register.sideCustomerDesc")}
           </p>
         </div>
       </div>

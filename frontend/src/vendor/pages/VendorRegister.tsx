@@ -2,8 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, ArrowRight, Loader2, Briefcase } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { vendorApi as api } from "@/vendor/lib/vendorApi";
 import { toast } from "sonner";
 
@@ -22,19 +24,20 @@ const VendorRegister = () => {
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation("vendor");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !name) {
-      toast.error("Please fill all required fields");
+      toast.error(t("register.fillAllFields"));
       return;
     }
     if (!PASSWORD_RULE.test(password)) {
-      toast.error("Password must be 8+ characters and include uppercase, lowercase, number, and special character");
+      toast.error(t("register.passwordRequirements"));
       return;
     }
     if (phone && !PHONE_RULE.test(phone)) {
-      toast.error("Phone number must be exactly 10 digits");
+      toast.error(t("register.phoneRequirements"));
       return;
     }
     setLoading(true);
@@ -56,10 +59,10 @@ const VendorRegister = () => {
       if (res.data) {
         setOtpId(res.data.otpId);
         setStep("otp");
-        toast.success("Account created! Verify your email.");
+        toast.success(t("register.accountCreated"));
       }
     } catch (err: any) {
-      toast.error(err.message || "Registration failed");
+      toast.error(err.message || t("register.registrationFailed"));
     } finally {
       setLoading(false);
     }
@@ -67,16 +70,16 @@ const VendorRegister = () => {
 
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length < 6) {
-      toast.error("Enter 6-digit OTP");
+      toast.error(t("register.otpPlaceholder"));
       return;
     }
     setLoading(true);
     try {
       await api.verifyOtp(otpId, otpCode, "signup");
-      toast.success("Email verified! Please sign in.");
+      toast.success(t("register.emailVerified"));
       navigate("/login");
     } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      toast.error(err.message || t("register.invalidOtp"));
     } finally {
       setLoading(false);
     }
@@ -100,50 +103,51 @@ const VendorRegister = () => {
             </span>
           </Link>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Become a Vendor</h1>
-          <p className="text-muted-foreground mb-8">Create your vendor account and start offering services</p>
+          <div className="flex justify-end mb-4"><LanguageSwitcher compact /></div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("register.title")}</h1>
+          <p className="text-muted-foreground mb-8">{t("register.subtitle")}</p>
 
           {step === "form" ? (
             <form className="space-y-4" onSubmit={handleRegister}>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Full name" className="pl-10 h-12 rounded-xl" value={name} onChange={e => setName(e.target.value)} />
+                <Input placeholder={t("register.fullName")} className="pl-10 h-12 rounded-xl" value={name} onChange={e => setName(e.target.value)} />
               </div>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Email address" type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
+                <Input placeholder={t("register.emailPlaceholder")} type="email" className="pl-10 h-12 rounded-xl" value={email} onChange={e => setEmail(e.target.value)} />
               </div>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Phone number (optional)" type="tel" inputMode="numeric" maxLength={10} className="pl-10 h-12 rounded-xl" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} />
+                <Input placeholder={t("register.phonePlaceholder")} type="tel" inputMode="numeric" maxLength={10} className="pl-10 h-12 rounded-xl" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} />
               </div>
-              <p className="text-xs text-muted-foreground -mt-2">Phone number should be exactly 10 digits.</p>
+              <p className="text-xs text-muted-foreground -mt-2">{t("register.phoneValidation")}</p>
               <div className="relative">
                 <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Business name (optional)" className="pl-10 h-12 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
+                <Input placeholder={t("register.businessNamePlaceholder")} className="pl-10 h-12 rounded-xl" value={businessName} onChange={e => setBusinessName(e.target.value)} />
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Password (min 8 characters)" type="password" className="pl-10 h-12 rounded-xl" value={password} onChange={e => setPassword(e.target.value)} />
+                <Input placeholder={t("register.passwordPlaceholder")} type="password" className="pl-10 h-12 rounded-xl" value={password} onChange={e => setPassword(e.target.value)} />
               </div>
-              <p className="text-xs text-muted-foreground -mt-2">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
+              <p className="text-xs text-muted-foreground -mt-2">{t("register.passwordRule")}</p>
               <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Create Vendor Account
+                {t("register.createVendorAccount")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </form>
           ) : (
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <Input
-                placeholder="Enter 6-digit OTP"
+                placeholder={t("register.otpPlaceholder")}
                 maxLength={6}
                 className="h-12 rounded-xl text-center tracking-[0.5em] font-mono text-lg"
                 value={otpCode}
                 onChange={e => setOtpCode(e.target.value)}
               />
               <p className="text-xs text-muted-foreground text-center">
-                Verification code sent to <span className="font-medium text-foreground">{email}</span>
+                {t("register.verificationCodeSentTo")} <span className="font-medium text-foreground">{email}</span>
               </p>
               <Button
                 disabled={loading}
@@ -151,16 +155,16 @@ const VendorRegister = () => {
                 className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-500 text-white border-0 rounded-xl font-semibold text-base"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
-                Verify Email
+                {t("register.verifyEmail")}
                 {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
               </Button>
             </motion.div>
           )}
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Already have a vendor account?{" "}
+            {t("register.haveAccount")}{" "}
             <Link to="/login" className="text-primary hover:underline font-medium">
-              Sign in
+              {t("register.signIn")}
             </Link>
           </p>
         </motion.div>
@@ -175,9 +179,9 @@ const VendorRegister = () => {
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center mx-auto mb-8">
             <Briefcase className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold mb-4">Grow Your Business</h2>
+          <h2 className="text-3xl font-bold mb-4">{t("register.sideTitle")}</h2>
           <p className="text-white/70 leading-relaxed">
-            Join thousands of verified service providers. Reach more customers and manage everything in one place.
+            {t("register.sideDesc")}
           </p>
         </div>
       </div>
