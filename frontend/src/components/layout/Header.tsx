@@ -130,7 +130,7 @@ const Header = () => {
           {/* Location selector */}
           <button
             onClick={() => setLocationPickerOpen(true)}
-            className="hidden md:flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg hover:bg-secondary transition-colors shrink-0"
+            className="hidden lg:flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg hover:bg-secondary transition-colors shrink-0"
           >
             <MapPin className="w-4 h-4 text-primary" />
             <span className="font-medium">{locationLoading ? t("location.detecting") : cityName || t("location.setLocation")}</span>
@@ -151,7 +151,7 @@ const Header = () => {
           </div>
 
           {/* Actions */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             <LanguageSwitcher />
             <Button
               variant="ghost"
@@ -221,7 +221,7 @@ const Header = () => {
 
           {/* Mobile menu toggle */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -231,7 +231,7 @@ const Header = () => {
 
       {/* Category nav — hidden on /services page and collapsed on scroll */}
       {!isServicesPage && (
-        <div className={`hidden md:block border-b border-border/30 transition-all duration-300 overflow-hidden ${scrolled ? "max-h-0 border-b-0" : "max-h-12"}`}>
+        <div className={`hidden lg:block border-b border-border/30 transition-all duration-300 overflow-hidden ${scrolled ? "max-h-0 border-b-0" : "max-h-12"}`}>
         <div className="container">
           <nav className="flex items-center gap-6 h-10 overflow-visible">
             <Link
@@ -283,7 +283,7 @@ const Header = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden overflow-hidden border-b border-border"
+            className="lg:hidden overflow-hidden border-b border-border"
           >
             <div className="container py-4 flex flex-col gap-3">
               <button

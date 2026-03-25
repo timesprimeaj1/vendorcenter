@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Globe, Check, Languages } from "lucide-react";
+import { Globe, Check, Languages, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { supportedLanguages, type SupportedLanguage } from "@/i18n/i18n";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 
 /* ─── Google Translate: cookie + hidden widget ─── */
 
@@ -168,8 +168,8 @@ const LanguageSwitcher = ({ compact = false }: LanguageSwitcherProps) => {
   const { i18n } = useTranslation();
   const currentLang = (i18n.language?.substring(0, 2) || "en") as SupportedLanguage;
   const gtWasActive = useRef(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  // Track whether GT was ever activated this session
   useEffect(() => {
     if (isGtActive()) gtWasActive.current = true;
   }, []);
@@ -203,10 +203,10 @@ const LanguageSwitcher = ({ compact = false }: LanguageSwitcherProps) => {
   /* shared label */
   const triggerLabel = supportedLanguages[currentLang];
 
-  /* ── Compact mode (mobile) ── */
+  /* ── Compact mode (mobile) — inline expand, no fly-out sub-menu ── */
   if (compact) {
     return (
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={(open) => { if (!open) setMoreOpen(false); }}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -221,54 +221,68 @@ const LanguageSwitcher = ({ compact = false }: LanguageSwitcherProps) => {
         <DropdownMenuContent
           align="end"
           translate="no"
-          className="notranslate min-w-[160px]"
+          className="notranslate w-[220px] max-h-[70vh] overflow-y-auto"
         >
-          {(
-            Object.entries(supportedLanguages) as [SupportedLanguage, string][]
-          ).map(([code, label]) => (
-            <DropdownMenuItem
-              key={code}
-              onClick={() => handleNativeLanguage(code)}
-              className="gap-2"
-            >
-              {currentLang === code && <Check className="w-3.5 h-3.5" />}
-              {label}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="gap-2 text-muted-foreground">
-              <Languages className="w-3.5 h-3.5" />
-              More languages…
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="notranslate max-h-[60vh] overflow-y-auto min-w-[180px]">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Indian Languages
-                </DropdownMenuLabel>
-                {INDIAN_LANGUAGES.map((l) => (
-                  <DropdownMenuItem
-                    key={l.code}
-                    onClick={() => handleGtLanguage(l.code)}
-                  >
-                    {l.label}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Global Languages
-                </DropdownMenuLabel>
-                {GLOBAL_LANGUAGES.map((l) => (
-                  <DropdownMenuItem
-                    key={l.code}
-                    onClick={() => handleGtLanguage(l.code)}
-                  >
-                    {l.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+          {!moreOpen ? (
+            <>
+              {(
+                Object.entries(supportedLanguages) as [SupportedLanguage, string][]
+              ).map(([code, label]) => (
+                <DropdownMenuItem
+                  key={code}
+                  onClick={() => handleNativeLanguage(code)}
+                  className="gap-2"
+                >
+                  {currentLang === code && <Check className="w-3.5 h-3.5 text-primary" />}
+                  {label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => { e.preventDefault(); setMoreOpen(true); }}
+                className="gap-2 text-primary font-medium"
+              >
+                <Languages className="w-3.5 h-3.5" />
+                More languages…
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem
+                onClick={(e) => { e.preventDefault(); setMoreOpen(false); }}
+                className="gap-2 text-muted-foreground text-xs"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Indian Languages
+              </DropdownMenuLabel>
+              {INDIAN_LANGUAGES.map((l) => (
+                <DropdownMenuItem
+                  key={l.code}
+                  onClick={() => handleGtLanguage(l.code)}
+                  className="text-sm"
+                >
+                  {l.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Global Languages
+              </DropdownMenuLabel>
+              {GLOBAL_LANGUAGES.map((l) => (
+                <DropdownMenuItem
+                  key={l.code}
+                  onClick={() => handleGtLanguage(l.code)}
+                  className="text-sm"
+                >
+                  {l.label}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     );
