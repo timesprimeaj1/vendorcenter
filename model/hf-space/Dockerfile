@@ -26,7 +26,7 @@ ENV PORT=7860
 
 # Model config
 ENV MODEL_REPO="timesprimeaj/vendorcenter-assistant-3b-gguf"
-ENV MODEL_FILE="unsloth.Q4_K_M.gguf"
+ENV MODEL_FILE="llama-3.2-3b-instruct.Q4_K_M.gguf"
 
 WORKDIR /app
 
