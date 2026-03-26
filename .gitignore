@@ -23,6 +23,22 @@ coverage/
 .private/
 credentials.local.md
 
+# AI agent local-only artifacts
+.ai-milestone-docs/
+.github/copilot-instructions.md
+.github/agents/
+AGENTS.md
+
+# MCP / Playwright local config
+.mcp.json
+.playwright-mcp/
+
+# Screenshots / debug artifacts (not for repo)
+*.png
+hero-console-errors.txt
+amazon-homepage.md
+amazon-nav.md
+
 # OS/Editor
 .DS_Store
 Thumbs.db

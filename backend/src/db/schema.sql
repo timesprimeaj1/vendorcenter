@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -201,4 +202,43 @@ CREATE TABLE IF NOT EXISTS employee_support_tasks (
   priority TEXT NOT NULL CHECK (priority IN ('low', 'medium', 'high', 'critical')) DEFAULT 'medium',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ═══ AI Query Logging ═══
+CREATE TABLE IF NOT EXISTS ai_query_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  user_id TEXT,
+  user_message TEXT NOT NULL,
+  detected_intent TEXT,
+  detected_service TEXT,
+  detected_action TEXT,
+  provider TEXT,
+  response_message TEXT,
+  response_json JSONB,
+  confidence DOUBLE PRECISION,
+  latency_ms INTEGER,
+  lang TEXT,
+  user_lat DOUBLE PRECISION,
+  user_lng DOUBLE PRECISION,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ═══ Embedding Tables ═══
+CREATE TABLE IF NOT EXISTS service_category_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category TEXT UNIQUE NOT NULL,
+  keywords TEXT,
+  description TEXT,
+  embedding vector(384),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS faq_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  embedding vector(384),
+  lang TEXT NOT NULL DEFAULT 'en',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

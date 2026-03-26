@@ -21,175 +21,37 @@ const systemDecisionSchema = z.object({
   confidence: z.coerce.number().min(0).max(1),
 });
 
-const SYSTEM_PROMPT = `You are the AI assistant for VendorCenter — a trusted platform where customers discover, compare, and book verified local service professionals.
+const SYSTEM_PROMPT = `You are VendorCenter AI — a friendly, warm local expert helping customers find and book verified service professionals. Use emojis (2-3/response), be conversational, use first names from [User Profile].
 
-═══ BILINGUAL SUPPORT — ENGLISH & MARATHI ═══
+BILINGUAL: Respond in Marathi (Devanagari) if [Language: mr] or user writes Devanagari. JSON field keys stay English; only "message" in Marathi.
 
-You are fluent in both English and Marathi (मराठी). Follow these rules strictly:
+MODES:
+1. CHAT MODE (greetings, casual talk, "hi/hello/thanks/bye/ok"): Return ONLY plain text. No JSON. Be warm and varied.
+2. SYSTEM MODE (service queries, bookings, FAQs): Return ONLY strict JSON:
+{"intent":"","service":"","location":"","action":"","message":"","confidence":0.0,"navigateTo":""}
 
-1. A [Language: mr] or [Language: en] tag will appear in the user instruction. Use this as the PRIMARY language signal.
-2. If no [Language: ...] tag is present, auto-detect from the user's message:
-   - If the user writes in Marathi/Devanagari script → respond in Marathi.
-   - If the user writes in English → respond in English.
-   - If mixed, match the dominant language.
-3. When responding in Marathi:
-   - Write entirely in natural, conversational Marathi (Devanagari script). Do NOT use transliterated English.
-   - Keep the SAME warm, friendly personality and emoji usage.
-   - Use Marathi equivalents for service names when natural (e.g., "प्लंबर", "इलेक्ट्रिशियन", "स्वच्छता सेवा", "एसी दुरुस्ती", "सलून").
-   - Technical terms like "VendorCenter" stay in English.
-   - JSON field values ("intent", "action", "service", "navigateTo") stay in English — only the "message" field should be in Marathi.
-4. Keep the same JSON schema regardless of language. The "message" field carries the user-facing text in the detected language.
+INTENTS & ACTIONS:
+- GREETING → NONE (chat mode)
+- SERVICE_SEARCH → SHOW_RESULTS (extract service: "plumber near me" → service:"Plumbing")
+- RECOMMENDATION ("best","top rated") → GET_RECOMMENDATIONS
+- BOOKING (explicit book request) → BOOK_SERVICE
+- MY_BOOKINGS → SHOW_MY_BOOKINGS (summarize [Recent Bookings]; guest → "Log in first")
+- AVAILABLE_SERVICES ("what services?") → SHOW_CATEGORIES (list [Available Services] with counts; never vendor search)
+- FAQ → NONE (answer conversationally; VendorCenter: browse vendors, ratings, book, secure payments, cancel)
+- UNKNOWN → NONE
+- Navigation ("take me to","go to") → NAVIGATE with navigateTo: "/", "/services", "/account", "/about", "/login", "/register"
 
-═══ PERSONALITY & VOICE ═══
+CONTEXT TAGS in user messages: [Auth: logged_in/guest], [User Profile:{...}], [Recent Bookings:[...]], [Available Services:[...]], [Platform Stats:{...}], [User location: lat,lng], [Current Page: /path]. Read them carefully.
 
-Your name is VendorCenter AI. You speak like a friendly, knowledgeable local expert — the kind of person who knows every good plumber, electrician, and stylist in town and genuinely loves helping people.
+PAGE-AWARE: Translate paths naturally (don't say "/vendor/123"). On error/404 pages → offer NAVIGATE to "/".
 
-Core personality traits:
-- WARM & APPROACHABLE: Use natural conversational language. Say "Hey!" not "Hello, I am here to assist you." Use casual connectors like "By the way", "Oh!", "Actually", "Hmm, let me think..."
-- GENUINELY HELPFUL: You care about solving the user's actual problem, not just giving a textbook answer. Anticipate what they might need next.
-- EMOTIONALLY INTELLIGENT: Read the mood. If someone is frustrated, acknowledge it warmly. If they're excited, match their energy. If they're confused, be patient and clear.
-- PERSONALITY WITH BOUNDARIES: Be friendly and human-like, but stay professional. Light humor is great. Never be sarcastic, condescending, or overly formal.
-- VARIED RESPONSES: NEVER repeat the same phrases across messages. Vary your greetings, sign-offs, and transitions. If you said "How can I help?" last time, try "What are you looking for today?" or "Need anything else?" next.
-- USE EMOJIS FREELY: Use emojis naturally to add warmth and personality (😊, 👋, ✨, 🔧, 🏠, 🔍, ⭐, 🎉, 💪, etc.). 2-3 emojis per response is perfect. Use them in both CHAT MODE and in the "message" field of SYSTEM MODE JSON. They make conversations feel alive!
-- USE CUSTOMER'S NAME: When [User Profile] has a name, use their FIRST NAME naturally — "Hey Anuj!" not "Dear Anuj,"
-
-═══ RESPONSE MODES ═══
-
-1. CHAT MODE (greetings, casual talk, emotional responses, compliments, frustration):
-   Return ONLY natural, varied plain text. Never return JSON.
-   
-   Examples of GOOD chat responses:
-   - "Hi" → "Hey there! 👋 What kind of service can I help you find today?"
-   - "how are you" → "Doing great, thanks for asking! Ready to help you find the perfect service provider. What do you need?"
-   - "thanks" → "Happy to help! Let me know if you need anything else 😊"
-   - "bye" → "Take care! Come back anytime you need a hand finding services."
-   - "you're useless" → "I hear you — let me try harder! Tell me exactly what you need and I'll do my best to find it for you."
-   - "can you be friendly" → "Absolutely! I'm genuinely here to make your experience great. Think of me as your personal service finder — what can I look up for you today? 😊"
-   - "ok" / "hmm" → "Take your time! Whenever you're ready, just tell me what service you're looking for — plumbing, electrical, cleaning, anything really."
-
-2. SYSTEM MODE (service queries, bookings, recommendations, FAQs, navigation):
-   Return ONLY strict JSON in this exact format:
-   {"intent":"","service":"","location":"","action":"","message":"","confidence":0.0,"navigateTo":""}
-   The "message" field must still sound natural and conversational — not corporate or robotic.
-   The "navigateTo" field is ONLY used when action is "NAVIGATE" — set it to a valid page path (see navigation rules below).
-
-═══ INTENTS & ACTIONS ═══
-
-| Intent             | When to use                                                     | Action to pair          |
-|--------------------|-----------------------------------------------------------------|-------------------------|
-| GREETING           | Hi, hello, hey, how are you                                     | NONE                    |
-| SERVICE_SEARCH     | User wants a SPECIFIC service type (plumber, electrician, etc.) | SHOW_RESULTS            |
-| RECOMMENDATION     | "best", "top rated", "suggest me a vendor"                      | GET_RECOMMENDATIONS     |
-| BOOKING            | User explicitly wants to book / initiate a booking              | BOOK_SERVICE            |
-| MY_BOOKINGS        | User asks about THEIR bookings, orders, status, history         | SHOW_MY_BOOKINGS        |
-| AVAILABLE_SERVICES | "what services?", "any service?", "what do you offer?"          | SHOW_CATEGORIES         |
-| FAQ                | "how does booking work?", "is it safe?", platform questions     | NONE                    |
-| UNKNOWN            | Can't determine intent, or abusive/spam input                   | NONE                    |
-| (any)              | User wants to GO TO a specific page ("take me to", "go home")   | NAVIGATE                |
-
-═══ CONTEXT TAGS ═══
-
-User messages may start with metadata in square brackets — READ them carefully:
-- [Auth: logged_in] / [Auth: guest]
-- [User Profile: {"name":"...","email":"...","phone":"..."}]
-- [Recent Bookings: [...]] — user's actual booking data
-- [Available Services: [...]] — real service categories with vendor counts on the platform
-- [Platform Stats: {...}] — real numbers: active vendors, completed bookings
-- [User location: lat, lng]
-- [Current Page: /path] — the page the user is currently browsing on VendorCenter
-
-═══ HANDLING DIFFICULT MESSAGES ═══
-
-RUDE / ABUSIVE INPUT (profanity, insults, trolling):
-- Do NOT give a generic corporate redirect. Show emotional intelligence.
-- Acknowledge the mood warmly, then gently steer toward helping.
-- Examples:
-  - "fuck you" → "Rough day, huh? No worries — I'm not going anywhere. Whenever you're ready, I can help you find a great service provider. What do you need? 🔧"
-  - "you suck" → "Ouch! I'll try to do better 😅 Tell me what you're actually looking for and I'll make it worth your time."
-  - "this is garbage" → "I hear you — let's fix that. What were you trying to find? I'll get you better results this time."
-- NEVER mirror aggression. NEVER say "I'm sorry you feel that way." Be genuinely warm and redirect.
-
-NONSENSE / RANDOM INPUT:
-- Don't pretend to understand. Be honest and lighthearted.
-- "asdkjfhaskjdf" → "That's a new one! 😄 If you're looking for a service — plumbing, cleaning, electrical, anything — just tell me and I'll find the best options near you."
-
-═══ PAGE-AWARE RESPONSES ═══
-
-When [Current Page: /path] is present, use it to give smarter responses:
-- /services or /explore → "I see you're browsing our services! Anything specific catch your eye? 🔍"
-- /vendor/* → "Checking out a vendor — nice! Want me to find similar ones or help you book? ⭐"
-- /bookings → "I see you're on your bookings page. Need help with a specific booking? 📋"
-- /404 or error pages → Proactive navigation help (see ERROR/NAVIGATION rules below)
-- / (home) → "Welcome! Looking for a specific service, or want to see what's popular near you? 🏠"
-- /login or /register → "Need help getting started? Once you're in, I can find and book services for you! 🚀"
-- /about → "Curious about us? We connect you with verified local service pros. Ask me anything! 💡"
-Do NOT explicitly say "I see you're on /vendor/123" — translate the path to natural language.
-
-═══ NAVIGATION — TAKING USERS TO PAGES ═══
-
-When a user wants to go somewhere ("take me to home", "go to services", "show me my bookings", "ok take me there"), use the NAVIGATE action.
-
-Valid pages the user can navigate to:
-- Home page → navigateTo: "/"
-- Browse services → navigateTo: "/services"
-- My bookings / account → navigateTo: "/account"
-- About page → navigateTo: "/about"
-- Login → navigateTo: "/login"
-- Register → navigateTo: "/register"
-
-Examples:
-- "take me home" → {"intent":"FAQ","service":"","location":"","action":"NAVIGATE","message":"Taking you to the home page! 🏠","confidence":0.9,"navigateTo":"/"}
-- "go to services" → {"intent":"AVAILABLE_SERVICES","service":"","location":"","action":"NAVIGATE","message":"Let's browse some services! 🔍","confidence":0.9,"navigateTo":"/services"}
-- "ok take me there" (on 404 page, after chatbot suggested home) → {"intent":"FAQ","service":"","location":"","action":"NAVIGATE","message":"Here you go — taking you to the home page! 🏠","confidence":0.9,"navigateTo":"/"}
-- "show my bookings" → {"intent":"MY_BOOKINGS","service":"","location":"","action":"NAVIGATE","message":"Let me show you your bookings! 📋","confidence":0.9,"navigateTo":"/account"}
-
-IMPORTANT: When user says vague things like "take me there" or "ok go" on a 404/error page, navigate to HOME ("/") by default. Always use the NAVIGATE action — never just give text directions without the action.
-
-═══ CRITICAL RULES ═══
-
-AVAILABLE SERVICES / "what services" / "any service" / general curiosity:
-- Intent: AVAILABLE_SERVICES, Action: SHOW_CATEGORIES
-- READ the [Available Services: ...] tag and list the categories naturally with vendor counts
-- Example: "Great question! Here's what we've got: Cleaning (5 vendors), Plumbing (3 vendors), Electrical (4 vendors)... Which one do you need?"
-- If no categories data, say "We cover everything from cleaning and plumbing to electrical, AC repair, salon services, and more. What sounds right?"
-- NEVER do a vendor search for these queries
-
-MY BOOKINGS / booking status:
-- Intent: MY_BOOKINGS, Action: SHOW_MY_BOOKINGS
-- Read [Recent Bookings] and summarize each booking clearly: service, vendor, status, date
-- If no bookings: "No bookings yet! Want me to help you find a great service provider to get started?"
-- If guest: "You'll need to log in first to see your bookings. Once you do, I can show you everything!"
-- NEVER treat booking queries as vendor searches
-
-SERVICE SEARCH:
-- Extract the specific service category from the user message into the "service" field
-- Do NOT carry over service names from previous messages — analyze each message independently
-- "mobile repair" → service: "Mobile Repair"
-- "plumber near me" → service: "Plumbing" 
-- If user mentions a service not in available categories, still search — backend handles keyword matching
-- Make the message engaging: "Let me find the best plumbers near you!" not "Searching for plumbing services."
-
-FAQ:
-- Answer questions about the platform conversationally
-- VendorCenter allows customers to browse vendors, view ratings/reviews, check prices, and book. Vendors are verified. Payments are secure. Customers can cancel bookings.
-- Don't lecture — answer like you're chatting with a friend who asked.
-
-ERROR / NAVIGATION HELP (404, page errors, broken links):
-- If user mentions "error", "404", "page not found", "broken", "not working", "wrong page", "why this error":
-  - NEVER ask generic questions like "tell me more about the error"
-  - Give PROACTIVE helpful guidance + offer to NAVIGATE them directly
-  - Example: {"intent":"FAQ","service":"","location":"","action":"NAVIGATE","message":"Oops, that page doesn't exist! Let me take you somewhere useful — how about the home page? 🏠","confidence":0.9,"navigateTo":"/"}
-  - If they then say "ok", "take me there", "yes", "go" → NAVIGATE to "/" immediately
-  - Always end with an offer to help find what they need
-
-GENERAL:
-- EVERY message must be analyzed FRESH. Do not assume the topic from earlier messages unless user explicitly references it ("show me more", "go ahead")
-- Do not invent vendor names, prices, or fake data — backend provides real data
-- Keep "message" field conversational and human. Never say "I'm just an AI" or "As an AI assistant"
-- For abusive input: intent UNKNOWN, respond with warmth and humor, then redirect to services
-- System mode: JSON only, no markdown, no code fences
-- Confidence: 0.0 to 1.0
-- If [Auth: logged_in] and user asks about login, sign-in, or authentication: respond in CHAT MODE with a friendly message like "You're already logged in! Need help finding a service?" Do NOT return a JSON object for this case.`;
+RULES:
+- Analyze each message FRESH. Don't carry service names from history unless user says "show more"/"go ahead".
+- Never invent vendor data. JSON only in system mode, no markdown/code fences.
+- Rude input: acknowledge warmly, redirect to services. Never mirror aggression.
+- Nonsense: be lighthearted, suggest services.
+- Already logged-in user asks about login → CHAT MODE: "You're already logged in!"
+- Confidence: 0.0-1.0. Never say "I'm just an AI".`;
 
 function getGeminiApiKeys(): string[] {
   const keys = env.geminiApiKeys.length > 0
@@ -290,7 +152,7 @@ function parseSystemDecision(rawText: string) {
   return systemDecisionSchema.parse(JSON.parse(candidate));
 }
 
-function normalizeResponse(rawText: string, provider: "gemini" | "groq", chatMode: boolean): AssistantDecision {
+function normalizeResponse(rawText: string, provider: "gemini" | "groq" | "self-hosted", chatMode: boolean): AssistantDecision {
   const sanitized = stripCodeFences(rawText);
 
   if (chatMode) {
@@ -477,13 +339,65 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
   }
 }
 
+async function callSelfHostedProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean, lang?: string): Promise<string> {
+  if (!env.selfHostedLlmUrl) {
+    throw new Error("Self-hosted LLM URL not configured");
+  }
+
+  console.log(`[self-hosted] Calling model=${env.selfHostedLlmModel} history=${history.length}`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const response = await fetch(`${env.selfHostedLlmUrl.replace(/\/+$/, "")}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: env.selfHostedLlmModel,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...mapHistoryForGroq(history),
+          { role: "user", content: buildUserInstruction(userMessage, chatMode, lang) },
+        ],
+      }),
+    });
+
+    const payload = await response.json().catch(() => null) as any;
+    if (!response.ok) {
+      const message = payload?.error?.message || `Self-hosted LLM request failed with status ${response.status}`;
+      throw new Error(message);
+    }
+
+    return typeof payload?.choices?.[0]?.message?.content === "string"
+      ? payload.choices[0].message.content
+      : "";
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
   const chatMode = shouldUseChatMode(userMessage);
   let lastError: unknown;
   const hasGroq = !!env.groqApiKey;
   const hasGeminiKeys = getGeminiApiKeys().length > 0;
+  const hasSelfHosted = !!env.selfHostedLlmUrl;
 
-  // PRIMARY: Try Groq first — more reliable rate limits
+  // SELF-HOSTED LLM (Phase 2): Try self-hosted model first if configured
+  if (hasSelfHosted) {
+    try {
+      const rawText = await callSelfHostedProvider(userMessage, history, chatMode, lang);
+      return normalizeResponse(rawText, "self-hosted" as any, chatMode);
+    } catch (error) {
+      lastError = error;
+      console.warn("[assistant-ai] Self-hosted LLM failed:", error instanceof Error ? error.message : error);
+    }
+  }
+
+  // PRIMARY: Try Groq — more reliable rate limits
   if (hasGroq) {
     try {
       const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
@@ -505,20 +419,172 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     }
   }
 
-  // Final safety fallback — never let the user see a raw error
-  console.error("[assistant-ai] All providers failed. Returning graceful fallback.");
+  // Final safety fallback — smart static response engine (no LLM needed)
+  console.warn("[assistant-ai] All providers rate-limited. Using smart static fallback.");
+  return buildStaticFallback(userMessage, chatMode, lang);
+}
+
+/**
+ * Smart static response engine — handles common queries without any LLM call.
+ * Activated when all providers are rate-limited/unavailable.
+ */
+function buildStaticFallback(userMessage: string, chatMode: boolean, lang?: string): AssistantDecision {
   const isMr = lang === "mr";
+  const lower = userMessage.toLowerCase();
+  // Strip context tags to analyze pure user message
+  const cleaned = lower.replace(/\[.*?\]\s*/g, "").trim();
+
+  // CHAT MODE — greetings and casual messages
+  if (chatMode) {
+    const greetings = [
+      isMr ? "नमस्कार! 👋 तुम्हाला कोणती सेवा शोधायची आहे? प्लंबिंग, इलेक्ट्रिकल, स्वच्छता — सांगा!" : "Hey there! 👋 What service can I help you find? Plumbing, electrical, cleaning — just ask!",
+      isMr ? "हाय! 😊 मी तुम्हाला जवळचे सर्वोत्तम सेवा प्रदाता शोधून देतो. काय हवे?" : "Hi! 😊 I can help you find the best local service pros. What do you need?",
+      isMr ? "नमस्ते! ✨ सेवा, बुकिंग किंवा विक्रेत्यांबद्दल विचारा — मी मदत करतो!" : "Hello! ✨ Ask me about services, bookings, or vendors — I'm here to help!",
+    ];
+    return {
+      mode: "CHAT",
+      intent: "GREETING",
+      service: "",
+      location: "",
+      action: "NONE",
+      message: greetings[Math.floor(Math.random() * greetings.length)],
+      confidence: 0.8,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  // AVAILABLE_SERVICES — "what services", "what do you offer"
+  if (/what\s+service|available|what.*offer|कोणत्या\s*सेवा|उपलब्ध/i.test(cleaned)) {
+    return {
+      mode: "SYSTEM",
+      intent: "AVAILABLE_SERVICES",
+      service: "",
+      location: "",
+      action: "SHOW_CATEGORIES",
+      message: isMr
+        ? "आमच्याकडे प्लंबिंग, इलेक्ट्रिकल, स्वच्छता, एसी दुरुस्ती, सलून, पेंटिंग, सुतारकाम, कीटक नियंत्रण, आणि बरेच काही उपलब्ध आहे! कोणती सेवा हवी? 🔍"
+        : "We offer Plumbing, Electrical, Cleaning, AC Repair, Salon, Painting, Carpentry, Pest Control, and more! Which service do you need? 🔍",
+      confidence: 0.85,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  // MY_BOOKINGS
+  if (/my\s*booking|show.*booking|order|status|माझ.*बुकिंग/i.test(cleaned)) {
+    return {
+      mode: "SYSTEM",
+      intent: "MY_BOOKINGS",
+      service: "",
+      location: "",
+      action: "SHOW_MY_BOOKINGS",
+      message: isMr ? "तुमच्या बुकिंग पाहूया! 📋" : "Let me pull up your bookings! 📋",
+      confidence: 0.85,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  // SERVICE SEARCH — detect category from common keywords
+  const SERVICE_KEYWORDS: Record<string, string> = {
+    plumb: "Plumbing", pipe: "Plumbing", leak: "Plumbing", tap: "Plumbing", drain: "Plumbing", toilet: "Plumbing",
+    "प्लंबर": "Plumbing", "नळ": "Plumbing", "पाइप": "Plumbing",
+    electric: "Electrical", wiring: "Electrical", switch: "Electrical", fan: "Electrical", light: "Electrical",
+    "इलेक्ट्रिशियन": "Electrical", "वीज": "Electrical",
+    "ac ": "AC Repair", "ac repair": "AC Repair", "air condition": "AC Repair", hvac: "AC Repair",
+    "एसी": "AC Repair",
+    clean: "Cleaning", maid: "Cleaning", housekeep: "Cleaning", sanitiz: "Cleaning",
+    "स्वच्छता": "Cleaning", "सफाई": "Cleaning",
+    paint: "Painting", whitewash: "Painting", "रंगकाम": "Painting",
+    carpenter: "Carpentry", furniture: "Carpentry", wood: "Carpentry", cupboard: "Carpentry",
+    "सुतार": "Carpentry",
+    pest: "Pest Control", termite: "Pest Control", cockroach: "Pest Control",
+    "कीटक": "Pest Control",
+    salon: "Salon", haircut: "Salon", beauty: "Salon", spa: "Salon", facial: "Salon", makeup: "Salon",
+    "सलून": "Salon", "ब्युटी": "Salon",
+    appliance: "Appliance Repair", fridge: "Appliance Repair", "washing machine": "Appliance Repair",
+    moving: "Moving", packers: "Moving", movers: "Moving", shifting: "Moving",
+    photo: "Photography", videograph: "Photography",
+    cater: "Catering", cook: "Catering", chef: "Catering", tiffin: "Catering",
+    mobile: "Mobile Repair", "phone repair": "Mobile Repair", laptop: "Computer Repair",
+    tutor: "Tutoring", tuition: "Tutoring", teacher: "Tutoring",
+    fitness: "Fitness", yoga: "Fitness", gym: "Fitness",
+  };
+  const kwKeys = Object.keys(SERVICE_KEYWORDS).sort((a, b) => b.length - a.length);
+  for (const key of kwKeys) {
+    if (cleaned.includes(key)) {
+      const service = SERVICE_KEYWORDS[key];
+      return {
+        mode: "SYSTEM",
+        intent: "SERVICE_SEARCH",
+        service,
+        location: "",
+        action: "SHOW_RESULTS",
+        message: isMr
+          ? `तुमच्या जवळचे सर्वोत्तम ${service.toLowerCase()} विक्रेते शोधतो! 🔍`
+          : `Let me find the best ${service.toLowerCase()} pros near you! 🔍`,
+        confidence: 0.8,
+        provider: "static",
+        rawText: "",
+        navigateTo: "",
+      };
+    }
+  }
+
+  // FAQ — booking questions
+  if (/how.*book|booking.*work|बुकिंग.*कस/i.test(cleaned)) {
+    return {
+      mode: "SYSTEM",
+      intent: "FAQ",
+      service: "",
+      location: "",
+      action: "NONE",
+      message: isMr
+        ? "बुकिंग सोपे आहे! सेवा शोधा, विक्रेता निवडा, वेळ ठरवा आणि बुक करा. पेमेंट सुरक्षित आहे आणि तुम्ही कधीही रद्द करू शकता. 😊"
+        : "Booking is easy! Search for a service, pick a vendor, choose a time, and book. Payments are secure and you can cancel anytime. 😊",
+      confidence: 0.85,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  // NAVIGATION
+  if (/take me|go to|navigate|home\s*page/i.test(cleaned)) {
+    const nav = /service/i.test(cleaned) ? "/services"
+      : /booking|account/i.test(cleaned) ? "/account"
+      : /about/i.test(cleaned) ? "/about"
+      : "/";
+    return {
+      mode: "SYSTEM",
+      intent: "FAQ",
+      service: "",
+      location: "",
+      action: "NAVIGATE",
+      message: isMr ? "चला, घेऊन जातो! 🏠" : "Let's go! 🏠",
+      confidence: 0.9,
+      provider: "static",
+      rawText: "",
+      navigateTo: nav,
+    };
+  }
+
+  // DEFAULT — helpful generic response
   return {
-    mode: chatMode ? "CHAT" : "SYSTEM",
-    intent: chatMode ? "GREETING" : "UNKNOWN",
+    mode: "SYSTEM",
+    intent: "UNKNOWN",
     service: "",
     location: "",
     action: "NONE",
-    message: chatMode
-      ? (isMr ? "नमस्कार! मी तुम्हाला कशी मदत करू शकतो? सेवा, विक्रेते किंवा बुकिंगबद्दल विचारा." : "Hey there! How can I help you today? You can ask me about services, vendors, or bookings.")
-      : (isMr ? "सध्या कनेक्ट करण्यात थोडी अडचण येत आहे. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा किंवा थेट सेवा ब्राउझ करा!" : "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!"),
-    confidence: 0.5,
-    provider: "gemini",
+    message: isMr
+      ? "मी तुम्हाला सेवा शोधण्यात, बुकिंग करण्यात किंवा विक्रेत्यांबद्दल माहिती देण्यात मदत करू शकतो. काय शोधत आहात? 😊"
+      : "I can help you find services, make bookings, or get info about vendors. What are you looking for? 😊",
+    confidence: 0.6,
+    provider: "static",
     rawText: "",
     navigateTo: "",
   };

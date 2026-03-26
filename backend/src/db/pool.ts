@@ -13,10 +13,18 @@ function cleanConnectionString(url: string): string {
   return url.replace(/[?&]sslmode=[^&]*/g, "").replace(/\?$/, "");
 }
 
+const poolTimeouts = {
+  connectionTimeoutMillis: 5_000,
+  idleTimeoutMillis: 30_000,
+  query_timeout: 10_000,
+  statement_timeout: 10_000,
+};
+
 export const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: cleanConnectionString(process.env.DATABASE_URL),
       ssl: { rejectUnauthorized: false },
+      ...poolTimeouts,
     })
   : new Pool({
       host: process.env.DB_HOST ?? "localhost",
@@ -25,4 +33,5 @@ export const pool = process.env.DATABASE_URL
       user: process.env.DB_USER ?? "vendorcenter",
       password: process.env.DB_PASSWORD ?? "change_me",
       ...(isProduction ? { ssl: { rejectUnauthorized: false } } : {}),
+      ...poolTimeouts,
     });

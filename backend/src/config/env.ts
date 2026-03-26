@@ -60,6 +60,9 @@ export const env = {
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   groqModel: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
   groqBaseUrl: process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1",
+
+  selfHostedLlmUrl: process.env.SELF_HOSTED_LLM_URL ?? "",
+  selfHostedLlmModel: process.env.SELF_HOSTED_LLM_MODEL ?? "vendorcenter-3b",
 };
 
 const DEFAULT_ACCESS_SECRET = "change_me_access";

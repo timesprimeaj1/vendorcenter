@@ -15,6 +15,8 @@ import {
   getConversationHistory,
   addToConversation,
 } from "./provider-chain.service.js";
+import { trySemanticResolution, semanticVendorSearch } from "./ai-assistant.semantic.js";
+import { pool } from "../../db/pool.js";
 import { randomUUID } from "crypto";
 
 // ═══════════════════════════════════════════════════════════════
@@ -621,7 +623,42 @@ export async function processAssistantQuery(
 
   try {
     const history = getConversationHistory(sessionId);
+    const queryStartTime = Date.now();
 
+    // ─── PHASE 1: Try semantic resolution first (no LLM needed) ───
+    const semantic = await trySemanticResolution(message, lang);
+    if (semantic) {
+      const latencyMs = Date.now() - queryStartTime;
+      console.log(`[ai-assistant] Semantic hit: intent=${semantic.intent} service=${semantic.service} conf=${semantic.confidence.toFixed(2)} ${latencyMs}ms`);
+
+      // If SERVICE_SEARCH, enrich with vendor results
+      let vendors: VendorResult[] = [];
+      if (semantic.intent === "SERVICE_SEARCH" && (lat != null || lng != null)) {
+        vendors = await semanticVendorSearch(message, lat, lng, 50, 5);
+      }
+
+      const response: AssistantResponse & { conversationId: string } = {
+        intent: semantic.intent,
+        message: semantic.message,
+        vendors,
+        action: semantic.intent === "SERVICE_SEARCH" ? "SHOW_RESULTS" : "NONE",
+        service: semantic.service,
+        confidence: semantic.confidence,
+        mode: "SYSTEM",
+        provider: "embedding",
+        conversationId: sessionId,
+      };
+
+      addToConversation(sessionId, { role: "user", parts: [{ text: message }] });
+      addToConversation(sessionId, { role: "model", parts: [{ text: response.message }] });
+
+      // Log query asynchronously — never block the response
+      logQuery(sessionId, userId, message, semantic.intent, semantic.service, "SHOW_RESULTS", "embedding", semantic.message, null, semantic.confidence, latencyMs, lang, lat, lng);
+
+      return response;
+    }
+
+    // ─── PHASE 2+: LLM provider chain ───
     // Build context: auth + platform data
     const [userContext, platformContext] = await Promise.all([
       userId ? buildAuthenticatedUserContext(userId) : Promise.resolve(["[Auth: guest]"]),
@@ -640,10 +677,14 @@ export async function processAssistantQuery(
 
     const enrichedMessage = contextParts.length > 0 ? `${contextParts.join(" ")} ${message}` : message;
     const decision = await callAssistantModel(enrichedMessage, history, lang);
+    const latencyMs = Date.now() - queryStartTime;
     const resolved = await resolveDecision(decision, message, history, lat, lng, lang);
 
     addToConversation(sessionId, { role: "user", parts: [{ text: message }] });
     addToConversation(sessionId, { role: "model", parts: [{ text: resolved.message }] });
+
+    // Log query asynchronously
+    logQuery(sessionId, userId, message, decision.intent, decision.service, decision.action, decision.provider, resolved.message, decision, decision.confidence, latencyMs, lang, lat, lng);
 
     return {
       ...resolved,
@@ -677,4 +718,50 @@ async function formatVendor(row: any): Promise<VendorResult> {
     completedBookings: row.completedBookings ?? 0,
     rankScore: row.rankScore ?? 0,
   };
+}
+
+// ─── Query Logging (Phase 0) ─────────────────────────────────
+// Fire-and-forget INSERT — logging failure must never break chatbot flow
+
+function logQuery(
+  sessionId: string,
+  userId: string | undefined,
+  userMessage: string,
+  intent: string,
+  service: string,
+  action: string,
+  provider: string,
+  responseMessage: string,
+  responseJson: unknown,
+  confidence: number,
+  latencyMs: number,
+  lang: string | undefined,
+  lat: number | undefined,
+  lng: number | undefined,
+): void {
+  pool
+    .query(
+      `INSERT INTO ai_query_logs
+        (session_id, user_id, user_message, detected_intent, detected_service, detected_action, provider, response_message, response_json, confidence, latency_ms, lang, user_lat, user_lng)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [
+        sessionId,
+        userId ?? null,
+        userMessage.substring(0, 2000),
+        intent,
+        service,
+        action,
+        provider,
+        responseMessage.substring(0, 2000),
+        responseJson ? JSON.stringify(responseJson) : null,
+        confidence,
+        latencyMs,
+        lang ?? null,
+        lat ?? null,
+        lng ?? null,
+      ],
+    )
+    .catch((err) => {
+      console.warn("[ai-assistant] Query logging failed (non-fatal):", (err as Error).message);
+    });
 }

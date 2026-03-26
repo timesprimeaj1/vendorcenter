@@ -26,6 +26,65 @@ const MIGRATIONS = [
     reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  // Phase 0+1: pgvector + AI query logging + embedding tables
+  `CREATE EXTENSION IF NOT EXISTS vector`,
+  `CREATE TABLE IF NOT EXISTS ai_query_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL,
+    user_id TEXT,
+    user_message TEXT NOT NULL,
+    detected_intent TEXT,
+    detected_service TEXT,
+    detected_action TEXT,
+    provider TEXT,
+    response_message TEXT,
+    response_json JSONB,
+    confidence DOUBLE PRECISION,
+    latency_ms INTEGER,
+    lang TEXT,
+    user_lat DOUBLE PRECISION,
+    user_lng DOUBLE PRECISION,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS service_category_embeddings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category TEXT UNIQUE NOT NULL,
+    keywords TEXT,
+    description TEXT,
+    embedding vector(384),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS faq_embeddings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    embedding vector(384),
+    lang TEXT NOT NULL DEFAULT 'en',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE vendor_profiles ADD COLUMN IF NOT EXISTS embedding vector(384)`,
+  `ALTER TABLE vendor_services ADD COLUMN IF NOT EXISTS embedding vector(384)`,
+  // RLS: enable on all tables (backend connects as postgres superuser, bypasses RLS;
+  // this blocks Supabase anon/authenticated roles from direct table access)
+  `ALTER TABLE users ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE auth_sessions ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE otp_events ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE bookings ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE zones ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE vendor_profiles ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE vendor_services ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE vendor_service_history ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE employee_zone_assignments ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE reviews ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE vendor_rating_aggregates ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE media_assets ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE notifications ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE email_jobs ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE employee_support_tasks ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE ai_query_logs ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE service_category_embeddings ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE faq_embeddings ENABLE ROW LEVEL SECURITY`,
 ];
 
 export async function initializeDatabase() {
