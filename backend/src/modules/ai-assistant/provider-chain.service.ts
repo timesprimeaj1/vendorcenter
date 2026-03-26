@@ -219,6 +219,16 @@ export function isAssistantAvailable(): boolean {
   return getGeminiApiKeys().length > 0 || !!env.groqApiKey;
 }
 
+// Startup diagnostic — log once when module loads
+(() => {
+  const geminiCount = getGeminiApiKeys().length;
+  const hasGroq = !!env.groqApiKey;
+  console.log(`[assistant-ai] Provider config: ${geminiCount} Gemini key(s), Groq=${hasGroq ? "yes" : "no"}, model=${env.geminiModel}`);
+  if (geminiCount === 0 && !hasGroq) {
+    console.warn("[assistant-ai] WARNING: No AI provider keys configured — chatbot will return static fallbacks");
+  }
+})();
+
 function isRetryableGeminiError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /429|quota exceeded|too many requests|rate.limit|rate-limit|403|401|api key not valid|permission denied|500|502|503|504|service unavailable|internal server error|overloaded|resource exhausted/i.test(message);
@@ -228,25 +238,28 @@ function getRetryDelayMs(error: unknown): number {
   const message = error instanceof Error ? error.message : String(error);
   const match = message.match(/retry in\s+(\d+(?:\.\d+)?)s/i);
   if (match) {
-    return Math.ceil(Number(match[1]) * 1000);
+    return Math.min(Math.ceil(Number(match[1]) * 1000), 30_000);
   }
-  return 60_000;
+  // Default cooldown: 15s (not 60s) — keys rotate faster
+  return 15_000;
 }
 
 function markKeyCooldown(keyIndex: number, error: unknown) {
   keyCooldownUntil.set(keyIndex, Date.now() + getRetryDelayMs(error));
 }
 
-function getCandidateKeyIndices(): number[] {
+function getCandidateKeyIndices(): { ready: number[]; allOnCooldown: boolean } {
   const apiKeys = getGeminiApiKeys();
-  if (apiKeys.length === 0) return [];
+  if (apiKeys.length === 0) return { ready: [], allOnCooldown: false };
 
   const now = Date.now();
   const preferred = preferredKeyIndex < apiKeys.length ? [preferredKeyIndex] : [];
   const remaining = apiKeys.map((_, index) => index).filter((index) => index !== preferredKeyIndex);
   const ordered = [...preferred, ...remaining];
-  const ready = ordered.filter((index) => (keyCooldownUntil.get(index) ?? 0) <= now);
-  return ready.length > 0 ? ready : ordered;
+  const readyKeys = ordered.filter((index) => (keyCooldownUntil.get(index) ?? 0) <= now);
+  return readyKeys.length > 0
+    ? { ready: readyKeys, allOnCooldown: false }
+    : { ready: [], allOnCooldown: true };
 }
 
 function shouldUseChatMode(userMessage: string): boolean {
@@ -376,9 +389,9 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 async function callGeminiProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean, lang?: string): Promise<string> {
-  const candidateKeyIndices = getCandidateKeyIndices();
+  const { ready: candidateKeyIndices, allOnCooldown } = getCandidateKeyIndices();
   if (candidateKeyIndices.length === 0) {
-    throw new Error("Gemini API key not configured");
+    throw new Error(allOnCooldown ? "All Gemini keys on cooldown" : "Gemini API key not configured");
   }
 
   let lastError: unknown;
@@ -467,9 +480,26 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
 export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
   const chatMode = shouldUseChatMode(userMessage);
   let lastError: unknown;
+  const hasGeminiKeys = getGeminiApiKeys().length > 0;
+  const { allOnCooldown } = hasGeminiKeys ? getCandidateKeyIndices() : { allOnCooldown: false };
+  const hasGroq = !!env.groqApiKey;
 
-  // Try Gemini first
-  if (getGeminiApiKeys().length > 0) {
+  // If all Gemini keys are on cooldown, try Groq FIRST to avoid wasting time
+  const tryGroqFirst = allOnCooldown && hasGroq;
+
+  if (tryGroqFirst) {
+    console.log("[assistant-ai] All Gemini keys on cooldown — trying Groq first");
+    try {
+      const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
+      return normalizeResponse(rawText, "groq", chatMode);
+    } catch (error) {
+      lastError = error;
+      console.warn("[assistant-ai] Groq failed (tried first):", error instanceof Error ? error.message : error);
+    }
+  }
+
+  // Try Gemini (skip if keys are exhausted and Groq already tried)
+  if (hasGeminiKeys && !tryGroqFirst) {
     try {
       const rawText = await callGeminiProvider(userMessage, history, chatMode, lang);
       return normalizeResponse(rawText, "gemini", chatMode);
@@ -479,8 +509,8 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     }
   }
 
-  // Groq fallback
-  if (env.groqApiKey) {
+  // Groq fallback (if not tried first already)
+  if (hasGroq && !tryGroqFirst) {
     try {
       const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
       return normalizeResponse(rawText, "groq", chatMode);
