@@ -346,13 +346,21 @@ async function buildAuthenticatedUserContext(userId: string): Promise<string[]> 
   return contextParts;
 }
 
-// Platform-level context: available services + stats (cached 5 min)
-let platformContextCache: { data: string[]; expires: number } | null = null;
+// Platform-level context: available services + stats (cached 5 min, keyed by geo cell)
+const platformContextCache = new Map<string, { data: string[]; expires: number }>();
+
+function geoCacheKey(lat?: number, lng?: number): string {
+  if (lat == null || lng == null) return "global";
+  // Round to ~11 km grid cells so nearby requests share cache
+  return `${(Math.round(lat * 10) / 10).toFixed(1)},${(Math.round(lng * 10) / 10).toFixed(1)}`;
+}
 
 async function buildPlatformContext(lat?: number, lng?: number): Promise<string[]> {
   const now = Date.now();
-  if (platformContextCache && platformContextCache.expires > now) {
-    return platformContextCache.data;
+  const key = geoCacheKey(lat, lng);
+  const cached = platformContextCache.get(key);
+  if (cached && cached.expires > now) {
+    return cached.data;
   }
 
   const parts: string[] = [];
@@ -371,7 +379,13 @@ async function buildPlatformContext(lat?: number, lng?: number): Promise<string[
       parts.push(`[Platform Stats: ${stats.activeVendors} active vendors, ${stats.completedBookings} completed bookings, ${stats.serviceCategories} service categories]`);
     }
 
-    platformContextCache = { data: parts, expires: now + 5 * 60 * 1000 };
+    platformContextCache.set(key, { data: parts, expires: now + 5 * 60 * 1000 });
+    // Evict old entries
+    if (platformContextCache.size > 50) {
+      for (const [k, v] of platformContextCache) {
+        if (v.expires <= now) platformContextCache.delete(k);
+      }
+    }
   } catch (error) {
     console.warn("[ai-assistant] Failed to fetch platform context:", error);
   }
@@ -461,11 +475,22 @@ async function resolveDecision(
     };
   }
 
-  // AVAILABLE_SERVICES — return AI-generated service list
+  // AVAILABLE_SERVICES — fetch location-filtered categories, override LLM message
   if (decision.intent === "AVAILABLE_SERVICES" || decision.action === "SHOW_CATEGORIES") {
+    let message = decision.message;
+    try {
+      const cats = await getServiceCategories(lat, lng, 50);
+      if (Array.isArray(cats) && cats.length > 0) {
+        const list = cats.map((c: any) => `${c.cat} (${c.vendor_count})`).join(", ");
+        const isMr = lang === "mr";
+        message = isMr
+          ? `तुमच्या भागात ${cats.length} सेवा उपलब्ध आहेत: ${list}. कोणती सेवा हवी? 🔍`
+          : `We have ${cats.length} service categories available in your area: ${list}. Which service do you need? 🔍`;
+      }
+    } catch { /* fall through to LLM message */ }
     return {
       intent: "AVAILABLE_SERVICES",
-      message: decision.message,
+      message,
       vendors: [],
       action: "SHOW_CATEGORIES",
       service: "",

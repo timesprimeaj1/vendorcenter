@@ -1,4 +1,4 @@
-# Stage 1: Build llama.cpp from source
+# Stage 1: Build llama.cpp from source (CPU-only, low-memory)
 FROM ubuntu:22.04 AS build
 
 RUN apt-get update && \
@@ -8,8 +8,9 @@ RUN apt-get update && \
 RUN git clone --depth 1 https://github.com/ggerganov/llama.cpp.git /llama.cpp
 
 WORKDIR /llama.cpp
-RUN cmake -B build -DGGML_CUDA=OFF -DLLAMA_SERVER=ON && \
-    cmake --build build --config Release --target llama-server -j$(nproc)
+# Limit parallelism to -j2 to avoid OOMKilled on free-tier HF Spaces (16GB RAM)
+RUN cmake -B build -DGGML_CUDA=OFF -DLLAMA_SERVER=ON -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build --config Release --target llama-server -j2
 
 # Stage 2: Runtime
 FROM ubuntu:22.04

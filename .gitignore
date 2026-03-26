@@ -28,6 +28,7 @@ credentials.local.md
 .github/copilot-instructions.md
 .github/agents/
 AGENTS.md
+docs/
 
 # MCP / Playwright local config
 .mcp.json
