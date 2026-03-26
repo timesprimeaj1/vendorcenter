@@ -86,34 +86,65 @@ async function queryAssistant(
   if (currentPage) body.currentPage = currentPage;
   if (lang) body.lang = lang;
 
-  const doFetch = async (): Promise<AssistantResponse> => {
-    const res = await fetch(`${API_BASE}/ai-assistant/query`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(localStorage.getItem("customer_accessToken")
-          ? { Authorization: `Bearer ${localStorage.getItem("customer_accessToken")}` }
-          : {}),
-      },
-      body: JSON.stringify(body),
-    });
+  const fallbackResponse: AssistantResponse = {
+    intent: "UNKNOWN",
+    message: "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!",
+    vendors: [],
+    action: "NONE",
+    conversationId: conversationId || "",
+  };
 
-    let json: Record<string, unknown>;
+  const doFetch = async (): Promise<AssistantResponse> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20_000);
+
     try {
-      json = await res.json();
-    } catch {
-      throw new Error("Server returned an invalid response");
+      const res = await fetch(`${API_BASE}/ai-assistant/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("customer_accessToken")
+            ? { Authorization: `Bearer ${localStorage.getItem("customer_accessToken")}` }
+            : {}),
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      let json: Record<string, unknown>;
+      try {
+        json = await res.json();
+      } catch {
+        return fallbackResponse;
+      }
+
+      if (!res.ok) {
+        // Backend returned an error — return fallback instead of throwing
+        return {
+          ...fallbackResponse,
+          message: typeof json.error === "string" && json.error.length < 200
+            ? json.error
+            : fallbackResponse.message,
+        };
+      }
+
+      return json.data as AssistantResponse;
+    } finally {
+      clearTimeout(timeoutId);
     }
-    if (!res.ok) throw new Error((json.error as string) || "Request failed");
-    return json.data as AssistantResponse;
   };
 
   try {
     return await doFetch();
-  } catch (firstErr) {
-    // Single auto-retry after a brief pause for transient failures
-    await new Promise((r) => setTimeout(r, 1500));
-    return await doFetch();
+  } catch {
+    // First attempt failed (network, timeout, etc.) — retry once after brief pause
+    try {
+      await new Promise((r) => setTimeout(r, 1500));
+      return await doFetch();
+    } catch {
+      // Both attempts failed — return graceful fallback, never throw
+      return fallbackResponse;
+    }
   }
 }
 
@@ -660,7 +691,7 @@ export default function AiAssistantChat() {
         const assistantMsg: ChatMessage = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: result.message,
+          text: result.message || t("errorMessage"),
           vendors: result.vendors,
           action: result.action,
           followUp: result.followUp,
@@ -669,12 +700,13 @@ export default function AiAssistantChat() {
         };
         setMessages((prev) => [...prev, assistantMsg]);
       } catch {
+        // Defensive: queryAssistant should never throw, but just in case
         setMessages((prev) => [
           ...prev,
           {
             id: `error-${Date.now()}`,
-            role: "assistant",
-            text: t("errorMessage"),
+            role: "assistant" as const,
+            text: "I'm having a bit of trouble right now. Please try again in a moment!",
             timestamp: new Date(),
           },
         ]);

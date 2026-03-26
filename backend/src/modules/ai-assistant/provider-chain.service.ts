@@ -221,7 +221,7 @@ export function isAssistantAvailable(): boolean {
 
 function isRetryableGeminiError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /429|quota exceeded|too many requests|rate.limit|rate-limit|403|401|api key not valid|permission denied/i.test(message);
+  return /429|quota exceeded|too many requests|rate.limit|rate-limit|403|401|api key not valid|permission denied|500|502|503|504|service unavailable|internal server error|overloaded|resource exhausted/i.test(message);
 }
 
 function getRetryDelayMs(error: unknown): number {
@@ -405,14 +405,16 @@ async function callGeminiProvider(userMessage: string, history: ConversationTurn
       return text;
     } catch (error) {
       lastError = error;
-      console.warn(`[gemini] Key ${keyIndex + 1} failed`);
+      console.warn(`[gemini] Key ${keyIndex + 1} failed:`, error instanceof Error ? error.message : error);
 
       if (isRetryableGeminiError(error)) {
         markKeyCooldown(keyIndex, error);
-        continue;
+      } else {
+        // Non-retryable: short cooldown so we don't hammer a broken key
+        keyCooldownUntil.set(keyIndex, Date.now() + 10_000);
       }
-
-      throw error;
+      // Always continue to next key instead of throwing
+      continue;
     }
   }
 
@@ -425,32 +427,41 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
   }
 
   console.log(`[groq] Calling model=${env.groqModel} history=${history.length}`);
-  const response = await fetch(`${env.groqBaseUrl.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.groqApiKey}`,
-    },
-    body: JSON.stringify({
-      model: env.groqModel,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...mapHistoryForGroq(history),
-        { role: "user", content: buildUserInstruction(userMessage, chatMode, lang) },
-      ],
-    }),
-  });
 
-  const payload = await response.json().catch(() => null) as any;
-  if (!response.ok) {
-    const message = payload?.error?.message || payload?.message || `Groq request failed with status ${response.status}`;
-    throw new Error(message);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetch(`${env.groqBaseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.groqApiKey}`,
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: env.groqModel,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...mapHistoryForGroq(history),
+          { role: "user", content: buildUserInstruction(userMessage, chatMode, lang) },
+        ],
+      }),
+    });
+
+    const payload = await response.json().catch(() => null) as any;
+    if (!response.ok) {
+      const message = payload?.error?.message || payload?.message || `Groq request failed with status ${response.status}`;
+      throw new Error(message);
+    }
+
+    return typeof payload?.choices?.[0]?.message?.content === "string"
+      ? payload.choices[0].message.content
+      : "";
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return typeof payload?.choices?.[0]?.message?.content === "string"
-    ? payload.choices[0].message.content
-    : "";
 }
 
 export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
