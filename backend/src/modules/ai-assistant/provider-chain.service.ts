@@ -12,7 +12,7 @@ const MAX_HISTORY = 20;
 const conversations = new Map<string, ConversationTurn[]>();
 
 const systemDecisionSchema = z.object({
-  intent: z.enum(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "UNKNOWN"]),
+  intent: z.enum(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "COMPLAINT", "RESCHEDULE", "CANCEL_BOOKING", "REFUND", "VENDOR_INFO", "LOCATION", "UNKNOWN"]),
   service: z.string().catch(""),
   location: z.string().catch(""),
   action: z.enum(["SHOW_RESULTS", "GET_RECOMMENDATIONS", "BOOK_SERVICE", "SHOW_MY_BOOKINGS", "SHOW_CATEGORIES", "ASK_LOCATION", "ASK_DETAILS", "NAVIGATE", "NONE"]),
@@ -53,6 +53,63 @@ RULES:
 - Already logged-in user asks about login → CHAT MODE: "You're already logged in!"
 - Confidence: 0.0-1.0. Never say "I'm just an AI".`;
 
+const SELF_HOSTED_SYSTEM_PROMPT = `You are VendorCenter AI, a helpful assistant for a local services marketplace in India.
+Given the user's message, respond with bracketed tags on the first line followed by a friendly message.
+
+Format: [INTENT:X] [SERVICE:Y] [ACTION:Z] [CONFIDENCE:N.N]
+Your helpful message here.
+
+Intents: GREETING, SERVICE_SEARCH, RECOMMENDATION, BOOKING, MY_BOOKINGS, AVAILABLE_SERVICES, FAQ, COMPLAINT, RESCHEDULE, CANCEL_BOOKING, REFUND, VENDOR_INFO, LOCATION, UNKNOWN
+Services: AC Repair, Appliance Repair, Catering, Cleaning, Carpentry, Computer Repair, Electrical, Fitness, Mobile Repair, Moving, Painting, Pest Control, Photography, Plumbing, Salon, Tutoring
+Actions: SHOW_RESULTS, GET_RECOMMENDATIONS, BOOK_SERVICE, SHOW_MY_BOOKINGS, SHOW_CATEGORIES, ASK_LOCATION, ASK_DETAILS, NAVIGATE, NONE
+
+Rules:
+- Tags MUST be on the first line, always in order: INTENT, SERVICE (optional), ACTION, CONFIDENCE
+- NAVIGATE includes: [NAVIGATE:/services] or [NAVIGATE:/account]
+- Message starts on the next line, plain text, warm and conversational
+- No JSON, no code fences, no markdown
+- For greetings/casual (hi, hello, thanks, bye): [INTENT:GREETING] [ACTION:NONE] [CONFIDENCE:0.95]
+- Support English, Hinglish, and Marathi. Be warm, use emojis sparingly. Never invent vendor data.`;
+
+const VALID_INTENTS = new Set(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "COMPLAINT", "RESCHEDULE", "CANCEL_BOOKING", "REFUND", "VENDOR_INFO", "LOCATION", "UNKNOWN"]);
+const VALID_ACTIONS = new Set(["SHOW_RESULTS", "GET_RECOMMENDATIONS", "BOOK_SERVICE", "SHOW_MY_BOOKINGS", "SHOW_CATEGORIES", "ASK_LOCATION", "ASK_DETAILS", "NAVIGATE", "NONE"]);
+
+function parseBracketedFormat(rawText: string): AssistantDecision | null {
+  const trimmed = rawText.trim();
+  const lines = trimmed.split("\n");
+  const tagLine = lines[0] || "";
+
+  const intentMatch = tagLine.match(/\[INTENT:(\w+)\]/);
+  if (!intentMatch) return null;
+
+  const intent = intentMatch[1];
+  if (!VALID_INTENTS.has(intent)) return null;
+
+  const serviceMatch = tagLine.match(/\[SERVICE:([^\]]*)\]/);
+  const actionMatch = tagLine.match(/\[ACTION:(\w+)\]/);
+  const confidenceMatch = tagLine.match(/\[CONFIDENCE:([\d.]+)\]/);
+  const navigateMatch = tagLine.match(/\[NAVIGATE:([^\]]*)\]/);
+
+  const action = actionMatch?.[1] ?? "NONE";
+  if (!VALID_ACTIONS.has(action)) return null;
+
+  const message = lines.slice(1).join("\n").trim();
+  if (!message) return null;
+
+  return {
+    mode: intent === "GREETING" ? "CHAT" : "SYSTEM",
+    intent: intent as Intent,
+    service: serviceMatch?.[1]?.trim() ?? "",
+    location: "",
+    action: action as Action,
+    message,
+    confidence: confidenceMatch ? Math.min(1, Math.max(0, Number(confidenceMatch[1]))) : 0.8,
+    provider: "self-hosted",
+    rawText,
+    navigateTo: navigateMatch?.[1]?.trim() ?? "",
+  };
+}
+
 function getGeminiApiKeys(): string[] {
   const keys = env.geminiApiKeys.length > 0
     ? env.geminiApiKeys
@@ -78,15 +135,16 @@ function getClient(keyIndex: number): GoogleGenerativeAI | null {
 }
 
 export function isAssistantAvailable(): boolean {
-  return getGeminiApiKeys().length > 0 || !!env.groqApiKey;
+  return getGeminiApiKeys().length > 0 || !!env.groqApiKey || !!env.selfHostedLlmUrl;
 }
 
 // Startup diagnostic — log once when module loads
 (() => {
   const geminiCount = getGeminiApiKeys().length;
   const hasGroq = !!env.groqApiKey;
-  console.log(`[assistant-ai] Provider config: Groq=${hasGroq ? "yes (primary)" : "no"}, ${geminiCount} Gemini key(s) (fallback), model=${env.geminiModel}`);
-  if (geminiCount === 0 && !hasGroq) {
+  const hasSelfHosted = !!env.selfHostedLlmUrl;
+  console.log(`[assistant-ai] Provider config: SelfHosted=${hasSelfHosted ? "yes" : "no"}, Groq=${hasGroq ? "yes (primary)" : "no"}, ${geminiCount} Gemini key(s) (fallback), model=${env.geminiModel}`);
+  if (geminiCount === 0 && !hasGroq && !hasSelfHosted) {
     console.warn("[assistant-ai] WARNING: No AI provider keys configured — chatbot will return static fallbacks");
   }
 })();
@@ -154,6 +212,14 @@ function parseSystemDecision(rawText: string) {
 
 function normalizeResponse(rawText: string, provider: "gemini" | "groq" | "self-hosted", chatMode: boolean): AssistantDecision {
   const sanitized = stripCodeFences(rawText);
+
+  // Self-hosted model uses bracketed format — try parsing that first
+  if (provider === "self-hosted") {
+    const bracketed = parseBracketedFormat(sanitized);
+    if (bracketed) return bracketed;
+    // Fall through to JSON parsing if bracketed failed
+    console.warn("[self-hosted] Bracketed parse failed, falling back to JSON");
+  }
 
   if (chatMode) {
     return {
@@ -273,7 +339,13 @@ async function callGeminiProvider(userMessage: string, history: ConversationTurn
         history: history.map((turn) => ({ role: turn.role, parts: turn.parts })),
       });
 
-      const result = await chat.sendMessage(buildUserInstruction(userMessage, chatMode, lang));
+      const geminiTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini request timed out after 25s")), 25_000),
+      );
+      const result = await Promise.race([
+        chat.sendMessage(buildUserInstruction(userMessage, chatMode, lang)),
+        geminiTimeout,
+      ]);
       const text = result.response.text();
       preferredKeyIndex = keyIndex;
       keyCooldownUntil.delete(keyIndex);
@@ -304,7 +376,7 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
   console.log(`[groq] Calling model=${env.groqModel} history=${history.length}`);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+  const timeoutId = setTimeout(() => controller.abort(), 20_000);
 
   try {
     const response = await fetch(`${env.groqBaseUrl.replace(/\/+$/, "")}/chat/completions`, {
@@ -339,15 +411,21 @@ async function callGroqProvider(userMessage: string, history: ConversationTurn[]
   }
 }
 
+// Track whether the HF Space has responded successfully at least once
+let selfHostedWarm = false;
+
 async function callSelfHostedProvider(userMessage: string, history: ConversationTurn[], chatMode: boolean, lang?: string): Promise<string> {
   if (!env.selfHostedLlmUrl) {
     throw new Error("Self-hosted LLM URL not configured");
   }
 
-  console.log(`[self-hosted] Calling model=${env.selfHostedLlmModel} history=${history.length}`);
+  // If the space has been warm recently, use a shorter timeout.
+  // Otherwise allow up to 90s for HuggingFace Spaces cold-start wake-up.
+  const timeoutMs = selfHostedWarm ? 15_000 : 90_000;
+  console.log(`[self-hosted] Calling model=${env.selfHostedLlmModel} history=${history.length} timeout=${timeoutMs}ms warm=${selfHostedWarm}`);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${env.selfHostedLlmUrl.replace(/\/+$/, "")}/v1/chat/completions`, {
@@ -358,9 +436,9 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
         model: env.selfHostedLlmModel,
         temperature: 0.2,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: SELF_HOSTED_SYSTEM_PROMPT },
           ...mapHistoryForGroq(history),
-          { role: "user", content: buildUserInstruction(userMessage, chatMode, lang) },
+          { role: "user", content: userMessage },
         ],
       }),
     });
@@ -371,13 +449,47 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
       throw new Error(message);
     }
 
-    return typeof payload?.choices?.[0]?.message?.content === "string"
+    const text = typeof payload?.choices?.[0]?.message?.content === "string"
       ? payload.choices[0].message.content
       : "";
+
+    selfHostedWarm = true;
+    return text;
+  } catch (error) {
+    // On timeout, mark as cold so next attempt uses the longer timeout
+    if (error instanceof DOMException || (error instanceof Error && error.name === "AbortError")) {
+      selfHostedWarm = false;
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }
 }
+
+// Periodically ping HF Space health endpoint to keep it warm and detect sleep
+function startSelfHostedKeepAlive() {
+  if (!env.selfHostedLlmUrl) return;
+  const healthUrl = `${env.selfHostedLlmUrl.replace(/\/+$/, "")}/health`;
+
+  const ping = async () => {
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 10_000);
+      const res = await fetch(healthUrl, { signal: controller.signal });
+      clearTimeout(t);
+      selfHostedWarm = res.ok;
+      if (!res.ok) console.warn(`[self-hosted] Health check returned ${res.status}`);
+    } catch {
+      selfHostedWarm = false;
+    }
+  };
+
+  // Ping every 10 minutes to prevent HF Space from sleeping (free tier sleeps after ~48h inactivity)
+  ping();
+  setInterval(ping, 10 * 60 * 1000);
+}
+
+startSelfHostedKeepAlive();
 
 export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
   const chatMode = shouldUseChatMode(userMessage);
@@ -386,25 +498,34 @@ export async function callAssistantModel(userMessage: string, history: Conversat
   const hasGeminiKeys = getGeminiApiKeys().length > 0;
   const hasSelfHosted = !!env.selfHostedLlmUrl;
 
-  // SELF-HOSTED LLM (Phase 2): Try self-hosted model first if configured
+  // SELF-HOSTED LLM: Try self-hosted model first if configured
   if (hasSelfHosted) {
     try {
       const rawText = await callSelfHostedProvider(userMessage, history, chatMode, lang);
       return normalizeResponse(rawText, "self-hosted" as any, chatMode);
     } catch (error) {
       lastError = error;
-      console.warn("[assistant-ai] Self-hosted LLM failed:", error instanceof Error ? error.message : error);
+      const msg = error instanceof Error ? error.message : String(error);
+      const isTimeout = msg.includes("abort") || msg.includes("AbortError") || (error instanceof DOMException);
+      console.warn(`[assistant-ai] Self-hosted LLM failed (${isTimeout ? "timeout — HF Space may be cold-starting" : "error"}):`, msg);
     }
   }
 
-  // PRIMARY: Try Groq — more reliable rate limits
+  // PRIMARY: Try Groq — reliable rate limits, fast inference
   if (hasGroq) {
-    try {
-      const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
-      return normalizeResponse(rawText, "groq", chatMode);
-    } catch (error) {
-      lastError = error;
-      console.warn("[assistant-ai] Groq (primary) failed:", error instanceof Error ? error.message : error);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
+        return normalizeResponse(rawText, "groq", chatMode);
+      } catch (error) {
+        lastError = error;
+        const msg = error instanceof Error ? error.message : String(error);
+        const isRetryable = /429|500|502|503|504|rate.limit|overloaded|timeout|abort/i.test(msg);
+        console.warn(`[assistant-ai] Groq attempt ${attempt + 1}/2 failed:`, msg);
+        if (!isRetryable || attempt === 1) break;
+        // Brief pause before retry on transient errors
+        await new Promise((r) => setTimeout(r, 1500));
+      }
     }
   }
 

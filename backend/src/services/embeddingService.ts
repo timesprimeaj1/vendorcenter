@@ -4,16 +4,29 @@ const MODEL_NAME = "Xenova/all-MiniLM-L6-v2";
 let extractor: FeatureExtractionPipeline | null = null;
 let loadingPromise: Promise<FeatureExtractionPipeline> | null = null;
 
+const MODEL_LOAD_TIMEOUT_MS = 60_000; // 60s max for model download/load
+
 async function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (extractor) return extractor;
 
   if (!loadingPromise) {
-    loadingPromise = pipeline("feature-extraction", MODEL_NAME, {
+    const load = pipeline("feature-extraction", MODEL_NAME, {
       quantized: true,
     }).then((pipe) => {
       extractor = pipe;
       console.log("[embedding] Model loaded:", MODEL_NAME);
       return pipe;
+    });
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Embedding model load timed out after ${MODEL_LOAD_TIMEOUT_MS}ms`)), MODEL_LOAD_TIMEOUT_MS),
+    );
+
+    loadingPromise = Promise.race([load, timeout]).catch((err) => {
+      // Reset so next call retries from scratch
+      loadingPromise = null;
+      extractor = null;
+      throw err;
     });
   }
 
