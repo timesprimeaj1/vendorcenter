@@ -34,6 +34,9 @@ docs/
 .mcp.json
 .playwright-mcp/
 
+# Training data generation progress (resume file)
+.gen-progress.json
+
 # Screenshots / debug artifacts (not for repo)
 *.png
 hero-console-errors.txt

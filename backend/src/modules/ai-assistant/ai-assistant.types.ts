@@ -1,4 +1,4 @@
-export type Intent = "GREETING" | "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "MY_BOOKINGS" | "AVAILABLE_SERVICES" | "FAQ" | "UNKNOWN";
+export type Intent = "GREETING" | "SERVICE_SEARCH" | "RECOMMENDATION" | "BOOKING" | "MY_BOOKINGS" | "AVAILABLE_SERVICES" | "FAQ" | "COMPLAINT" | "RESCHEDULE" | "CANCEL_BOOKING" | "REFUND" | "VENDOR_INFO" | "LOCATION" | "UNKNOWN";
 export type Action = "SHOW_RESULTS" | "GET_RECOMMENDATIONS" | "BOOK_SERVICE" | "SHOW_MY_BOOKINGS" | "SHOW_CATEGORIES" | "ASK_LOCATION" | "ASK_DETAILS" | "NAVIGATE" | "NONE";
 export type AssistantMode = "CHAT" | "SYSTEM";
 export type AssistantProvider = "gemini" | "groq" | "static" | "embedding" | "self-hosted";

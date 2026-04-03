@@ -77,6 +77,12 @@ function normalizeAssistantLanguage(language?: string): AssistantLanguage {
   return normalized?.startsWith("mr") ? "mr" : "en";
 }
 
+function getAssistantFallbackMessage(lang: AssistantLanguage): string {
+  return lang === "mr"
+    ? "सध्या कनेक्ट होण्यात थोडी अडचण येत आहे. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा किंवा थेट सेवा ब्राउझ करा."
+    : "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!";
+}
+
 async function queryAssistant(
   message: string,
   lat?: number,
@@ -95,7 +101,7 @@ async function queryAssistant(
 
   const fallbackResponse: AssistantResponse = {
     intent: "UNKNOWN",
-    message: "I'm having a bit of trouble connecting right now. Please try again in a moment, or browse our services directly!",
+    message: getAssistantFallbackMessage(lang ?? "en"),
     vendors: [],
     action: "NONE",
     conversationId: conversationId || "",
@@ -526,6 +532,10 @@ const WELCOME_MESSAGE: ChatMessage = {
 const CHAT_STORAGE_KEY = "vc_ai_chat_messages";
 const CHAT_CONV_KEY = "vc_ai_chat_conv_id";
 
+function getChatScope(scope: string, lang: AssistantLanguage): string {
+  return `${scope}:lang:${lang}`;
+}
+
 function getAuthScope(): string {
   const token = localStorage.getItem("customer_accessToken");
   if (!token) return "guest";
@@ -558,21 +568,30 @@ function loadSavedMessages(scope: string): ChatMessage[] {
 export default function AiAssistantChat() {
   const { t, i18n } = useTranslation("chat");
   const assistantLanguage = normalizeAssistantLanguage(i18n.resolvedLanguage || i18n.language);
-  const [authScope, setAuthScope] = useState<string>(() => getAuthScope());
+  const initialAuthScope = getAuthScope();
+  const [authScope, setAuthScope] = useState<string>(initialAuthScope);
+  const chatScope = getChatScope(authScope, assistantLanguage);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages(getAuthScope()));
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages(getChatScope(initialAuthScope, assistantLanguage)));
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(
-    () => sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, getAuthScope())) || undefined,
+    () => sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, getChatScope(initialAuthScope, assistantLanguage))) || undefined,
   );
   const [isClosing, setIsClosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activeChatScopeRef = useRef(chatScope);
   const { location } = useGeoLocation();
   const navigate = useNavigate();
   const routeLocation = useRouteLocation();
+
+  useEffect(() => {
+    activeChatScopeRef.current = chatScope;
+    setLoading(false);
+    setInput("");
+  }, [chatScope]);
 
   useEffect(() => {
     const syncScope = () => {
@@ -591,11 +610,11 @@ export default function AiAssistantChat() {
   }, []);
 
   useEffect(() => {
-    const nextMessages = loadSavedMessages(authScope);
-    const nextConversationId = sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, authScope)) || undefined;
+    const nextMessages = loadSavedMessages(chatScope);
+    const nextConversationId = sessionStorage.getItem(scopedStorageKey(CHAT_CONV_KEY, chatScope)) || undefined;
     setMessages(nextMessages);
     setConversationId(nextConversationId);
-  }, [authScope]);
+  }, [chatScope]);
 
   useEffect(() => {
     if (open && suggestions.length === 0) {
@@ -618,14 +637,14 @@ export default function AiAssistantChat() {
 
   // Persist chat to sessionStorage
   useEffect(() => {
-    try { sessionStorage.setItem(scopedStorageKey(CHAT_STORAGE_KEY, authScope), JSON.stringify(messages)); } catch { /* quota */ }
-  }, [messages, authScope]);
+    try { sessionStorage.setItem(scopedStorageKey(CHAT_STORAGE_KEY, chatScope), JSON.stringify(messages)); } catch { /* quota */ }
+  }, [messages, chatScope]);
 
   useEffect(() => {
-    const key = scopedStorageKey(CHAT_CONV_KEY, authScope);
+    const key = scopedStorageKey(CHAT_CONV_KEY, chatScope);
     if (conversationId) sessionStorage.setItem(key, conversationId);
     else sessionStorage.removeItem(key);
-  }, [conversationId, authScope]);
+  }, [conversationId, chatScope]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 350);
@@ -666,14 +685,15 @@ export default function AiAssistantChat() {
     if (conversationId) clearConversation(conversationId);
     setConversationId(undefined);
     setMessages([{ ...WELCOME_MESSAGE, id: `welcome-${Date.now()}`, timestamp: new Date() }]);
-    sessionStorage.removeItem(scopedStorageKey(CHAT_STORAGE_KEY, authScope));
-    sessionStorage.removeItem(scopedStorageKey(CHAT_CONV_KEY, authScope));
-  }, [conversationId, authScope]);
+    sessionStorage.removeItem(scopedStorageKey(CHAT_STORAGE_KEY, chatScope));
+    sessionStorage.removeItem(scopedStorageKey(CHAT_CONV_KEY, chatScope));
+  }, [conversationId, chatScope]);
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
+      const requestScope = chatScope;
 
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -695,6 +715,8 @@ export default function AiAssistantChat() {
           assistantLanguage,
         );
 
+        if (activeChatScopeRef.current !== requestScope) return;
+
         if (result.conversationId) setConversationId(result.conversationId);
 
         const assistantMsg: ChatMessage = {
@@ -709,22 +731,25 @@ export default function AiAssistantChat() {
         };
         setMessages((prev) => [...prev, assistantMsg]);
       } catch {
+        if (activeChatScopeRef.current !== requestScope) return;
         // Defensive: queryAssistant should never throw, but just in case
         setMessages((prev) => [
           ...prev,
           {
             id: `error-${Date.now()}`,
             role: "assistant" as const,
-            text: "I'm having a bit of trouble right now. Please try again in a moment!",
+            text: getAssistantFallbackMessage(assistantLanguage),
             timestamp: new Date(),
           },
         ]);
       } finally {
-        setLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 50);
+        if (activeChatScopeRef.current === requestScope) {
+          setLoading(false);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }
       }
     },
-    [loading, location, conversationId, routeLocation.pathname, assistantLanguage, t],
+    [loading, location, conversationId, routeLocation.pathname, assistantLanguage, t, chatScope],
   );
 
   const handleSubmit = (e: React.FormEvent) => {

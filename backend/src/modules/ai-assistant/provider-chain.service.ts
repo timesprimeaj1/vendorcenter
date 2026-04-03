@@ -7,9 +7,14 @@ const clientCache = new Map<string, GoogleGenerativeAI>();
 const keyCooldownUntil = new Map<number, number>();
 let preferredKeyIndex = 0;
 
-const CHAT_MODE_PATTERNS = /\b(hi|hello|hey|hii|hlo|yo|hola|namaste|ok|okay|good\s+(morning|afternoon|evening)|how are you|what'?s up|sup|thanks|thank you|bye|goodbye|no|yes|ya|yep|nope|hmm|ohh?|great|nice|cool|awesome|sure|नमस्कार|नमस्ते|धन्यवाद|हो|नाही|बरोबर|ठीक|चालेल|आभार|शुभ\s*(सकाळ|दुपार|संध्याकाळ)|कसे\s*आहात|बाय|हॅलो|अरे)\b/i;
+const CHAT_MODE_PATTERNS = /\b(hi|hello|hey|hii|hlo|yo|hola|namaste|ok|okay|good\s+(morning|afternoon|evening)|how are you|what'?s up|sup|thanks|thank you|bye|goodbye|who\s+are\s+you|tu\s+kon\s+hai|no|yes|ya|yep|nope|hmm|ohh?|great|nice|cool|awesome|sure|speak\s+in\s+(marathi|english)|marathi\s*bol|english\s*bol|नमस्कार|नमस्ते|धन्यवाद|हो|नाही|बरोबर|ठीक|चालेल|आभार|शुभ\s*(सकाळ|दुपार|संध्याकाळ)|कसे\s*आहात|बाय|हॅलो|अरे|तू\s*कोण|तुम्ही\s*कोण|मराठी(?:त)?\s*बोला|इंग्रजी(?:त)?\s*बोला|मराठी\s*बोल)\b/i;
 const MAX_HISTORY = 20;
 const conversations = new Map<string, ConversationTurn[]>();
+const DEVANAGARI_PATTERN = /[\u0900-\u097F]/;
+const MARATHI_OUTPUT_PATTERNS = /\bmarathi\b|मराठी|मराठीत|मराठीत/i;
+const ENGLISH_OUTPUT_PATTERNS = /\benglish\b|इंग्रजी|english\s*bol|speak\s+in\s+english/i;
+const IDENTITY_CHAT_PATTERNS = /\b(who\s+are\s+you|tu\s+kon\s+a+h?es|kon\s+a+h?es|tu\s+kon\s+a+he|kon\s+a+he|tumhi\s+kon(?:\s+a+h?a+t)?|तू\s*कोण|तुम्ही\s*कोण)\b/i;
+const CONTROL_TAG_PATTERNS = /\[(?:INTENT|SERVICE|ACTION|CONFIDENCE|NAVIGATE):/i;
 
 const systemDecisionSchema = z.object({
   intent: z.enum(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "COMPLAINT", "RESCHEDULE", "CANCEL_BOOKING", "REFUND", "VENDOR_INFO", "LOCATION", "UNKNOWN"]),
@@ -69,6 +74,9 @@ Rules:
 - Message starts on the next line, plain text, warm and conversational
 - No JSON, no code fences, no markdown
 - For greetings/casual (hi, hello, thanks, bye): [INTENT:GREETING] [ACTION:NONE] [CONFIDENCE:0.95]
+- If [Language: mr] is present, the user writes Devanagari, or the user asks to speak in Marathi, the message line MUST be fully in Marathi (Devanagari). Do not answer in English.
+- If the user asks to switch language, comply immediately and continue in that language.
+- Language-switch requests like "marathi bol" or "मराठीत बोला" should be treated as GREETING with ACTION:NONE.
 - Support English, Hinglish, and Marathi. Be warm, use emojis sparingly. Never invent vendor data.`;
 
 const VALID_INTENTS = new Set(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "COMPLAINT", "RESCHEDULE", "CANCEL_BOOKING", "REFUND", "VENDOR_INFO", "LOCATION", "UNKNOWN"]);
@@ -183,16 +191,109 @@ function getCandidateKeyIndices(): { ready: number[]; allOnCooldown: boolean } {
 }
 
 function shouldUseChatMode(userMessage: string): boolean {
-  return CHAT_MODE_PATTERNS.test(userMessage.trim());
+  const trimmed = userMessage.trim();
+  return CHAT_MODE_PATTERNS.test(trimmed) || IDENTITY_CHAT_PATTERNS.test(trimmed);
+}
+
+function shouldRespondInMarathi(userMessage: string, lang?: string): boolean {
+  return lang === "mr" || DEVANAGARI_PATTERN.test(userMessage) || MARATHI_OUTPUT_PATTERNS.test(userMessage);
+}
+
+function buildLanguageInstruction(userMessage: string, lang?: string): string {
+  if (shouldRespondInMarathi(userMessage, lang)) {
+    return "RESPOND_LANGUAGE: Marathi (Devanagari) only for the user-facing message.";
+  }
+
+  if (lang === "en" || ENGLISH_OUTPUT_PATTERNS.test(userMessage)) {
+    return "RESPOND_LANGUAGE: English only for the user-facing message.";
+  }
+
+  return "";
 }
 
 function buildUserInstruction(userMessage: string, chatMode: boolean, lang?: string): string {
   const langTag = lang ? `\n[Language: ${lang}]` : "";
+  const languageInstruction = buildLanguageInstruction(userMessage, lang);
   if (chatMode) {
-    return `MODE: CHAT${langTag}\nUSER_INPUT: ${userMessage}\nReturn only short friendly plain text. Do not return JSON.`;
+    return `MODE: CHAT${langTag}${languageInstruction ? `\n${languageInstruction}` : ""}\nUSER_INPUT: ${userMessage}\nReturn only short friendly plain text. Do not return JSON.`;
   }
 
-  return `MODE: SYSTEM${langTag}\nUSER_INPUT: ${userMessage}\nReturn only strict JSON. No markdown. No code fences.`;
+  return `MODE: SYSTEM${langTag}${languageInstruction ? `\n${languageInstruction}` : ""}\nUSER_INPUT: ${userMessage}\nReturn only strict JSON. No markdown. No code fences.`;
+}
+
+function buildSelfHostedUserInstruction(userMessage: string, chatMode: boolean, lang?: string): string {
+  const langTag = lang ? `[Language: ${lang}]` : "";
+  const languageInstruction = buildLanguageInstruction(userMessage, lang);
+  const modeLine = chatMode ? "MODE: CHAT" : "MODE: SYSTEM";
+  const responseRule = chatMode
+    ? "Return bracket tags on the first line and a short friendly reply on the next line."
+    : "Return bracket tags on the first line and the helpful reply on the next line.";
+
+  return [modeLine, langTag, languageInstruction, `USER_INPUT: ${userMessage}`, responseRule]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function responseMatchesRequestedLanguage(message: string, userMessage: string, lang?: string): boolean {
+  if (!shouldRespondInMarathi(userMessage, lang)) {
+    return true;
+  }
+
+  return DEVANAGARI_PATTERN.test(message);
+}
+
+function buildDeterministicChatResponse(userMessage: string, lang?: string): AssistantDecision | null {
+  const cleaned = userMessage.toLowerCase().replace(/\[.*?\]\s*/g, "").trim();
+  const isMr = shouldRespondInMarathi(userMessage, lang);
+
+  if (/marathi\s*bol|speak\s+in\s+marathi|मराठी(?:त)?\s*बोला|मराठी\s*बोल/i.test(cleaned)) {
+    return {
+      mode: "CHAT",
+      intent: "GREETING",
+      service: "",
+      location: "",
+      action: "NONE",
+      message: "नक्की, मी आता मराठीत बोलेन. तुम्हाला कोणती सेवा हवी आहे? 😊",
+      confidence: 0.98,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  if (/english\s*bol|speak\s+in\s+english|इंग्रजी(?:त)?\s*बोला/i.test(cleaned)) {
+    return {
+      mode: "CHAT",
+      intent: "GREETING",
+      service: "",
+      location: "",
+      action: "NONE",
+      message: "Sure, I will continue in English. What service do you need? 😊",
+      confidence: 0.98,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  if (IDENTITY_CHAT_PATTERNS.test(cleaned)) {
+    return {
+      mode: "CHAT",
+      intent: "GREETING",
+      service: "",
+      location: "",
+      action: "NONE",
+      message: isMr
+        ? "मी VendorCenter चा AI सहाय्यक आहे. तुमच्या जवळच्या सेवा शोधण्यात आणि बुकिंग करण्यात मदत करण्यासाठी इथे आहे. 😊"
+        : "I'm VendorCenter's AI assistant. I'm here to help you find nearby services and bookings. 😊",
+      confidence: 0.98,
+      provider: "static",
+      rawText: "",
+      navigateTo: "",
+    };
+  }
+
+  return null;
 }
 
 function stripCodeFences(text: string): string {
@@ -217,7 +318,10 @@ function normalizeResponse(rawText: string, provider: "gemini" | "groq" | "self-
   if (provider === "self-hosted") {
     const bracketed = parseBracketedFormat(sanitized);
     if (bracketed) return bracketed;
-    // Fall through to JSON parsing if bracketed failed
+    if (CONTROL_TAG_PATTERNS.test(sanitized)) {
+      throw new Error("Malformed self-hosted tagged response");
+    }
+    // Fall through to JSON parsing if bracketed failed without control tags
     console.warn("[self-hosted] Bracketed parse failed, falling back to JSON");
   }
 
@@ -438,7 +542,7 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
         messages: [
           { role: "system", content: SELF_HOSTED_SYSTEM_PROMPT },
           ...mapHistoryForGroq(history),
-          { role: "user", content: userMessage },
+          { role: "user", content: buildSelfHostedUserInstruction(userMessage, chatMode, lang) },
         ],
       }),
     });
@@ -493,16 +597,25 @@ startSelfHostedKeepAlive();
 
 export async function callAssistantModel(userMessage: string, history: ConversationTurn[], lang?: string): Promise<AssistantDecision> {
   const chatMode = shouldUseChatMode(userMessage);
+  const deterministicChat = chatMode ? buildDeterministicChatResponse(userMessage, lang) : null;
+  if (deterministicChat) {
+    return deterministicChat;
+  }
   let lastError: unknown;
   const hasGroq = !!env.groqApiKey;
   const hasGeminiKeys = getGeminiApiKeys().length > 0;
   const hasSelfHosted = !!env.selfHostedLlmUrl;
 
-  // SELF-HOSTED LLM: Try self-hosted model first if configured
-  if (hasSelfHosted) {
+  // SELF-HOSTED LLM: use it first for structured/system requests, but avoid it for casual chat
+  if (!chatMode && hasSelfHosted) {
     try {
       const rawText = await callSelfHostedProvider(userMessage, history, chatMode, lang);
-      return normalizeResponse(rawText, "self-hosted" as any, chatMode);
+      const decision = normalizeResponse(rawText, "self-hosted" as any, chatMode);
+      if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
+        return decision;
+      }
+      lastError = new Error("Self-hosted response ignored Marathi language request");
+      console.warn("[assistant-ai] Self-hosted response ignored Marathi request; trying fallback provider.");
     } catch (error) {
       lastError = error;
       const msg = error instanceof Error ? error.message : String(error);
@@ -516,7 +629,12 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
-        return normalizeResponse(rawText, "groq", chatMode);
+        const decision = normalizeResponse(rawText, "groq", chatMode);
+        if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
+          return decision;
+        }
+        lastError = new Error("Groq response ignored Marathi language request");
+        console.warn(`[assistant-ai] Groq attempt ${attempt + 1}/2 ignored Marathi request; trying next provider.`);
       } catch (error) {
         lastError = error;
         const msg = error instanceof Error ? error.message : String(error);
@@ -533,7 +651,12 @@ export async function callAssistantModel(userMessage: string, history: Conversat
   if (hasGeminiKeys) {
     try {
       const rawText = await callGeminiProvider(userMessage, history, chatMode, lang);
-      return normalizeResponse(rawText, "gemini", chatMode);
+      const decision = normalizeResponse(rawText, "gemini", chatMode);
+      if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
+        return decision;
+      }
+      lastError = new Error("Gemini response ignored Marathi language request");
+      console.warn("[assistant-ai] Gemini response ignored Marathi request; using static fallback.");
     } catch (error) {
       lastError = error;
       console.warn("[assistant-ai] Gemini (fallback) also failed:", error instanceof Error ? error.message : error);
@@ -550,13 +673,45 @@ export async function callAssistantModel(userMessage: string, history: Conversat
  * Activated when all providers are rate-limited/unavailable.
  */
 function buildStaticFallback(userMessage: string, chatMode: boolean, lang?: string): AssistantDecision {
-  const isMr = lang === "mr";
+  const isMr = shouldRespondInMarathi(userMessage, lang);
   const lower = userMessage.toLowerCase();
   // Strip context tags to analyze pure user message
   const cleaned = lower.replace(/\[.*?\]\s*/g, "").trim();
 
   // CHAT MODE — greetings and casual messages
   if (chatMode) {
+    if (/marathi\s*bol|speak\s+in\s+marathi|मराठी(?:त)?\s*बोला|मराठी\s*बोल/i.test(cleaned)) {
+      return {
+        mode: "CHAT",
+        intent: "GREETING",
+        service: "",
+        location: "",
+        action: "NONE",
+        message: "नक्की, मी आता मराठीत बोलेन. तुम्हाला कोणती सेवा हवी आहे? 😊",
+        confidence: 0.9,
+        provider: "static",
+        rawText: "",
+        navigateTo: "",
+      };
+    }
+
+    if (IDENTITY_CHAT_PATTERNS.test(cleaned)) {
+      return {
+        mode: "CHAT",
+        intent: "GREETING",
+        service: "",
+        location: "",
+        action: "NONE",
+        message: isMr
+          ? "मी VendorCenter चा AI सहाय्यक आहे. तुमच्या जवळच्या सेवांसाठी मदत करू शकतो. काय हवे? 😊"
+          : "I'm VendorCenter's AI assistant. I can help you find nearby services and bookings. What do you need? 😊",
+        confidence: 0.9,
+        provider: "static",
+        rawText: "",
+        navigateTo: "",
+      };
+    }
+
     const greetings = [
       isMr ? "नमस्कार! 👋 तुम्हाला कोणती सेवा शोधायची आहे? प्लंबिंग, इलेक्ट्रिकल, स्वच्छता — सांगा!" : "Hey there! 👋 What service can I help you find? Plumbing, electrical, cleaning — just ask!",
       isMr ? "हाय! 😊 मी तुम्हाला जवळचे सर्वोत्तम सेवा प्रदाता शोधून देतो. काय हवे?" : "Hi! 😊 I can help you find the best local service pros. What do you need?",
