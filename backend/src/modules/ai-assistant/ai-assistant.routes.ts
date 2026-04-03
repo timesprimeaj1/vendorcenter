@@ -6,13 +6,18 @@ import { getActorFromBearerToken } from "../../middleware/auth.js";
 
 export const aiAssistantRouter = Router();
 
+function normalizeAssistantLanguage(value?: string): "en" | "mr" {
+  const normalized = value?.toLowerCase().trim();
+  return normalized?.startsWith("mr") ? "mr" : "en";
+}
+
 const querySchema = z.object({
   message: z.string().min(1).max(500),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
   conversationId: z.string().uuid().optional(),
   currentPage: z.string().max(200).optional(),
-  lang: z.enum(["en", "mr"]).optional(),
+  lang: z.string().max(20).optional(),
 });
 
 // POST /api/ai-assistant/query — public endpoint, optional auth for user-aware features
@@ -23,7 +28,8 @@ aiAssistantRouter.post("/query", async (req: Request, res: Response) => {
     return;
   }
 
-  const { message, lat, lng, conversationId, currentPage, lang } = parsed.data;
+  const { message, lat, lng, conversationId, currentPage } = parsed.data;
+  const lang = normalizeAssistantLanguage(parsed.data.lang);
 
   // Extract optional user identity from Bearer token (no 401 if missing)
   const actor = getActorFromBearerToken(req.header("authorization"));
@@ -53,7 +59,7 @@ aiAssistantRouter.post("/clear", (req: Request, res: Response) => {
 // GET /api/ai-assistant/suggestions — returns quick-action suggestions
 aiAssistantRouter.get("/suggestions", (req: Request, res: Response) => {
   const actor = getActorFromBearerToken(req.header("authorization"));
-  const lang = req.query.lang === "mr" ? "mr" : "en";
+  const lang = normalizeAssistantLanguage(typeof req.query.lang === "string" ? req.query.lang : undefined);
 
   const suggestions: Record<string, string[]> = {
     en: [

@@ -56,6 +56,8 @@ interface ChatMessage {
   navigateTo?: string;
 }
 
+type AssistantLanguage = "en" | "mr";
+
 // ─── API ─────────────────────────────────────────────────────
 
 function resolveApiBase() {
@@ -70,13 +72,18 @@ function resolveApiBase() {
   return `${base.replace(/\/+$/, "")}/api`;
 }
 
+function normalizeAssistantLanguage(language?: string): AssistantLanguage {
+  const normalized = language?.toLowerCase().trim();
+  return normalized?.startsWith("mr") ? "mr" : "en";
+}
+
 async function queryAssistant(
   message: string,
   lat?: number,
   lng?: number,
   conversationId?: string,
   currentPage?: string,
-  lang?: string,
+  lang?: AssistantLanguage,
 ): Promise<AssistantResponse> {
   const API_BASE = resolveApiBase();
   const body: Record<string, unknown> = { message };
@@ -162,7 +169,8 @@ async function getSuggestions(lang?: string): Promise<string[]> {
   const headers: Record<string, string> = {};
   const token = localStorage.getItem("customer_accessToken");
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const url = lang ? `${API_BASE}/ai-assistant/suggestions?lang=${lang}` : `${API_BASE}/ai-assistant/suggestions`;
+  const normalizedLang = normalizeAssistantLanguage(lang);
+  const url = `${API_BASE}/ai-assistant/suggestions?lang=${normalizedLang}`;
   const res = await fetch(url, { headers });
   const json = await res.json();
   return json.data ?? [];
@@ -549,6 +557,7 @@ function loadSavedMessages(scope: string): ChatMessage[] {
 
 export default function AiAssistantChat() {
   const { t, i18n } = useTranslation("chat");
+  const assistantLanguage = normalizeAssistantLanguage(i18n.resolvedLanguage || i18n.language);
   const [authScope, setAuthScope] = useState<string>(() => getAuthScope());
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages(getAuthScope()));
@@ -590,16 +599,16 @@ export default function AiAssistantChat() {
 
   useEffect(() => {
     if (open && suggestions.length === 0) {
-      getSuggestions(i18n.language).then(setSuggestions).catch(() => {});
+      getSuggestions(assistantLanguage).then(setSuggestions).catch(() => {});
     }
-  }, [open, suggestions.length, i18n.language]);
+  }, [open, suggestions.length, assistantLanguage]);
 
   // Reload suggestions when language changes
   useEffect(() => {
     if (open) {
-      getSuggestions(i18n.language).then(setSuggestions).catch(() => {});
+      getSuggestions(assistantLanguage).then(setSuggestions).catch(() => {});
     }
-  }, [i18n.language]);
+  }, [open, assistantLanguage]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -683,7 +692,7 @@ export default function AiAssistantChat() {
           location?.longitude,
           conversationId,
           routeLocation.pathname,
-          i18n.language,
+          assistantLanguage,
         );
 
         if (result.conversationId) setConversationId(result.conversationId);
@@ -715,7 +724,7 @@ export default function AiAssistantChat() {
         setTimeout(() => inputRef.current?.focus(), 50);
       }
     },
-    [loading, location, conversationId],
+    [loading, location, conversationId, routeLocation.pathname, assistantLanguage, t],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
