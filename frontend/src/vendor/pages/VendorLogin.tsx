@@ -164,7 +164,7 @@ const VendorLogin = () => {
     setLoading(true);
     try {
       await ensureSwitchedAccount(email);
-      const res = await api.login({ email, password });
+      const res = await api.login({ email, password, role: "vendor" });
       if (!res.data?.accessToken || !res.data?.refreshToken || !res.data?.actor) {
         throw new Error("Login failed");
       }

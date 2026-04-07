@@ -13,11 +13,19 @@ export interface DbUser {
   verified: boolean;
   firebase_uid: string | null;
   auth_provider: string;
+  suspended: boolean;
 }
 
-export async function findUserByEmail(email: string) {
+export async function findUserByEmail(email: string, role?: AppRole) {
+  if (role) {
+    const result = await pool.query<DbUser>(
+      "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE email = $1 AND role = $2 LIMIT 1",
+      [email, role]
+    );
+    return result.rows[0] ?? null;
+  }
   const result = await pool.query<DbUser>(
-    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE email = $1 LIMIT 1",
+    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE email = $1 LIMIT 1",
     [email]
   );
   return result.rows[0] ?? null;
@@ -25,7 +33,7 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(id: string) {
   const result = await pool.query<DbUser>(
-    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE id = $1 LIMIT 1",
+    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE id = $1 LIMIT 1",
     [id]
   );
   return result.rows[0] ?? null;
@@ -69,13 +77,13 @@ export async function createSession(input: { userId: string; refreshTokenHash: s
 export async function findUserByPhone(phone: string, role?: AppRole) {
   if (role) {
     const result = await pool.query<DbUser>(
-      "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE phone = $1 AND role = $2 LIMIT 1",
+      "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE phone = $1 AND role = $2 LIMIT 1",
       [phone, role]
     );
     return result.rows[0] ?? null;
   }
   const result = await pool.query<DbUser>(
-    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE phone = $1 LIMIT 1",
+    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE phone = $1 LIMIT 1",
     [phone]
   );
   return result.rows[0] ?? null;
@@ -84,13 +92,13 @@ export async function findUserByPhone(phone: string, role?: AppRole) {
 export async function findUserByFirebaseUid(firebaseUid: string, role?: AppRole) {
   if (role) {
     const result = await pool.query<DbUser>(
-      "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE firebase_uid = $1 AND role = $2 LIMIT 1",
+      "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE firebase_uid = $1 AND role = $2 LIMIT 1",
       [firebaseUid, role]
     );
     return result.rows[0] ?? null;
   }
   const result = await pool.query<DbUser>(
-    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider FROM users WHERE firebase_uid = $1 LIMIT 1",
+    "SELECT id, email, role, password_hash, name, phone, business_name, profile_picture_url, verified, firebase_uid, auth_provider, COALESCE(suspended, false) AS suspended FROM users WHERE firebase_uid = $1 LIMIT 1",
     [firebaseUid]
   );
   return result.rows[0] ?? null;

@@ -87,7 +87,7 @@ export const adminApi = {
   login: (payload: { email: string; password: string }) =>
     request<AuthResult>("/auth/login", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, role: "admin" }),
     }),
 
   logout: () => {
@@ -134,4 +134,31 @@ export const adminApi = {
   getAnalytics: () => request<any>("/analytics/admin"),
 
   getActivityLogs: () => request<any[]>("/activity"),
+
+  deleteUser: (userId: string) =>
+    request<{ message: string }>(`/admin/users/${userId}`, { method: "DELETE" }),
+
+  updateUserRole: (userId: string, role: string) =>
+    request<any>(`/admin/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+
+  suspendUser: (userId: string, suspended: boolean) =>
+    request<any>(`/admin/users/${userId}/suspend`, {
+      method: "PATCH",
+      body: JSON.stringify({ suspended }),
+    }),
+
+  createEmployee: (payload: { email: string; password: string; name: string; phone?: string; role?: string; permissions?: string[] }) =>
+    request<any>("/admin/employees", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateBookingStatus: (bookingId: string, status: string) =>
+    request<any>(`/admin/bookings/${bookingId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
 };

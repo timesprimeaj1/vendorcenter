@@ -214,7 +214,7 @@ const Login = () => {
     }
     setLoading(true);
     try {
-      const res = await api.login({ email, password });
+      const res = await api.login({ email, password, role: "customer" });
       if (!res.data?.accessToken || !res.data?.refreshToken || !res.data?.actor) {
         throw new Error("Login failed");
       }

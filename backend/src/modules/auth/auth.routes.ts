@@ -35,7 +35,7 @@ authRouter.post("/signup", async (req, res) => {
       return;
     }
 
-    const existing = await findUserByEmail(parsed.data.email);
+    const existing = await findUserByEmail(parsed.data.email, parsed.data.role);
     if (existing) {
       res.status(409).json({ success: false, error: "User already exists" });
       return;
@@ -78,7 +78,7 @@ authRouter.post("/signup", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
   try {
     const parsed = z
-      .object({ email: z.string().email(), password: z.string().min(8) })
+      .object({ email: z.string().email(), password: z.string().min(8), role: z.enum(["customer", "vendor", "admin"]).optional() })
       .safeParse(req.body);
 
     if (!parsed.success) {
@@ -86,10 +86,15 @@ authRouter.post("/login", async (req, res) => {
       return;
     }
 
-    const user = await findUserByEmail(parsed.data.email);
+    const user = await findUserByEmail(parsed.data.email, parsed.data.role as any);
 
     if (!user) {
       res.status(401).json({ success: false, error: "Invalid credentials" });
+      return;
+    }
+
+    if (user.suspended) {
+      res.status(403).json({ success: false, error: "Your account has been suspended. Contact support." });
       return;
     }
 

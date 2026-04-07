@@ -118,6 +118,16 @@ const MIGRATIONS = [
   `ALTER TABLE otp_events ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'email'`,
   `ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY`,
+  // Admin: suspended column and employee permissions
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended BOOLEAN NOT NULL DEFAULT false`,
+  `CREATE TABLE IF NOT EXISTS employee_permissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, permission)
+  )`,
+  `ALTER TABLE employee_permissions ENABLE ROW LEVEL SECURITY`,
 ];
 
 export async function initializeDatabase() {

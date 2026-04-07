@@ -166,6 +166,11 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide Firebase reCAPTCHA badge (invisible mode) */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MICRO-INTERACTIONS
    ═══════════════════════════════════════════════════════════════ */

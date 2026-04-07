@@ -74,6 +74,7 @@ async function refreshAccessToken(): Promise<boolean> {
 export interface LoginPayload {
   email: string;
   password: string;
+  role?: "customer" | "vendor" | "admin";
 }
 
 export interface SignupPayload {
