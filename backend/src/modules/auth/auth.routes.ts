@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { trackActivity } from "../activity/activity.service.js";
@@ -16,6 +16,15 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, "Password must contain a number")
   .regex(/[^A-Za-z0-9]/, "Password must contain a special character");
 
+// Serialize Zod validation errors to a human-readable string
+function zodErrorString(error: z.ZodError): string {
+  const flat = error.flatten();
+  const fieldMsgs = Object.entries(flat.fieldErrors)
+    .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`)
+    .join("; ");
+  return fieldMsgs || flat.formErrors.join("; ") || "Invalid input";
+}
+
 const signupSchema = z.object({
   email: z.string().email(),
   password: passwordSchema,
@@ -31,7 +40,7 @@ authRouter.post("/signup", async (req, res) => {
   try {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -82,7 +91,7 @@ authRouter.post("/login", async (req, res) => {
       .safeParse(req.body);
 
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -140,7 +149,7 @@ authRouter.post("/refresh", async (req, res) => {
   try {
     const parsed = z.object({ refreshToken: z.string().min(20) }).safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -185,7 +194,7 @@ authRouter.post("/logout", async (req, res) => {
   try {
     const parsed = z.object({ refreshToken: z.string().min(20) }).safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -224,7 +233,7 @@ authRouter.post("/reset-password", async (req, res) => {
     }).safeParse(req.body);
 
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -275,7 +284,7 @@ authRouter.post("/reset-password", async (req, res) => {
   }
 });
 
-// ─── Profile ──────────────────────────────────────
+// â”€â”€â”€ Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 authRouter.get("/profile", requireRole(["customer", "vendor", "admin", "employee"]), async (req: AuthRequest, res) => {
   try {
     const user = await findUserById(req.actor!.id);
@@ -294,7 +303,7 @@ authRouter.put("/profile", requireRole(["customer", "vendor", "admin", "employee
       phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits").optional(),
       profilePictureUrl: z.string().optional(),
     }).safeParse(req.body);
-    if (!parsed.success) { res.status(400).json({ success: false, error: parsed.error.flatten() }); return; }
+    if (!parsed.success) { res.status(400).json({ success: false, error: zodErrorString(parsed.error) }); return; }
 
     // Check phone uniqueness per role before update
     if (parsed.data.phone) {
@@ -316,7 +325,7 @@ authRouter.put("/profile", requireRole(["customer", "vendor", "admin", "employee
   }
 });
 
-// ─── Phone OTP Platform Gate (hard 9/day limit) ──
+// â”€â”€â”€ Phone OTP Platform Gate (hard 9/day limit) â”€â”€
 // Firebase Blaze plan charges per SMS beyond 10/day free tier.
 // Platform-wide safety cap + per-phone limit.
 // Quota resets at midnight Pacific Time (when Firebase resets).
@@ -353,7 +362,7 @@ authRouter.post("/phone-otp-gate", async (req, res) => {
       return;
     }
 
-    // Check if phone is registered for this role — if not, ask to register first
+    // Check if phone is registered for this role â€” if not, ask to register first
     const userCheck = await pool.query(
       "SELECT id, suspended FROM users WHERE phone = $1 AND role = $2 LIMIT 1",
       [phone, role]
@@ -379,7 +388,7 @@ authRouter.post("/phone-otp-gate", async (req, res) => {
     );
     const phoneUsed = parseInt(phoneResult.rows[0]?.count ?? "0", 10);
     if (phoneUsed >= DAILY_PER_PHONE_OTP_LIMIT) {
-      console.warn(`[otp-gate] BLOCKED — per-phone limit for ${phone} (${phoneUsed}/${DAILY_PER_PHONE_OTP_LIMIT})`);
+      console.warn(`[otp-gate] BLOCKED â€” per-phone limit for ${phone} (${phoneUsed}/${DAILY_PER_PHONE_OTP_LIMIT})`);
       res.status(429).json({
         success: false,
         error: `OTP limit reached for this number (${DAILY_PER_PHONE_OTP_LIMIT}/day). Try again tomorrow.`,
@@ -397,7 +406,7 @@ authRouter.post("/phone-otp-gate", async (req, res) => {
     );
     const platformUsed = parseInt(platformResult.rows[0]?.count ?? "0", 10);
     if (platformUsed >= DAILY_PLATFORM_OTP_LIMIT) {
-      console.warn(`[otp-gate] BLOCKED — platform limit reached (${platformUsed}/${DAILY_PLATFORM_OTP_LIMIT})`);
+      console.warn(`[otp-gate] BLOCKED â€” platform limit reached (${platformUsed}/${DAILY_PLATFORM_OTP_LIMIT})`);
       res.status(429).json({
         success: false,
         error: "SMS service temporarily unavailable. Please try again later.",
@@ -418,16 +427,16 @@ authRouter.post("/phone-otp-gate", async (req, res) => {
       DAILY_PER_PHONE_OTP_LIMIT - phoneUsed - 1,
       DAILY_PLATFORM_OTP_LIMIT - platformUsed - 1
     );
-    console.log(`[otp-gate] approved — phone ${phone}: ${phoneUsed + 1}/${DAILY_PER_PHONE_OTP_LIMIT}, platform: ${platformUsed + 1}/${DAILY_PLATFORM_OTP_LIMIT}`);
+    console.log(`[otp-gate] approved â€” phone ${phone}: ${phoneUsed + 1}/${DAILY_PER_PHONE_OTP_LIMIT}, platform: ${platformUsed + 1}/${DAILY_PLATFORM_OTP_LIMIT}`);
     res.json({ success: true, data: { allowed: true }, remaining });
   } catch (err) {
     console.error("[otp-gate] error", err);
-    // FAIL CLOSED — if the gate errors, block the OTP to prevent billing
+    // FAIL CLOSED â€” if the gate errors, block the OTP to prevent billing
     res.status(503).json({ success: false, error: "OTP service temporarily unavailable. Try again shortly." });
   }
 });
 
-// ─── Phone Auth (Firebase) ────────────────────────
+// â”€â”€â”€ Phone Auth (Firebase) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const phoneLoginSchema = z.object({
   idToken: z.string().min(20, "Firebase ID token required"),
   role: z.enum(["customer", "vendor"]).default("customer"),
@@ -442,7 +451,7 @@ authRouter.post("/phone-login", async (req, res) => {
 
     const parsed = phoneLoginSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten() });
+      res.status(400).json({ success: false, error: zodErrorString(parsed.error) });
       return;
     }
 
@@ -475,7 +484,7 @@ authRouter.post("/phone-login", async (req, res) => {
       user = await findUserByPhone(normalizedPhone, requestedRole);
 
       if (user) {
-        // Existing user with this phone+role but no Firebase UID — link them
+        // Existing user with this phone+role but no Firebase UID â€” link them
         await linkFirebaseUid(user.id, firebaseUid);
       } else {
         // Check if phone is already taken for this role (prevent duplicates)
@@ -485,7 +494,7 @@ authRouter.post("/phone-login", async (req, res) => {
           return;
         }
 
-        // New user — create with phone auth
+        // New user â€” create with phone auth
         user = await createPhoneUser({
           phone: normalizedPhone,
           firebaseUid,

@@ -210,6 +210,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   String _friendlyError(Object e) {
+    // Extract backend error message from DioException first
+    if (e is DioException && e.response?.data is Map) {
+      final serverError = e.response!.data['error'];
+      if (serverError is String) {
+        final sl = serverError.toLowerCase();
+        if (sl.contains('suspended')) return 'Your account has been suspended. Contact support.';
+        if (sl.contains('uses phone login')) return 'This account uses phone login. Please use OTP instead.';
+        if (sl.contains('phone verification') || sl.contains('phone login')) return 'Phone verification failed. Please try again.';
+        return serverError;
+      }
+    }
+
     final s = e.toString().toLowerCase();
     // Network errors first
     if (s.contains('network') || s.contains('connection') || s.contains('socketexception')) {
@@ -228,7 +240,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (s.contains('409') || s.contains('already exists')) {
       return 'Account already exists. Try logging in.';
     }
-    // Backend: "This account uses phone login" — for email-login attempt on phone-only account
     if (s.contains('uses phone login')) {
       return 'This account uses phone login. Please use OTP instead.';
     }

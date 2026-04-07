@@ -42,7 +42,8 @@ async function request<T>(
         return retry.json().catch(() => ({}));
       }
     }
-    throw new Error(body.error || `Request failed (${res.status})`);
+    const errorMsg = typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
+    throw new Error(errorMsg);
   }
   return body;
 }
