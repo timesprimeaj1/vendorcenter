@@ -128,6 +128,19 @@ const MIGRATIONS = [
     UNIQUE(user_id, permission)
   )`,
   `ALTER TABLE employee_permissions ENABLE ROW LEVEL SECURITY`,
+  // Fix unique constraints: phone and email must be unique per-role, not globally
+  // Drop global phone unique (allows same phone across customer/vendor roles)
+  `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_unique`,
+  // Drop global email unique (allows same email across customer/vendor roles)
+  `DROP INDEX IF EXISTS users_email_key`,
+  `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`,
+  // Drop global firebase_uid unique (allows same Firebase user across roles)
+  `DROP INDEX IF EXISTS idx_users_firebase_uid`,
+  `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_firebase_uid_key`,
+  // Create per-role unique indexes
+  `CREATE UNIQUE INDEX IF NOT EXISTS users_phone_role_unique ON users (phone, role) WHERE phone IS NOT NULL AND phone != ''`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS users_email_role_unique ON users (email, role) WHERE email IS NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid_role_unique ON users (firebase_uid, role) WHERE firebase_uid IS NOT NULL`,
 ];
 
 export async function initializeDatabase() {
