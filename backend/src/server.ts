@@ -4,6 +4,8 @@ import { getSecurityConfigStatus } from "./config/env.js";
 import { initializeDatabase } from "./db/init.js";
 import { dbState } from "./db/state.js";
 import { processQueuedEmailJobs } from "./modules/notifications/notifications.repository.js";
+import { pool } from "./db/pool.js";
+import bcrypt from "bcryptjs";
 
 // Prevent process crash on unhandled async errors (Express 4 doesn't catch them)
 process.on("unhandledRejection", (reason) => {
@@ -33,6 +35,36 @@ function validateSecurityConfiguration() {
   }
 }
 
+async function autoSeedAdmin() {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) return;
+
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@vendorcenter.in";
+  try {
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE email = $1 AND role = 'admin'",
+      [adminEmail]
+    );
+    if (existing.rows.length > 0) return;
+
+    const passwordHash = await bcrypt.hash(adminPassword, 12);
+    const result = await pool.query(
+      `INSERT INTO users (email, role, password_hash, name, verified)
+       VALUES ($1, 'admin', $2, 'Platform Admin', true)
+       RETURNING id`,
+      [adminEmail, passwordHash]
+    );
+    // Also insert into user_roles
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role) VALUES ($1, 'admin') ON CONFLICT (user_id, role) DO NOTHING`,
+      [result.rows[0].id]
+    );
+    console.log(`[admin-seed] created admin user: ${adminEmail}`);
+  } catch (err) {
+    console.warn(`[admin-seed] failed:`, (err as Error).message);
+  }
+}
+
 async function bootstrap() {
   validateSecurityConfiguration();
 
@@ -40,6 +72,7 @@ async function bootstrap() {
     await initializeDatabase();
     dbState.connected = true;
     dbState.lastError = "";
+    await autoSeedAdmin();
   } catch (error) {
     dbState.connected = false;
     dbState.lastError = error instanceof Error ? error.message : "Database initialization failed";

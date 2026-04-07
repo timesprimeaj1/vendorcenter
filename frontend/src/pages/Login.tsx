@@ -506,7 +506,7 @@ const Login = () => {
         <Button
           type="button"
           variant="outline"
-          disabled={loading || !email}
+          disabled={loading}
           onClick={handleSendEmailOtp}
           className="w-full h-11 rounded-xl border-border/60 text-sm font-medium"
         >
