@@ -150,19 +150,37 @@ app.get("/health", (_req: Request, res: Response) => {
 
 // Firebase Admin SDK health check
 app.get("/health/firebase", async (_req: Request, res: Response) => {
+  const { env: envConfig } = await import("./config/env.js");
+  const { isFirebaseConfigured } = await import("./services/firebaseService.js");
+
+  // Key diagnostics (safe: only PEM header, length — no secret material)
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY ?? "";
+  const parsedKey = envConfig.firebasePrivateKey;
+  const keyDiag = {
+    rawLength: rawKey.length,
+    parsedLength: parsedKey.length,
+    rawFirst35: rawKey.substring(0, 35),
+    parsedFirst35: parsedKey.substring(0, 35),
+    parsedLast30: parsedKey.substring(Math.max(0, parsedKey.length - 30)),
+    hasLiteralBackslashN: rawKey.includes("\\n"),
+    hasRealNewlines: parsedKey.includes("\n"),
+    newlineCount: (parsedKey.match(/\n/g) || []).length,
+    rawStartsWithQuote: rawKey.startsWith('"') || rawKey.startsWith("'"),
+  };
+
+  const configured = isFirebaseConfigured();
+  if (!configured) {
+    res.json({ success: true, data: { configured: false, status: "not_configured", keyDiag } });
+    return;
+  }
+
   try {
-    const { isFirebaseConfigured, getFirebaseAuth } = await import("./services/firebaseService.js");
-    const configured = isFirebaseConfigured();
-    if (!configured) {
-      res.json({ success: true, data: { configured: false, status: "not_configured", message: "Missing FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY" } });
-      return;
-    }
-    // Try to initialize and list users (limit 1) to verify credentials
+    const { getFirebaseAuth } = await import("./services/firebaseService.js");
     const auth = getFirebaseAuth();
     await auth.listUsers(1);
-    res.json({ success: true, data: { configured: true, status: "ok", message: "Firebase Admin SDK verified" } });
+    res.json({ success: true, data: { configured: true, status: "ok", keyDiag, message: "Firebase Admin SDK verified" } });
   } catch (err: any) {
-    res.json({ success: true, data: { configured: true, status: "error", message: err.message || "Firebase init failed" } });
+    res.json({ success: true, data: { configured: true, status: "error", keyDiag, message: err.message || "Firebase init failed" } });
   }
 });
 
