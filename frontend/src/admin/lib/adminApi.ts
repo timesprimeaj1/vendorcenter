@@ -219,6 +219,9 @@ export const adminApi = {
   quickAddPincode: (pincode: string, areaName?: string) =>
     request<any>("/service-zones/quick-add-pincode", { method: "POST", body: JSON.stringify({ pincode, areaName }) }),
 
+  checkServiceability: (pincode: string) =>
+    request<any>(`/service-zones/check?pincode=${encodeURIComponent(pincode)}`),
+
   getServiceZoneCounts: () =>
     request<{ states: number; zones: number; pincodes: number }>("/service-zones/counts"),
 };

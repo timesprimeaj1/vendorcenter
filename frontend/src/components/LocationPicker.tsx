@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, Navigation, Clock } from "lucide-react";
+import { X, Search, Navigation, Clock, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useLocation } from "@/hooks/useLocation";
 import { forwardGeocode } from "@/services/locationService";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 interface LocationResult {
   lat: number;
@@ -43,9 +45,11 @@ const LocationPicker = ({ open, onClose }: LocationPickerProps) => {
   const [searching, setSearching] = useState(false);
   const [recentLocations, setRecentLocations] = useState<LocationResult[]>([]);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const { setManualLocation, refresh } = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -53,6 +57,10 @@ const LocationPicker = ({ open, onClose }: LocationPickerProps) => {
       setQuery("");
       setResults([]);
       setTimeout(() => inputRef.current?.focus(), 200);
+      // Fetch saved addresses for logged-in customers
+      if (user && user.role === "customer") {
+        api.getAddresses().then(res => setSavedAddresses(res.data ?? [])).catch(() => {});
+      }
     }
   }, [open]);
 
@@ -213,6 +221,45 @@ const LocationPicker = ({ open, onClose }: LocationPickerProps) => {
                       </div>
                     </button>
                   </div>
+
+                  {/* Saved addresses */}
+                  {savedAddresses.length > 0 && (
+                    <div className="mt-6 px-4">
+                      <h3 className="text-xs font-semibold text-muted-foreground tracking-wider mb-3 px-3">
+                        SAVED ADDRESSES
+                      </h3>
+                      <div className="space-y-1">
+                        {savedAddresses.map((addr: any) => (
+                          <button
+                            key={addr.id}
+                            onClick={() => {
+                              if (addr.latitude && addr.longitude) {
+                                selectLocation({
+                                  lat: Number(addr.latitude),
+                                  lng: Number(addr.longitude),
+                                  display: addr.fullAddress || `${addr.label} — ${addr.pincode}`,
+                                });
+                              }
+                            }}
+                            className="w-full text-left flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-secondary transition-colors"
+                          >
+                            <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium flex items-center gap-1.5">
+                                {addr.label}
+                                {addr.isDefault && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Default</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                {addr.fullAddress || addr.pincode}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Recent searches */}
                   {recentLocations.length > 0 && (

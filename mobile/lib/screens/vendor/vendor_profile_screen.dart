@@ -95,6 +95,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
               _infoTile(Icons.store, 'Business Name', _profile['business_name'] ?? 'Not set'),
               _infoTile(Icons.category, 'Category', _profile['category'] ?? 'Not set'),
               _infoTile(Icons.location_on, 'Area', _profile['area'] ?? _profile['city'] ?? 'Not set'),
+              _infoTile(Icons.pin_drop, 'Pincode', _profile['primaryPincode'] ?? _profile['primary_pincode'] ?? 'Not set'),
               _infoTile(Icons.phone, 'Phone', _profile['phone'] ?? auth.userPhone ?? 'Not set'),
               const SizedBox(height: 20),
             ],

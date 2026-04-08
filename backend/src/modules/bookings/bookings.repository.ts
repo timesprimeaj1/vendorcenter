@@ -90,8 +90,33 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
 
   if (role === "vendor") {
     const result = await pool.query<DbBooking>(
-      `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
-       FROM bookings WHERE vendor_id = $1 ORDER BY created_at DESC`,
+      `SELECT b.id, b.customer_id as "customerId", b.vendor_id as "vendorId",
+              b.service_name as "serviceName", b.status,
+              b.transaction_id as "transactionId", b.payment_status as "paymentStatus",
+              b.scheduled_date as "scheduledDate", b.scheduled_time as "scheduledTime",
+              b.notes, b.final_amount as "finalAmount",
+              b.work_started_at as "workStartedAt",
+              b.completion_requested_at as "completionRequestedAt",
+              b.payment_request_token_hash as "paymentRequestTokenHash",
+              b.payment_request_expires as "paymentRequestExpires",
+              b.rejection_reason as "rejectionReason",
+              b.created_at as "createdAt", b.updated_at as "updatedAt",
+              u.name as "customerName",
+              b.service_pincode as "servicePincode",
+              CASE WHEN b.status IN ('completed','cancelled') AND b.payment_status = 'success'
+                THEN NULL ELSE ca.full_address END as "serviceAddress",
+              CASE WHEN b.status IN ('completed','cancelled') AND b.payment_status = 'success'
+                THEN NULL ELSE ca.label END as "serviceAddressLabel",
+              CASE WHEN b.status IN ('completed','cancelled') AND b.payment_status = 'success'
+                THEN NULL ELSE ca.landmark END as "serviceAddressLandmark",
+              CASE WHEN b.status IN ('completed','cancelled') AND b.payment_status = 'success'
+                THEN NULL ELSE ca.city END as "serviceAddressCity",
+              CASE WHEN b.status IN ('completed','cancelled') AND b.payment_status = 'success'
+                THEN NULL ELSE ca.pincode END as "serviceAddressPincode"
+       FROM bookings b
+       LEFT JOIN users u ON u.id = b.customer_id
+       LEFT JOIN customer_addresses ca ON ca.id = b.service_address_id
+       WHERE b.vendor_id = $1 ORDER BY b.created_at DESC`,
       [actorId]
     );
     return result.rows;

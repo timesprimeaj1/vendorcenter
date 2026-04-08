@@ -24,7 +24,7 @@ import { sendBookingConfirmation, sendCompletionOtpEmail, sendNotificationEmail,
 import { findUserById } from "../auth/auth.repository.js";
 import { generateBookingReceipt } from "../../services/pdfService.js";
 import { getVendorProfile } from "../vendors/vendors.repository.js";
-import { checkServiceability } from "../service-zones/service-zones.repository.js";
+import { checkServiceability, vendorServesPincode } from "../service-zones/service-zones.repository.js";
 
 const statusSchema = z.enum(["pending", "confirmed", "in_progress", "completed", "cancelled"]);
 
@@ -53,6 +53,13 @@ bookingsRouter.post("/", requireRole(["customer"]), async (req: AuthRequest, res
     const serviceCheck = await checkServiceability(parsed.data.pincode);
     if (!serviceCheck || !serviceCheck.serviceable) {
       res.status(400).json({ success: false, error: "This pincode is not in a serviceable area yet." });
+      return;
+    }
+
+    // Check if the specific vendor covers this pincode
+    const vendorCovers = await vendorServesPincode(parsed.data.vendorId, parsed.data.pincode);
+    if (!vendorCovers) {
+      res.status(400).json({ success: false, error: "This vendor does not provide services in your pincode area." });
       return;
     }
   }

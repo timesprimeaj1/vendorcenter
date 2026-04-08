@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, LogOut, Store, CheckCircle2, XCircle, Clock, ArrowLeft } from "lucide-react";
+import { Shield, LogOut, Store, CheckCircle2, XCircle, Clock, ArrowLeft, MapPin, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,12 @@ interface VendorItem {
   zone: string;
   verificationStatus: string;
   createdAt: string;
+  ownerName?: string;
+  ownerPhone?: string;
+  ownerEmail?: string;
+  profilePictureUrl?: string;
+  primaryPincode?: string;
+  workingHours?: string;
 }
 
 const AdminVendors = () => {
@@ -142,19 +148,55 @@ const AdminVendors = () => {
               <motion.div key={v.id || i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg">{v.businessName}</h3>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[v.verificationStatus] || "bg-gray-100 text-gray-800"}`}>
-                            {v.verificationStatus?.replace("_", " ")}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">Zone: {v.zone}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {(v.serviceCategories || []).map((cat: string) => (
-                            <Badge key={cat} variant="secondary" className="text-xs">{cat}</Badge>
-                          ))}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="flex gap-3 flex-1">
+                        {v.profilePictureUrl ? (
+                          <img
+                            src={v.profilePictureUrl.startsWith("http") ? v.profilePictureUrl : `/api/uploads/files/${v.profilePictureUrl}`}
+                            alt=""
+                            className="w-14 h-14 rounded-full object-cover border-2 border-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                            <User className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold text-lg">{v.businessName}</h3>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[v.verificationStatus] || "bg-gray-100 text-gray-800"}`}>
+                              {v.verificationStatus?.replace("_", " ")}
+                            </span>
+                          </div>
+                          {v.ownerName && (
+                            <p className="text-sm text-muted-foreground">
+                              <User className="w-3.5 h-3.5 inline mr-1" />{v.ownerName}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-sm text-muted-foreground">
+                            {v.ownerPhone && (
+                              <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{v.ownerPhone}</span>
+                            )}
+                            {v.ownerEmail && (
+                              <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{v.ownerEmail}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            <MapPin className="w-3.5 h-3.5 inline mr-1" />{v.zone}{v.primaryPincode ? ` — ${v.primaryPincode}` : ""}
+                          </p>
+                          {v.workingHours && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              <Clock className="w-3 h-3 inline mr-1" />{v.workingHours}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {(v.serviceCategories || []).map((cat: string) => (
+                              <Badge key={cat} variant="secondary" className="text-xs">{cat}</Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            Registered: {new Date(v.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
                         </div>
                       </div>
 

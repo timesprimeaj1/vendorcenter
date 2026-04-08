@@ -176,7 +176,15 @@ export default function AdminServiceZones() {
     try {
       const res = await adminApi.lookupPincode(quickPin);
       if (res.data?.valid) {
-        setQuickLookup(res.data);
+        // Also check if already in system
+        let existingInfo = null;
+        try {
+          const svcRes = await adminApi.checkServiceability(quickPin);
+          if (svcRes.data?.serviceable) {
+            existingInfo = svcRes.data;
+          }
+        } catch {}
+        setQuickLookup({ ...res.data, existingInfo });
         setQuickAreaName(res.data.postOffices?.[0]?.name || res.data.district || "");
       } else {
         toast.error(`Pincode ${quickPin} not found in India Post database`);
@@ -347,6 +355,12 @@ export default function AdminServiceZones() {
                         <span><span className="text-gray-500">State:</span> <strong>{quickLookup.state}</strong></span>
                         <span><span className="text-gray-500">District:</span> <strong>{quickLookup.district}</strong></span>
                       </div>
+                      {quickLookup.existingInfo && (
+                        <div className="mt-2 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 text-xs text-amber-800">
+                          <strong>Already registered</strong> under: {quickLookup.existingInfo.areaName}, {quickLookup.existingInfo.zoneName}, {quickLookup.existingInfo.stateName}.
+                          Adding again will <strong>move</strong> it to the new area.
+                        </div>
+                      )}
                     </div>
                     <button onClick={() => setQuickLookup(null)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
                   </div>

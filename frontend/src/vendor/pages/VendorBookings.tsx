@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, LogOut, CalendarDays, Clock, CheckCircle2, XCircle, Download, IndianRupee, ShieldCheck, Send } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, CalendarDays, Clock, CheckCircle2, XCircle, Download, IndianRupee, ShieldCheck, Send, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -195,6 +195,27 @@ const VendorBookings = () => {
                         </p>
                       )}
                       {b.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">"{b.notes}"</p>}
+                      {b.customerName && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Customer: <span className="font-medium text-foreground">{b.customerName}</span>
+                        </p>
+                      )}
+                      {b.serviceAddress && (
+                        <p className="text-xs text-blue-600 mt-0.5 flex items-start gap-1">
+                          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                          <span>
+                            {b.serviceAddressLabel && <span className="font-medium">{b.serviceAddressLabel}: </span>}
+                            {b.serviceAddress}
+                            {b.serviceAddressPincode && ` — ${b.serviceAddressPincode}`}
+                          </span>
+                        </p>
+                      )}
+                      {!b.serviceAddress && b.servicePincode && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          <MapPin className="w-3 h-3 inline mr-1" />
+                          Pincode: {b.servicePincode}
+                        </p>
+                      )}
                       {b.workStartedAt && (
                         <p className="text-xs text-green-700 mt-0.5">
                           {t("bookings.workStarted")} {new Date(b.workStartedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}

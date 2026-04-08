@@ -108,6 +108,8 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> with Single
     final paymentStatus = (booking['payment_status'] ?? '').toString().toLowerCase();
     final finalAmount = booking['final_amount'] ?? booking['finalAmount'];
     final completionRequested = booking['completion_requested_at'] != null;
+    final serviceAddress = booking['serviceAddress'];
+    final servicePincode = booking['servicePincode'] ?? booking['service_pincode'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -140,6 +142,38 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> with Single
                 Text(customerName, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
               ],
             ),
+            if (serviceAddress != null && serviceAddress is Map) ...[
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      [
+                        if (serviceAddress['label'] != null) serviceAddress['label'],
+                        if (serviceAddress['landmark'] != null) serviceAddress['landmark'],
+                        if (serviceAddress['fullAddress'] != null) serviceAddress['fullAddress'],
+                        if (serviceAddress['pincode'] != null) serviceAddress['pincode'],
+                      ].where((s) => s != null && s.toString().isNotEmpty).join(', '),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (servicePincode != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('Pincode: $servicePincode', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            ],
             const SizedBox(height: 4),
             Row(
               children: [

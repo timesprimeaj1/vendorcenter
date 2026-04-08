@@ -64,6 +64,7 @@ const VendorEditProfile = () => {
   const [longitude, setLongitude] = useState("");
   const [serviceRadius, setServiceRadius] = useState("10");
   const [workingHours, setWorkingHours] = useState("");
+  const [primaryPincode, setPrimaryPincode] = useState("");
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null);
@@ -102,6 +103,7 @@ const VendorEditProfile = () => {
           setLongitude(String(p.longitude || ""));
           setServiceRadius(String(p.serviceRadiusKm || 10));
           setWorkingHours(p.workingHours || "");
+          setPrimaryPincode(p.primaryPincode || "");
           setProfileEdited(!!p.profileEdited);
           setExistingPortfolio(p.portfolioUrls || []);
           setIsOnboardingIncomplete(!isVendorProfileComplete(p));
@@ -293,6 +295,10 @@ const VendorEditProfile = () => {
                     <p><strong>{t("editProfile.business")}</strong> {businessName}</p>
                     <p><strong>{t("editProfile.categoriesLabel")}</strong> {selectedCategories.join(", ")}</p>
                     <p><strong>{t("editProfile.zone")}</strong> {zone}</p>
+                    {primaryPincode && <p><strong>Pincode:</strong> {primaryPincode}</p>}
+                    {(latitude || longitude) && (
+                      <p><strong>Location:</strong> {latitude}, {longitude}</p>
+                    )}
                     <p><strong>{t("editProfile.workingHours")}</strong> {workingHours}</p>
                     <p><strong>{t("editProfile.serviceRadius")}</strong> {serviceRadius} km</p>
                   </div>

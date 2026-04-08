@@ -104,6 +104,10 @@ const VendorDetail = () => {
     if (!selectedService) { toast.error(t("vendorDetail.selectService")); return; }
     if (!scheduledDate) { toast.error(t("vendorDetail.selectDate")); return; }
     if (!scheduledTime) { toast.error(t("vendorDetail.selectTime")); return; }
+    if (!selectedAddressId) {
+      toast.error("Please select a service address before booking.");
+      return;
+    }
     if (addressServiceable === false) {
       toast.error("Your selected address is not in a serviceable area yet. Please choose a different address.");
       return;
@@ -180,28 +184,54 @@ const VendorDetail = () => {
         </div>
       </div>
 
-      {/* Photo Gallery */}
+      {/* Photo Gallery — Professional Portfolio */}
       <div className="container pt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 rounded-2xl overflow-hidden max-h-[340px]">
-          {photos.slice(0, 4).map((src, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.1, duration: 0.4 }}
-              className={`relative overflow-hidden cursor-pointer rounded-xl group ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-              onClick={() => setLightboxIdx(i)}
-            >
-              <img src={src} alt={`${vendorName} photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              {i === 3 && photos.length > 4 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
-                  <span className="text-white font-semibold text-lg">{t("vendorDetail.morePhotos", { count: photos.length - 4 })}</span>
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
+        {photos.length === 1 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative overflow-hidden cursor-pointer rounded-2xl max-h-[360px]"
+            onClick={() => setLightboxIdx(0)}
+          >
+            <img src={photos[0]} alt={`${vendorName} photo`} className="w-full h-full object-cover" loading="lazy" />
+          </motion.div>
+        ) : photos.length === 2 ? (
+          <div className="grid grid-cols-2 gap-2.5 rounded-2xl overflow-hidden max-h-[300px]">
+            {photos.map((src, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className="relative overflow-hidden cursor-pointer rounded-xl group"
+                onClick={() => setLightboxIdx(i)}
+              >
+                <img src={src} alt={`${vendorName} photo ${i + 1}`} className="w-full h-full object-cover aspect-[4/3] group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2 rounded-2xl overflow-hidden max-h-[340px]">
+            {photos.slice(0, 5).map((src, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.08, duration: 0.4 }}
+                className={`relative overflow-hidden cursor-pointer rounded-xl group ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+                onClick={() => setLightboxIdx(i)}
+              >
+                <img src={src} alt={`${vendorName} photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {i === 4 && photos.length > 5 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
+                    <span className="text-white font-semibold text-lg">+{photos.length - 5} more</span>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
@@ -402,7 +432,7 @@ const VendorDetail = () => {
 
               <Button
                 className="w-full gradient-bg text-primary-foreground border-0 rounded-xl h-11 btn-press shadow-lg hover:shadow-xl transition-shadow"
-                disabled={!selectedService || !scheduledDate || !scheduledTime || booking}
+                disabled={!selectedService || !scheduledDate || !scheduledTime || !selectedAddressId || addressServiceable === false || booking}
                 onClick={handleBooking}
               >
                 {booking ? t("vendorDetail.sending") : t("vendorDetail.requestBooking")}

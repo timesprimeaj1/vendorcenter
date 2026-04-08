@@ -109,6 +109,12 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       );
       return;
     }
+    if (_selectedAddressId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a service address before booking.')),
+      );
+      return;
+    }
     if (_addressServiceable == false) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Your selected address is not in a serviceable area yet. Please choose a different address.')),

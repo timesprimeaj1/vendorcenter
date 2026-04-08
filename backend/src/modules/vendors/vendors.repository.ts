@@ -48,8 +48,19 @@ export async function listVendorProfiles() {
 
 export async function listVendorProfilesByStatus(status: "under_review" | "approved" | "rejected") {
   const result = await pool.query(
-    `SELECT id, vendor_id as "vendorId", business_name as "businessName", service_categories as "serviceCategories", latitude, longitude, zone, service_radius_km as "serviceRadiusKm", working_hours as "workingHours", document_urls as "documentUrls", verification_status as "verificationStatus", created_at as "createdAt"
-     FROM vendor_profiles WHERE verification_status = $1 ORDER BY created_at DESC`,
+    `SELECT vp.id, vp.vendor_id as "vendorId", vp.business_name as "businessName",
+            vp.service_categories as "serviceCategories", vp.latitude, vp.longitude,
+            vp.zone, vp.service_radius_km as "serviceRadiusKm",
+            vp.working_hours as "workingHours", vp.document_urls as "documentUrls",
+            vp.portfolio_urls as "portfolioUrls",
+            vp.primary_pincode as "primaryPincode",
+            vp.verification_status as "verificationStatus",
+            vp.created_at as "createdAt",
+            u.name as "ownerName", u.email as "ownerEmail", u.phone as "ownerPhone",
+            u.profile_picture_url as "profilePictureUrl"
+     FROM vendor_profiles vp
+     LEFT JOIN users u ON u.id = vp.vendor_id
+     WHERE vp.verification_status = $1 ORDER BY vp.created_at DESC`,
     [status]
   );
   return result.rows;
@@ -272,6 +283,7 @@ export async function getVendorProfile(vendorId: string) {
             working_hours as "workingHours", document_urls as "documentUrls",
             portfolio_urls as "portfolioUrls",
             verification_status as "verificationStatus",
+            primary_pincode as "primaryPincode",
             COALESCE(profile_edited, false) as "profileEdited",
             created_at as "createdAt", updated_at as "updatedAt"
      FROM vendor_profiles WHERE vendor_id = $1`,
