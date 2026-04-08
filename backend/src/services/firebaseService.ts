@@ -30,6 +30,8 @@ function initFirebase(): admin.app.App {
 
   // Priority 2: Individual env vars
   if (env.firebaseProjectId && env.firebaseClientEmail && env.firebasePrivateKey) {
+    const pk = env.firebasePrivateKey;
+    console.log(`[firebase] Init from env vars — projectId: ${env.firebaseProjectId}, key starts: "${pk.substring(0, 30)}...", key length: ${pk.length}, has newlines: ${pk.includes("\n")}`);
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert({
         projectId: env.firebaseProjectId,

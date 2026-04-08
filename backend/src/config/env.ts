@@ -67,7 +67,14 @@ export const env = {
   // Firebase
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID ?? "",
   firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? "",
-  firebasePrivateKey: (process.env.FIREBASE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
+  firebasePrivateKey: (() => {
+    let key = process.env.FIREBASE_PRIVATE_KEY ?? "";
+    // Strip surrounding quotes (common copy-paste issue)
+    key = key.replace(/^["']|["']$/g, "");
+    // Replace escaped newlines (literal \n) with real newlines
+    key = key.replace(/\\n/g, "\n");
+    return key;
+  })(),
   firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH ?? "",
 };
 
