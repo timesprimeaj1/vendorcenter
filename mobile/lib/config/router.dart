@@ -60,6 +60,12 @@ GoRouter createRouter(AuthService auth) {
           path == '/register' ||
           path == '/forgot-password';
 
+      // If logged in with wrong role (vendor in customer app), force logout
+      if (loggedIn && auth.user?['role'] != null && auth.user!['role'] != 'customer') {
+        auth.logout();
+        return '/login';
+      }
+
       // If not logged in and route requires auth, redirect to login
       if (!loggedIn && !isAuthPage && !isPublic) return '/login';
       // If logged in and on auth page, go home

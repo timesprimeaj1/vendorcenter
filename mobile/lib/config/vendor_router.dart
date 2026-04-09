@@ -22,6 +22,12 @@ GoRouter createVendorRouter(AuthService auth) {
       final loggedIn = auth.isLoggedIn;
       final isPublic = state.matchedLocation == '/login' || state.matchedLocation == '/register' || state.matchedLocation == '/forgot-password';
 
+      // If logged in with wrong role (customer in vendor app), force logout
+      if (loggedIn && auth.user?['role'] != null && auth.user!['role'] != 'vendor') {
+        auth.logout();
+        return '/login';
+      }
+
       if (!loggedIn && !isPublic) return '/login';
       if (loggedIn && isPublic) return '/dashboard';
       return null;

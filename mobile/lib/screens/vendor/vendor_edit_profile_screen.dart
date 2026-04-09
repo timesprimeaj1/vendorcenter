@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:vendorcenter/config/theme.dart';
@@ -24,6 +26,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
   final _phoneCtrl = TextEditingController();
   // Business fields
   final _businessNameCtrl = TextEditingController();
+  final _pincodeCtrl = TextEditingController();
   final _zoneCtrl = TextEditingController();
   final _radiusCtrl = TextEditingController();
   final _hoursCtrl = TextEditingController();
@@ -31,11 +34,14 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _uploading = false;
+  bool _lookingUpPincode = false;
+  bool _detectingLocation = false;
   File? _avatarFile;
   String? _avatarUrl;
   List<String> _categories = [];
   double? _lat;
   double? _lng;
+  String? _pincodeArea; // auto-filled from pincode lookup
 
   @override
   void initState() {
@@ -48,6 +54,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _businessNameCtrl.dispose();
+    _pincodeCtrl.dispose();
     _zoneCtrl.dispose();
     _radiusCtrl.dispose();
     _hoursCtrl.dispose();
@@ -67,8 +74,14 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
         _phoneCtrl.text = user['phone'] ?? '';
         _avatarUrl = user['profilePictureUrl'] as String?;
         _businessNameCtrl.text = vendor['businessName'] ?? '';
-        _zoneCtrl.text = vendor['zone'] ?? '';
-        _radiusCtrl.text = (vendor['serviceRadiusKm'] ?? '').toString();
+        final zone = vendor['zone'] ?? '';
+        _zoneCtrl.text = zone;
+        // If zone looks like a 6-digit pincode, populate the pincode field
+        if (RegExp(r'^\d{6}$').hasMatch(zone)) {
+          _pincodeCtrl.text = zone;
+        }
+        final radius = vendor['serviceRadiusKm'];
+        _radiusCtrl.text = (radius != null && radius != 0) ? radius.toString() : '';
         _hoursCtrl.text = vendor['workingHours'] ?? '';
         _lat = vendor['latitude'] is num ? (vendor['latitude'] as num).toDouble() : null;
         _lng = vendor['longitude'] is num ? (vendor['longitude'] as num).toDouble() : null;
@@ -78,6 +91,87 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _lookupPincode() async {
+    final pin = _pincodeCtrl.text.trim();
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid 6-digit pincode'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+    setState(() => _lookingUpPincode = true);
+    try {
+      final res = await _api.lookupPincode(pin);
+      if (mounted) {
+        final offices = res['offices'] as List? ?? [];
+        if (offices.isNotEmpty) {
+          final first = offices[0];
+          final area = '${first['Name']}, ${first['District']}, ${first['State']}';
+          setState(() {
+            _pincodeArea = area;
+            _zoneCtrl.text = pin;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Found: $area'), backgroundColor: AppColors.success),
+          );
+        } else {
+          setState(() => _pincodeArea = null);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pincode not found'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _pincodeArea = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lookup failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _lookingUpPincode = false);
+    }
+  }
+
+  Future<void> _detectLocation() async {
+    setState(() => _detectingLocation = true);
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever || perm == LocationPermission.denied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission denied'), backgroundColor: AppColors.error),
+          );
+        }
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      if (mounted) {
+        setState(() {
+          _lat = pos.latitude;
+          _lng = pos.longitude;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Location: ${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _detectingLocation = false);
     }
   }
 
@@ -133,7 +227,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
         'serviceCategories': _categories.isNotEmpty ? _categories : ['General'],
         'latitude': _lat ?? 0.0,
         'longitude': _lng ?? 0.0,
-        'zone': _zoneCtrl.text.trim().isNotEmpty ? _zoneCtrl.text.trim() : 'Default',
+        'zone': _pincodeCtrl.text.trim().isNotEmpty ? _pincodeCtrl.text.trim() : (_zoneCtrl.text.trim().isNotEmpty ? _zoneCtrl.text.trim() : 'Default'),
         'serviceRadiusKm': (double.tryParse(_radiusCtrl.text.trim()) ?? 10).clamp(1, 100),
         'workingHours': _hoursCtrl.text.trim().isNotEmpty ? _hoursCtrl.text.trim() : '9 AM - 6 PM',
       });
@@ -155,30 +249,95 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
     }
   }
 
+  static const _allCategories = [
+    'Cleaning', 'Plumbing', 'Electrical', 'Painting',
+    'Carpentry', 'Pest Control', 'AC Repair', 'Salon',
+    'Appliance Repair', 'Moving', 'Photography', 'Catering',
+  ];
+
   void _editCategories() async {
-    final ctrl = TextEditingController(text: _categories.join(', '));
-    final result = await showDialog<String>(
+    final selected = List<String>.from(_categories);
+    final customCtrl = TextEditingController();
+    final result = await showModalBottomSheet<List<String>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Service Categories'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(
-            hintText: 'e.g. Plumbing, Electrician',
-            helperText: 'Comma-separated list',
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 16, right: 16, top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
           ),
-          maxLines: 2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select Categories', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _allCategories.map((cat) {
+                  final isSelected = selected.contains(cat);
+                  return FilterChip(
+                    label: Text(cat),
+                    selected: isSelected,
+                    onSelected: (val) {
+                      setSheetState(() {
+                        if (val) { selected.add(cat); } else { selected.remove(cat); }
+                      });
+                    },
+                    selectedColor: AppColors.vendor.withValues(alpha: 0.15),
+                    checkmarkColor: AppColors.vendor,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: customCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Add custom category',
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle, color: AppColors.vendor),
+                    onPressed: () {
+                      final txt = customCtrl.text.trim();
+                      if (txt.isNotEmpty && !selected.contains(txt)) {
+                        setSheetState(() => selected.add(txt));
+                        customCtrl.clear();
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel'))),
+                  const SizedBox(width: 12),
+                  Expanded(child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, selected),
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.vendor),
+                    child: const Text('Done'),
+                  )),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Save')),
-        ],
       ),
     );
     if (result != null && mounted) {
-      setState(() {
-        _categories = result.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-      });
+      setState(() => _categories = result);
     }
   }
 
@@ -307,19 +466,90 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // Location section
+                  Text('Location & Coverage', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textOf(context))),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _zoneCtrl,
-                    decoration: _inputDeco('Service Zone / Area', Icons.location_on_outlined),
+
+                  // Pincode with lookup
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _pincodeCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                          decoration: _inputDeco('Pincode (6 digits)', Icons.pin_drop_outlined),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null; // optional
+                            if (v.trim().length != 6 || int.tryParse(v.trim()) == null) return 'Enter valid 6-digit pincode';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: SizedBox(
+                          height: 48,
+                          child: FilledButton.icon(
+                            onPressed: _lookingUpPincode ? null : _lookupPincode,
+                            icon: _lookingUpPincode
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.search, size: 18),
+                            label: const Text('Lookup'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.vendor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_pincodeArea != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_outline, size: 16, color: AppColors.success),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(_pincodeArea!, style: const TextStyle(fontSize: 13, color: AppColors.success))),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+
+                  // GPS location detect
+                  OutlinedButton.icon(
+                    onPressed: _detectingLocation ? null : _detectLocation,
+                    icon: _detectingLocation
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.my_location, size: 18),
+                    label: Text(_lat != null ? 'Location: ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}' : 'Detect My Location'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: AppColors.vendor.withValues(alpha: 0.5)),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _radiusCtrl,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: _inputDeco('Service Radius (km)', Icons.radar_outlined),
                     validator: (v) {
-                      final n = double.tryParse(v ?? '');
-                      if (n == null || n <= 0) return 'Enter a valid radius';
+                      if (v == null || v.trim().isEmpty) return null; // use default
+                      final n = double.tryParse(v.trim());
+                      if (n == null || n <= 0) return 'Enter a valid radius (1-100)';
                       if (n > 100) return 'Maximum 100 km';
                       return null;
                     },

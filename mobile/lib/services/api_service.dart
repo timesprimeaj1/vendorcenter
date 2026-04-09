@@ -96,10 +96,11 @@ class ApiService {
   }
 
   // ─── Auth endpoints ────────────────────────────
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password, {String? role}) async {
     final res = await _dio.post('/auth/login', data: {
       'email': email,
       'password': password,
+      if (role != null) 'role': role,
     });
     return res.data;
   }

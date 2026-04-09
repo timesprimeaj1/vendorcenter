@@ -30,7 +30,7 @@ class AuthService extends ChangeNotifier {
 
   /// Email + password login
   Future<void> login(String email, String password, {String role = 'customer'}) async {
-    final res = await _api.login(email, password);
+    final res = await _api.login(email, password, role: role);
     if (res['success'] == true && res['data'] != null) {
       final data = res['data'];
       await _api.saveTokens(data['accessToken'], data['refreshToken']);
