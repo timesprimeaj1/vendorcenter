@@ -133,7 +133,13 @@ class _SearchScreenState extends State<SearchScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.surfaceAltOf(context),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.borderOf(context)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: TextField(
                         controller: _searchCtrl,
@@ -275,11 +281,8 @@ class _FilterChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isActive ? AppColors.primary : AppColors.borderOf(context),
-            ),
+            color: isActive ? AppColors.primary : AppColors.surfaceAltOf(context),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             label,

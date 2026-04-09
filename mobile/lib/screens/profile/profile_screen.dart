@@ -142,15 +142,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         appBar: AppBar(title: Text(context.tr('profile.title'))),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.person_outline, size: 56, color: AppColors.textMuted),
-              const SizedBox(height: 12),
-              Text(context.tr('profile.sign_in_to_view'), style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: () => context.go('/login'), child: Text(context.tr('auth.login'))),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_outline_rounded, size: 40, color: AppColors.primary),
+                ),
+                const SizedBox(height: 16),
+                Text(context.tr('profile.sign_in_to_view'), style: TextStyle(color: AppColors.textSecondaryOf(context), fontSize: 16)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(onPressed: () => context.go('/login'), child: Text(context.tr('auth.login'))),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -204,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(auth.userName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textOf(context))),
+                        Text(auth.userName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textOf(context))),
                         if (auth.userEmail != null && auth.userEmail!.isNotEmpty)
                           Text(auth.userEmail!, style: TextStyle(color: AppColors.textSecondaryOf(context))),
                         if (auth.userPhone != null && auth.userPhone!.isNotEmpty)
@@ -263,9 +276,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceOf(context),
+                      color: AppColors.surfaceAltOf(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderOf(context)),
                     ),
                     child: Row(
                       children: [
@@ -333,9 +345,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
+        color: AppColors.surfaceAltOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderOf(context)),
       ),
       child: Row(
         children: [
@@ -373,9 +384,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
+        color: AppColors.surfaceAltOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderOf(context)),
       ),
       child: Row(
         children: [
@@ -399,12 +409,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
+        color: AppColors.surfaceAltOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderOf(context)),
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
         title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.textOf(context))),
         subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondaryOf(context))) : null,
         trailing: Icon(Icons.chevron_right, size: 20, color: AppColors.textMutedOf(context)),

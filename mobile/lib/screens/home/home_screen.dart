@@ -83,9 +83,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   static const _bannerCount = 3;
   static const _bannerGradients = [
-    [Color(0xFF2874F0), Color(0xFF6366F1)],
-    [Color(0xFF1A5DC8), Color(0xFF3B82F6)],
-    [Color(0xFF16A34A), Color(0xFF059669)],
+    [Color(0xFF004AC6), Color(0xFF2563EB)],
+    [Color(0xFF2563EB), Color(0xFF60A5FA)],
+    [Color(0xFF22C55E), Color(0xFF16A34A)],
   ];
   static const _bannerIcons = [
     Icons.verified_user_outlined,
@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 148,
+              height: 160,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -267,15 +267,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Row(
             children: [
-              // User avatar circle
+              // User avatar circle — gradient
               GestureDetector(
                 onTap: () => context.go('/profile'),
                 child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.accent],
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.gradientStart, AppColors.gradientEnd],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -289,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(width: 12),
-              // Greeting
+              // Greeting — editorial typography
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,10 +299,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       style: TextStyle(fontSize: 13, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500),
                     ),
                     if (displayName.isNotEmpty) ...[              
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         displayName,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textOf(context)),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textOf(context)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -310,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              // Action icons
+              // Notification
               _ActionIcon(
                 icon: Icons.notifications_outlined,
                 onTap: () => context.push('/notifications'),
@@ -318,18 +318,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          // Location bar (Flipkart style)
-          const SizedBox(height: 8),
+          // Location bar — tonal, no border
+          const SizedBox(height: 10),
           GestureDetector(
             onTap: () {
               LocationPickerSheet.show(context);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.surfaceAltOf(context),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.borderOf(context)),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
@@ -385,7 +384,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: AppColors.surfaceAltOf(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -435,7 +440,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: AppColors.surfaceAltOf(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.borderOf(context)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -565,9 +576,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildQuickActions() {
     final actions = [
-      _QuickAction(context.tr('home.quick_explore'), Icons.map_rounded, const [Color(0xFF6366F1), Color(0xFF8B5CF6)], () => context.push('/explore')),
-      _QuickAction(context.tr('home.quick_bookings'), Icons.event_note_rounded, const [Color(0xFFF59E0B), Color(0xFFF97316)], () => context.go('/bookings')),
-      _QuickAction(context.tr('home.quick_support'), Icons.headset_mic_rounded, const [Color(0xFFEF4444), Color(0xFFEC4899)], () => context.push('/support')),
+      _QuickAction(context.tr('home.quick_explore'), Icons.map_rounded, const [Color(0xFF004AC6), Color(0xFF2563EB)], () => context.push('/explore')),
+      _QuickAction(context.tr('home.quick_bookings'), Icons.event_note_rounded, const [Color(0xFFF97316), Color(0xFFFF8C42)], () => context.go('/bookings')),
+      _QuickAction(context.tr('home.quick_support'), Icons.headset_mic_rounded, const [Color(0xFFEF4444), Color(0xFFF87171)], () => context.push('/support')),
     ];
 
     return Padding(
@@ -582,9 +593,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 margin: EdgeInsets.only(left: e.key == 0 ? 0 : 8),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceOf(context),
+                  color: AppColors.surfaceAltOf(context),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.borderOf(context)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -618,40 +635,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildSocialProof() {
     final items = [
-      _StatItem(context.tr('home.stat_vendors'), _formatCount(_stats['activeVendors']), Icons.storefront_rounded, const Color(0xFF6366F1)),
-      _StatItem(context.tr('home.stat_customers'), _formatCount(_stats['happyCustomers']), Icons.people_rounded, const Color(0xFF16A34A)),
-      _StatItem(context.tr('home.stat_jobs'), _formatCount(_stats['servicesCompleted']), Icons.check_circle_rounded, const Color(0xFFF59E0B)),
+      _StatItem(context.tr('home.stat_vendors'), _formatCount(_stats['activeVendors']), Icons.storefront_rounded, const Color(0xFF2563EB)),
+      _StatItem(context.tr('home.stat_customers'), _formatCount(_stats['happyCustomers']), Icons.people_rounded, const Color(0xFF22C55E)),
+      _StatItem(context.tr('home.stat_jobs'), _formatCount(_stats['servicesCompleted']), Icons.check_circle_rounded, const Color(0xFFF97316)),
     ];
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
+        color: AppColors.surfaceAltOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderOf(context)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Row(
         children: items.asMap().entries.map((e) {
           final item = e.value;
-          final isLast = e.key == items.length - 1;
           return Expanded(
-            child: Container(
-              decoration: !isLast
-                  ? BoxDecoration(border: Border(right: BorderSide(color: AppColors.borderOf(context))))
-                  : null,
-              child: Column(
-                children: [
-                  Icon(item.icon, size: 22, color: item.color),
-                  const SizedBox(height: 6),
-                  Text(item.value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textOf(context))),
-                  const SizedBox(height: 2),
-                  Text(item.label, style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context)), textAlign: TextAlign.center),
-                ],
-              ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(item.icon, size: 20, color: item.color),
+                ),
+                const SizedBox(height: 8),
+                Text(item.value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textOf(context))),
+                const SizedBox(height: 2),
+                Text(item.label, style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context)), textAlign: TextAlign.center),
+              ],
             ),
           );
         }).toList(),

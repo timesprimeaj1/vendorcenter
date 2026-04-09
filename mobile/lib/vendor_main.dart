@@ -78,7 +78,7 @@ class _VendorAppEntryState extends State<_VendorAppEntry> {
     if (_showSplash) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF1A1A2E)),
+        theme: ThemeData(scaffoldBackgroundColor: const Color(0xFF2563EB)),
         home: const SplashScreen(),
       );
     }

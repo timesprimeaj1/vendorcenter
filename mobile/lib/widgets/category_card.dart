@@ -9,22 +9,23 @@ class CategoryCard extends StatelessWidget {
   const CategoryCard({super.key, required this.name, required this.count, this.onTap});
 
   static const _categoryStyles = <String, _CatStyle>{
-    'electric': _CatStyle(Icons.electrical_services, [Color(0xFFFFF3E0), Color(0xFFFFE0B2)], Color(0xFFFF8F00)),
-    'plumb': _CatStyle(Icons.plumbing, [Color(0xFFE3F2FD), Color(0xFFBBDEFB)], Color(0xFF1565C0)),
-    'clean': _CatStyle(Icons.cleaning_services, [Color(0xFFE8F5E9), Color(0xFFC8E6C9)], Color(0xFF2E7D32)),
-    'paint': _CatStyle(Icons.format_paint, [Color(0xFFFCE4EC), Color(0xFFF8BBD0)], Color(0xFFC62828)),
-    'carpenter': _CatStyle(Icons.carpenter, [Color(0xFFEFEBE9), Color(0xFFD7CCC8)], Color(0xFF4E342E)),
-    'salon': _CatStyle(Icons.content_cut, [Color(0xFFF3E5F5), Color(0xFFE1BEE7)], Color(0xFF7B1FA2)),
-    'beauty': _CatStyle(Icons.content_cut, [Color(0xFFF3E5F5), Color(0xFFE1BEE7)], Color(0xFF7B1FA2)),
-    'pest': _CatStyle(Icons.bug_report, [Color(0xFFFFF8E1), Color(0xFFFFECB3)], Color(0xFFF57F17)),
-    'ac': _CatStyle(Icons.ac_unit, [Color(0xFFE0F7FA), Color(0xFFB2EBF2)], Color(0xFF00838F)),
-    'hvac': _CatStyle(Icons.ac_unit, [Color(0xFFE0F7FA), Color(0xFFB2EBF2)], Color(0xFF00838F)),
-    'shift': _CatStyle(Icons.local_shipping, [Color(0xFFEDE7F6), Color(0xFFD1C4E9)], Color(0xFF4527A0)),
-    'pack': _CatStyle(Icons.local_shipping, [Color(0xFFEDE7F6), Color(0xFFD1C4E9)], Color(0xFF4527A0)),
-    'garden': _CatStyle(Icons.grass, [Color(0xFFE8F5E9), Color(0xFFA5D6A7)], Color(0xFF1B5E20)),
-    'photo': _CatStyle(Icons.camera_alt, [Color(0xFFE8EAF6), Color(0xFFC5CAE9)], Color(0xFF283593)),
-    'catering': _CatStyle(Icons.restaurant, [Color(0xFFFBE9E7), Color(0xFFFFCCBC)], Color(0xFFBF360C)),
-    'food': _CatStyle(Icons.restaurant, [Color(0xFFFBE9E7), Color(0xFFFFCCBC)], Color(0xFFBF360C)),
+    'electric': _CatStyle(Icons.electrical_services, Color(0xFFF97316), Color(0xFFFFF7ED)),
+    'plumb': _CatStyle(Icons.plumbing, Color(0xFF2563EB), Color(0xFFEFF6FF)),
+    'clean': _CatStyle(Icons.cleaning_services, Color(0xFF22C55E), Color(0xFFF0FDF4)),
+    'paint': _CatStyle(Icons.format_paint, Color(0xFFEF4444), Color(0xFFFEF2F2)),
+    'carpenter': _CatStyle(Icons.carpenter, Color(0xFF92400E), Color(0xFFFEFCE8)),
+    'salon': _CatStyle(Icons.content_cut, Color(0xFF9333EA), Color(0xFFFAF5FF)),
+    'beauty': _CatStyle(Icons.content_cut, Color(0xFF9333EA), Color(0xFFFAF5FF)),
+    'pest': _CatStyle(Icons.bug_report, Color(0xFFD97706), Color(0xFFFFFBEB)),
+    'ac': _CatStyle(Icons.ac_unit, Color(0xFF0891B2), Color(0xFFECFEFF)),
+    'hvac': _CatStyle(Icons.ac_unit, Color(0xFF0891B2), Color(0xFFECFEFF)),
+    'shift': _CatStyle(Icons.local_shipping, Color(0xFF7C3AED), Color(0xFFF5F3FF)),
+    'pack': _CatStyle(Icons.local_shipping, Color(0xFF7C3AED), Color(0xFFF5F3FF)),
+    'garden': _CatStyle(Icons.grass, Color(0xFF15803D), Color(0xFFF0FDF4)),
+    'photo': _CatStyle(Icons.camera_alt, Color(0xFF1D4ED8), Color(0xFFEFF6FF)),
+    'catering': _CatStyle(Icons.restaurant, Color(0xFFDC2626), Color(0xFFFEF2F2)),
+    'food': _CatStyle(Icons.restaurant, Color(0xFFDC2626), Color(0xFFFEF2F2)),
+    'repair': _CatStyle(Icons.home_repair_service, Color(0xFF2563EB), Color(0xFFEFF6FF)),
   };
 
   _CatStyle get _style {
@@ -32,7 +33,7 @@ class CategoryCard extends StatelessWidget {
     for (final entry in _categoryStyles.entries) {
       if (lower.contains(entry.key)) return entry.value;
     }
-    return const _CatStyle(Icons.home_repair_service, [Color(0xFFF5F5F5), Color(0xFFE0E0E0)], Color(0xFF616161));
+    return const _CatStyle(Icons.home_repair_service, Color(0xFF737686), Color(0xFFF2F3FF));
   }
 
   @override
@@ -43,41 +44,42 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        width: 110,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          gradient: isDark
-              ? null
-              : LinearGradient(colors: style.bg, begin: Alignment.topLeft, end: Alignment.bottomRight),
-          color: isDark ? AppColors.darkSurface : null,
+          color: isDark ? AppColors.darkSurfaceAlt : style.bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? AppColors.darkBorder : style.accent.withValues(alpha: 0.2)),
           boxShadow: [
-            BoxShadow(color: style.accent.withValues(alpha: isDark ? 0.05 : 0.08), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: style.accent.withValues(alpha: isDark ? 0.06 : 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: style.accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                color: style.accent.withValues(alpha: isDark ? 0.18 : 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(style.icon, size: 24, color: style.accent),
+              child: Icon(style.icon, size: 26, color: style.accent),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               name,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textOf(context)),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textOf(context)),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 2),
             Text(
               '$count vendor${count != 1 ? 's' : ''}',
-              style: TextStyle(fontSize: 9, color: AppColors.textMutedOf(context), fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -88,7 +90,7 @@ class CategoryCard extends StatelessWidget {
 
 class _CatStyle {
   final IconData icon;
-  final List<Color> bg;
   final Color accent;
-  const _CatStyle(this.icon, this.bg, this.accent);
+  final Color bg;
+  const _CatStyle(this.icon, this.accent, this.bg);
 }

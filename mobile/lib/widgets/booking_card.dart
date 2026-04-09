@@ -16,6 +16,8 @@ class BookingCard extends StatelessWidget {
     final amount = (booking['finalAmount'] ?? booking['total_amount'] ?? 0).toString();
     final date = (booking['scheduledDate'] ?? booking['preferred_date'] ?? '').toString();
     final time = (booking['scheduledTime'] ?? booking['preferred_time'] ?? '').toString();
+    final isDark = AppColors.isDark(context);
+    final isActive = ['pending', 'confirmed', 'in_progress'].contains(status.toLowerCase());
 
     String displayDate = date;
     try {
@@ -28,44 +30,73 @@ class BookingCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceOf(context),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.borderOf(context)),
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: isActive
+                  ? AppColors.primary.withValues(alpha: isDark ? 0.08 : 0.06)
+                  : Colors.black.withValues(alpha: 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Service name + status
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Service icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.home_repair_service_rounded, size: 20, color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(serviceName, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textOf(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(serviceName, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textOf(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(vendorName, style: TextStyle(fontSize: 13, color: AppColors.textSecondaryOf(context))),
+                    ],
+                  ),
                 ),
                 StatusBadge(status: status),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(vendorName, style: TextStyle(fontSize: 13, color: AppColors.textSecondaryOf(context))),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.calendar_today, size: 13, color: AppColors.textMutedOf(context)),
-                const SizedBox(width: 4),
-                Text(displayDate, style: TextStyle(fontSize: 12, color: AppColors.textMutedOf(context))),
-                if (time.isNotEmpty) ...[
-                  const SizedBox(width: 12),
-                  Icon(Icons.access_time, size: 13, color: AppColors.textMutedOf(context)),
-                  const SizedBox(width: 4),
-                  Text(time, style: TextStyle(fontSize: 12, color: AppColors.textMutedOf(context))),
+            const SizedBox(height: 14),
+            // Date/Time + Amount row — tonal background
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceAlt : AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textSecondaryOf(context)),
+                  const SizedBox(width: 6),
+                  Text(displayDate, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textOf(context))),
+                  if (time.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    Icon(Icons.access_time_rounded, size: 14, color: AppColors.textSecondaryOf(context)),
+                    const SizedBox(width: 4),
+                    Text(time, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textOf(context))),
+                  ],
+                  const Spacer(),
+                  Text('₹$amount', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
                 ],
-                const Spacer(),
-                Text('₹$amount', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
-              ],
+              ),
             ),
           ],
         ),

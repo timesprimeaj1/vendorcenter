@@ -6,8 +6,9 @@ import 'package:vendorcenter/services/favorites_service.dart';
 
 class VendorCard extends StatelessWidget {
   final Map<String, dynamic> vendor;
+  final bool compact;
 
-  const VendorCard({super.key, required this.vendor});
+  const VendorCard({super.key, required this.vendor, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +21,8 @@ class VendorCard extends StatelessWidget {
     final vendorId = vendor['vendorId']?.toString() ?? vendor['id']?.toString() ?? '';
     final isVerified = vendor['verificationStatus'] == 'approved' || vendor['is_verified'] == true;
     final distanceKm = vendor['distanceKm'];
+    final pricePerHour = vendor['pricePerHour'] ?? vendor['price_per_hour'];
+    final profilePhoto = vendor['profilePictureUrl'] ?? vendor['profile_picture_url'] ?? '';
 
     final favService = context.watch<FavoritesService>();
     final isFav = favService.isFavorite(vendorId);
@@ -30,127 +33,242 @@ class VendorCard extends StatelessWidget {
         if (vendorId.isNotEmpty) context.push('/vendor/$vendorId');
       },
       child: Container(
-        padding: const EdgeInsets.all(14),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: AppColors.surfaceOf(context),
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderOf(context)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.04), blurRadius: 10, offset: const Offset(0, 3)),
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: isDark ? 0.08 : 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+            if (!isDark) BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Circular avatar with category icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary.withValues(alpha: 0.12), AppColors.accent.withValues(alpha: 0.1)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  _categoryIcon(category),
-                  size: 22,
-                  color: AppColors.primary,
-                ),
+            // Photo header — 60% image weight
+            SizedBox(
+              height: compact ? 120 : 160,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (profilePhoto.toString().isNotEmpty)
+                    Image.network(
+                      profilePhoto.toString(),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildPhotoPlaceholder(category, isDark),
+                    )
+                  else
+                    _buildPhotoPlaceholder(category, isDark),
+                  // Subtle gradient overlay at bottom
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Container(
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Top-left badges
+                  Positioned(
+                    top: 10, left: 10,
+                    child: Row(
+                      children: [
+                        if (isVerified)
+                          _badge('Verified', Icons.verified, AppColors.primary),
+                        if (isVerified && rating >= 4.5) const SizedBox(width: 6),
+                        if (rating >= 4.5)
+                          _badge('Top Rated', Icons.workspace_premium, AppColors.accent),
+                      ],
+                    ),
+                  ),
+                  // Favorite button top-right
+                  Positioned(
+                    top: 10, right: 10,
+                    child: GestureDetector(
+                      onTap: () => favService.toggle(vendorId),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: Icon(
+                            isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            key: ValueKey(isFav),
+                            size: 18,
+                            color: isFav ? AppColors.error : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Rating pill bottom-left — white glass
+                  if (rating > 0)
+                    Positioned(
+                      bottom: 10, left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star_rounded, size: 14, color: _ratingColor(rating)),
+                            const SizedBox(width: 3),
+                            Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _ratingColor(rating))),
+                            if (reviewCount > 0) ...[
+                              const SizedBox(width: 2),
+                              Text('(${_formatReviews(reviewCount)})', style: const TextStyle(fontSize: 11, color: Color(0xFF737686))),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
+            // Content — editorial spacing
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    name,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textOf(context), height: 1.2),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  // Category tag
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      category,
+                      style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Location + price row
                   Row(
                     children: [
-                      Flexible(
+                      Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                      const SizedBox(width: 3),
+                      Expanded(
                         child: Text(
-                          name,
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textOf(context)),
+                          distanceKm != null ? '$city • ${_formatDistance(distanceKm)}' : city,
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondaryOf(context)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isVerified) ...[
-                        const SizedBox(width: 5),
-                        const Icon(Icons.verified, size: 16, color: Color(0xFF2874F0)),
+                      if (pricePerHour != null) ...[
+                        Text('₹$pricePerHour', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                        Text('/hr', style: TextStyle(fontSize: 11, color: AppColors.textMutedOf(context))),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    category,
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (city.isNotEmpty) ...[
-                        Icon(Icons.location_on_outlined, size: 12, color: AppColors.textMutedOf(context)),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(city, style: TextStyle(fontSize: 11, color: AppColors.textMutedOf(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 12),
+                  // Gradient CTA — Stitch spec
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.gradientStart, AppColors.gradientEnd],
                         ),
-                      ],
-                      if (reviewCount > 0) ...[
-                        const SizedBox(width: 6),
-                        Text('$reviewCount Reviews', style: TextStyle(fontSize: 11, color: AppColors.textMutedOf(context))),
-                      ],
-                    ],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            if (vendorId.isNotEmpty) context.push('/vendor/$vendorId');
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 11),
+                            child: Text('View Profile', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            // Rating + favorite
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (rating > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _ratingColor(rating).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.star_rounded, size: 14, color: _ratingColor(rating)),
-                        const SizedBox(width: 3),
-                        Text(
-                          rating.toStringAsFixed(1),
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _ratingColor(rating)),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: () => favService.toggle(vendorId),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Icon(
-                      isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      key: ValueKey(isFav),
-                      size: 22,
-                      color: isFav ? AppColors.error : AppColors.textMutedOf(context),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildPhotoPlaceholder(String category, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF161822), const Color(0xFF1E2030)]
+              : [AppColors.surfaceAlt, AppColors.surfaceContainer],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Icon(_categoryIcon(category), size: 44, color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+    );
+  }
+
+  Widget _badge(String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  String _formatDistance(dynamic km) {
+    final d = double.tryParse(km.toString()) ?? 0;
+    if (d < 1) return '${(d * 1000).round()}m away';
+    return '${d.toStringAsFixed(1)} km';
+  }
+
+  String _formatReviews(dynamic count) {
+    final n = int.tryParse(count.toString()) ?? 0;
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return n.toString();
   }
 
   Color _ratingColor(double r) {

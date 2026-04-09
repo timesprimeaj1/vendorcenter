@@ -74,18 +74,31 @@ class _BookingsScreenState extends State<BookingsScreen> with SingleTickerProvid
       return Scaffold(
         appBar: AppBar(title: Text(context.tr('bookings.title'))),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.lock_outline, size: 56, color: AppColors.textMuted),
-              const SizedBox(height: 12),
-              Text(context.tr('bookings.sign_in_to_view'), style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => context.go('/login'),
-                child: Text(context.tr('auth.login')),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock_outline_rounded, size: 40, color: AppColors.primary),
+                ),
+                const SizedBox(height: 16),
+                Text(context.tr('bookings.sign_in_to_view'), style: TextStyle(color: AppColors.textSecondaryOf(context), fontSize: 16)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => context.go('/login'),
+                    child: Text(context.tr('auth.login')),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
