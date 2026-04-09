@@ -25,7 +25,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   bool _obscure1 = true;
   bool _obscure2 = true;
   String? _error;
-  String? _resetToken;
+  String? _otpId;
+  String? _verifiedCode;
 
   late AnimationController _slideCtrl;
   late Animation<Offset> _slideAnim;
@@ -74,8 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     });
 
     try {
-      await _api.requestPasswordReset(email);
+      final res = await _api.requestPasswordReset(email);
       if (mounted) {
+        _otpId = res['data']?['otpId'] as String?;
         setState(() => _loading = false);
         _goToStep(ForgotStep.otp);
       }
@@ -102,13 +104,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     });
 
     try {
-      final res = await _api.verifyOtp(
-        identifier: _emailCtrl.text.trim(),
+      await _api.verifyOtp(
+        identifier: _otpId ?? _emailCtrl.text.trim(),
         code: code,
         purpose: 'password_reset',
       );
       if (mounted) {
-        _resetToken = res['data']?['token'] ?? code;
+        _verifiedCode = code;
         setState(() => _loading = false);
         _goToStep(ForgotStep.newPassword);
       }
@@ -138,7 +140,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     });
 
     try {
-      await _api.resetPassword(_resetToken ?? '', _passwordCtrl.text);
+      await _api.resetPassword(
+        email: _emailCtrl.text.trim(),
+        otpId: _otpId ?? '',
+        code: _verifiedCode ?? '',
+        newPassword: _passwordCtrl.text,
+      );
       if (mounted) {
         setState(() => _loading = false);
         _goToStep(ForgotStep.success);

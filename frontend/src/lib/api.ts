@@ -191,6 +191,11 @@ export const api = {
   getPublicStats: () => request<PublicStats>("/analytics/public"),
 
   // Password reset
+  requestPasswordReset: (email: string) =>
+    request<{ otpId: string; expiresInMinutes: number }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
   resetPassword: (payload: { email: string; otpId: string; code: string; newPassword: string }) =>
     request<{ reset: boolean }>("/auth/reset-password", {
       method: "POST",

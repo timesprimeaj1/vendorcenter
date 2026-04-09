@@ -24,6 +24,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = true;
   bool _searching = false;
   bool _hasSearched = false;
+  double _minRating = 0;
+  double _maxRadius = 50;
 
   @override
   void initState() {
@@ -107,13 +109,122 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<dynamic> get _filteredVendors {
     final query = _searchCtrl.text.toLowerCase().trim();
-    if (query.isEmpty) return _vendors;
-    return _vendors.where((v) {
+    var list = _vendors;
+    if (_minRating > 0) {
+      list = list.where((v) => ((v['rating'] as num?) ?? 0) >= _minRating).toList();
+    }
+    if (query.isEmpty) return list;
+    return list.where((v) {
       final name = (v['businessName'] ?? v['business_name'] ?? '').toString().toLowerCase();
       final cats = v['serviceCategories'] as List<dynamic>?;
       final cat = (cats != null && cats.isNotEmpty) ? cats.first.toString().toLowerCase() : (v['category'] ?? '').toString().toLowerCase();
       return name.contains(query) || cat.contains(query);
     }).toList();
+  }
+
+  void _showFilterSheet() {
+    double tempRating = _minRating;
+    double tempRadius = _maxRadius;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              ),
+              const SizedBox(height: 16),
+              Text('Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textOf(context))),
+              const SizedBox(height: 20),
+              Text('Minimum Rating', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context))),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: tempRating,
+                      min: 0, max: 5, divisions: 10,
+                      label: tempRating == 0 ? 'Any' : tempRating.toStringAsFixed(1),
+                      activeColor: AppColors.primary,
+                      onChanged: (v) => setSheetState(() => tempRating = v),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Text(tempRating == 0 ? 'Any' : tempRating.toStringAsFixed(1),
+                      style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textOf(context)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text('Search Radius (km)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context))),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: tempRadius,
+                      min: 5, max: 100, divisions: 19,
+                      label: '${tempRadius.round()} km',
+                      activeColor: AppColors.primary,
+                      onChanged: (v) => setSheetState(() => tempRadius = v),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text('${tempRadius.round()} km',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textOf(context)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setSheetState(() { tempRating = 0; tempRadius = 50; });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.borderOf(context)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                      child: const Text('Reset'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        setState(() { _minRating = tempRating; _maxRadius = tempRadius; });
+                        if (_activeCategory != null) {
+                          _loadVendors(_activeCategory!);
+                        } else if (_hasSearched) {
+                          _loadAllVendors();
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -162,13 +273,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
+                  GestureDetector(
+                    onTap: _showFilterSheet,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: (_minRating > 0 || _maxRadius < 50)
+                            ? AppColors.primary.withValues(alpha: 0.2)
+                            : AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.tune_rounded, size: 22, color: AppColors.primary),
                     ),
-                    child: const Icon(Icons.tune_rounded, size: 22, color: AppColors.primary),
                   ),
                 ],
               ),

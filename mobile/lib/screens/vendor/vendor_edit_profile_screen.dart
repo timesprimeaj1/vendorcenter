@@ -134,7 +134,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
         'latitude': _lat ?? 0.0,
         'longitude': _lng ?? 0.0,
         'zone': _zoneCtrl.text.trim().isNotEmpty ? _zoneCtrl.text.trim() : 'Default',
-        'serviceRadiusKm': double.tryParse(_radiusCtrl.text.trim()) ?? 10,
+        'serviceRadiusKm': (double.tryParse(_radiusCtrl.text.trim()) ?? 10).clamp(1, 100),
         'workingHours': _hoursCtrl.text.trim().isNotEmpty ? _hoursCtrl.text.trim() : '9 AM - 6 PM',
       });
 
@@ -317,6 +317,12 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
                     controller: _radiusCtrl,
                     keyboardType: TextInputType.number,
                     decoration: _inputDeco('Service Radius (km)', Icons.radar_outlined),
+                    validator: (v) {
+                      final n = double.tryParse(v ?? '');
+                      if (n == null || n <= 0) return 'Enter a valid radius';
+                      if (n > 100) return 'Maximum 100 km';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

@@ -59,7 +59,7 @@ export async function listVendorProfilesByStatus(status: "under_review" | "appro
             u.name as "ownerName", u.email as "ownerEmail", u.phone as "ownerPhone",
             u.profile_picture_url as "profilePictureUrl"
      FROM vendor_profiles vp
-     LEFT JOIN users u ON u.id = vp.vendor_id
+     LEFT JOIN users u ON u.id::text = vp.vendor_id
      WHERE vp.verification_status = $1 ORDER BY vp.created_at DESC`,
     [status]
   );
@@ -175,9 +175,11 @@ export async function listApprovedVendors(lat?: number, lng?: number, radiusKm =
            vp.working_hours AS "workingHours",
            vp.verification_status AS "verificationStatus",
            COALESCE(vra.average_rating, 0)::float AS rating,
-           COALESCE(vra.total_reviews, 0)::int AS reviews
+           COALESCE(vra.total_reviews, 0)::int AS reviews,
+           u.profile_picture_url AS "profilePictureUrl"
     FROM vendor_profiles vp
     LEFT JOIN vendor_rating_aggregates vra ON vra.vendor_id = vp.vendor_id
+    LEFT JOIN users u ON u.id::text = vp.vendor_id
     WHERE vp.verification_status = 'approved'`;
   const params: any[] = [];
   let paramIdx = 1;
@@ -226,9 +228,11 @@ export async function getVendorsByCategory(category: string, lat?: number, lng?:
            vp.working_hours AS "workingHours",
            vp.verification_status AS "verificationStatus",
            COALESCE(vra.average_rating, 0)::float AS rating,
-           COALESCE(vra.total_reviews, 0)::int AS reviews
+           COALESCE(vra.total_reviews, 0)::int AS reviews,
+           u.profile_picture_url AS "profilePictureUrl"
     FROM vendor_profiles vp
     LEFT JOIN vendor_rating_aggregates vra ON vra.vendor_id = vp.vendor_id
+    LEFT JOIN users u ON u.id::text = vp.vendor_id
     WHERE vp.verification_status = 'approved'`;
   const params: any[] = [];
   let paramIdx = 1;
@@ -293,7 +297,7 @@ export async function getVendorProfile(vendorId: string) {
             u.profile_picture_url as "profilePictureUrl",
             u.phone as "phone", u.email as "email"
      FROM vendor_profiles vp
-     LEFT JOIN users u ON u.id = vp.vendor_id
+     LEFT JOIN users u ON u.id::text = vp.vendor_id
      WHERE vp.vendor_id = $1`,
     [vendorId]
   );

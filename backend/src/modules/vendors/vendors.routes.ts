@@ -83,7 +83,7 @@ const onboardingSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   zone: z.string().min(2),
-  serviceRadiusKm: z.number().positive(),
+  serviceRadiusKm: z.number().positive().max(100),
   workingHours: z.string().min(3),
   documentUrls: z.array(z.string()).default([]),
   portfolioUrls: z.array(z.string()).default([]),
@@ -139,7 +139,7 @@ vendorsRouter.patch("/me", requireRole(["vendor"]), async (req: AuthRequest, res
     latitude: z.number(),
     longitude: z.number(),
     zone: z.string().min(2),
-    serviceRadiusKm: z.number().positive(),
+    serviceRadiusKm: z.number().positive().max(100),
     workingHours: z.string().min(3),
   }).safeParse(req.body);
 
@@ -287,7 +287,7 @@ vendorsRouter.get("/detail/:vendorId", async (req, res) => {
   );
   // Get user info for profile picture
   const userResult = await pool.query(
-    `SELECT name, profile_picture_url FROM users WHERE id = $1 LIMIT 1`,
+    `SELECT name, profile_picture_url FROM users WHERE id::text = $1 LIMIT 1`,
     [req.params.vendorId]
   );
   const userInfo = userResult.rows[0];

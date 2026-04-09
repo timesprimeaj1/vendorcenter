@@ -381,10 +381,17 @@ class ApiService {
     return res.data;
   }
 
-  Future<Map<String, dynamic>> resetPassword(String token, String password) async {
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String otpId,
+    required String code,
+    required String newPassword,
+  }) async {
     final res = await _dio.post('/auth/reset-password', data: {
-      'token': token,
-      'password': password,
+      'email': email,
+      'otpId': otpId,
+      'code': code,
+      'newPassword': newPassword,
     });
     return res.data;
   }

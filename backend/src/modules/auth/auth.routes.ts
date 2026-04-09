@@ -228,6 +228,51 @@ authRouter.post("/logout", async (req, res) => {
   }
 });
 
+// ─── Forgot Password (sends OTP email) ──
+authRouter.post("/forgot-password", async (req, res) => {
+  try {
+    const parsed = z.object({ email: z.string().email() }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: "Valid email required" });
+      return;
+    }
+
+    const user = await findUserByEmail(parsed.data.email);
+    if (!user) {
+      res.status(404).json({ success: false, error: "No account found with this email" });
+      return;
+    }
+
+    // Generate OTP and store in otp_events
+    const crypto = await import("node:crypto");
+    const { pool } = await import("../../db/pool.js");
+    const { env } = await import("../../config/env.js");
+    const { sendOtpEmail } = await import("../../services/emailService.js");
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const result = await pool.query<{ id: string }>(
+      "INSERT INTO otp_events (email, purpose, code_hash, expires_at, max_attempts) VALUES ($1, 'password_reset', $2, NOW() + ($3 * INTERVAL '1 minute'), $4) RETURNING id",
+      [parsed.data.email, codeHash, env.otpExpiryMinutes ?? 10, env.otpMaxAttempts ?? 5]
+    );
+    const otpId = result.rows[0].id;
+
+    await sendOtpEmail({
+      recipientEmail: parsed.data.email,
+      code,
+      purpose: "password_reset",
+      expiryMinutes: env.otpExpiryMinutes ?? 10,
+    });
+
+    trackActivity({ actorId: user.id, role: user.role, action: "auth.forgot_password", entity: "user" });
+
+    res.json({ success: true, data: { otpId, expiresInMinutes: env.otpExpiryMinutes ?? 10 } });
+  } catch (err) {
+    console.error("[auth] forgot-password error", err);
+    res.status(500).json({ success: false, error: "Failed to send reset email" });
+  }
+});
+
 authRouter.post("/reset-password", async (req, res) => {
   try {
     const parsed = z.object({
