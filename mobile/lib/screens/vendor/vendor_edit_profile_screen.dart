@@ -159,7 +159,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Location: ${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}'),
+            content: Text('Location detected successfully'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -534,7 +534,7 @@ class _VendorEditProfileScreenState extends State<VendorEditProfileScreen> {
                     icon: _detectingLocation
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.my_location, size: 18),
-                    label: Text(_lat != null ? 'Location: ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}' : 'Detect My Location'),
+                    label: Text(_lat != null ? 'Location detected ✓' : 'Detect My Location'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

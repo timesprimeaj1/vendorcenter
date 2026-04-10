@@ -208,6 +208,27 @@ export const vendorApi = {
       body: JSON.stringify({ pincodeIds }),
     }),
 
+  // Availability & Scheduling
+  getAvailability: () =>
+    request<{ slots: any[]; blockedDates: any[] }>("/vendors/me/availability"),
+
+  setAvailability: (slots: { dayOfWeek: number; startTime: string; endTime: string }[]) =>
+    request<any[]>("/vendors/me/availability", {
+      method: "PUT",
+      body: JSON.stringify({ slots }),
+    }),
+
+  addBlockedDate: (date: string, reason?: string) =>
+    request<any>("/vendors/me/blocked-dates", {
+      method: "POST",
+      body: JSON.stringify({ date, reason }),
+    }),
+
+  removeBlockedDate: (date: string) =>
+    request("/vendors/me/blocked-dates/" + encodeURIComponent(date), {
+      method: "DELETE",
+    }),
+
   checkServiceability: (pincode: string) =>
     request<any>(`/service-zones/check?pincode=${encodeURIComponent(pincode)}`),
 

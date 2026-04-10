@@ -296,9 +296,6 @@ const VendorEditProfile = () => {
                     <p><strong>{t("editProfile.categoriesLabel")}</strong> {selectedCategories.join(", ")}</p>
                     <p><strong>{t("editProfile.zone")}</strong> {zone}</p>
                     {primaryPincode && <p><strong>Pincode:</strong> {primaryPincode}</p>}
-                    {(latitude || longitude) && (
-                      <p><strong>Location:</strong> {latitude}, {longitude}</p>
-                    )}
                     <p><strong>{t("editProfile.workingHours")}</strong> {workingHours}</p>
                     <p><strong>{t("editProfile.serviceRadius")}</strong> {serviceRadius} km</p>
                   </div>

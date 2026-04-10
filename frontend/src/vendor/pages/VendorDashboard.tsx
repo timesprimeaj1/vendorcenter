@@ -186,6 +186,23 @@ const VendorDashboard = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Clock className="w-5 h-5 text-purple-500" />
+                Availability & Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Set your weekly working hours and block off dates.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => navigate("/availability")}>
+                Manage Schedule
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Service Coverage Banner — for vendors without pincodes set */}
