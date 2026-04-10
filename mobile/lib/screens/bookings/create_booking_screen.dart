@@ -251,7 +251,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: isSelected ? AppColors.primary : AppColors.border, width: isSelected ? 2 : 1),
-                    color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+                    color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : AppColors.surfaceOf(context),
                   ),
                   child: Row(
                     children: [
@@ -449,13 +449,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
   Widget _buildShimmer() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade200,
-      highlightColor: Colors.grey.shade50,
+      baseColor: AppColors.isDark(context) ? AppColors.darkSurfaceAlt : Colors.grey.shade200,
+      highlightColor: AppColors.isDark(context) ? AppColors.darkBorder : Colors.grey.shade50,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(children: List.generate(4, (_) => Container(
           height: 60, margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(12)),
         ))),
       ),
     );

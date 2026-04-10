@@ -128,7 +128,7 @@ class NotificationService {
       channelDescription: _bookingChannel.description,
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: const Color(0xFFF97316), // VendorCenter orange
       styleInformation: BigTextStyleInformation(
         notification.body ?? '',

@@ -108,7 +108,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> with SingleTick
                 backgroundColor: Colors.white70,
                 child: Icon(Icons.share_outlined, size: 18, color: Colors.black87),
               ),
-              onPressed: () => Share.share('Check out $name on VendorCenter!'),
+              onPressed: () => Share.share('Check out $name on VendorCenter!\nhttps://vendorcenter.in/vendor/${widget.vendorId}'),
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(

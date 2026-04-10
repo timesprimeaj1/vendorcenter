@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:vendorcenter/config/theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -71,8 +72,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
     final isLast = _current == _pages.length - 1;
 
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundOf(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -89,13 +92,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF2F3FF),
+                            color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFF2F3FF),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Skip',
                             style: TextStyle(
-                              color: Color(0xFF2563EB),
+                              color: isDark ? Colors.white70 : const Color(0xFF2563EB),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -130,10 +133,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         _pages[_current].title,
                         key: ValueKey(_current),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF131B2E),
+                          color: isDark ? Colors.white : const Color(0xFF131B2E),
                           letterSpacing: -0.5,
                           height: 1.2,
                         ),
@@ -147,9 +150,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         _pages[_current].subtitle,
                         key: ValueKey('sub$_current'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
-                          color: Color(0xFF737686),
+                          color: isDark ? Colors.grey.shade400 : const Color(0xFF737686),
                           height: 1.55,
                         ),
                         textAlign: TextAlign.center,
@@ -177,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     ],
                                   )
                                 : null,
-                            color: active ? null : const Color(0xFFE0E4ED),
+                            color: active ? null : (isDark ? Colors.grey.shade700 : const Color(0xFFE0E4ED)),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );

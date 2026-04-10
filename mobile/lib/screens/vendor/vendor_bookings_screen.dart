@@ -458,7 +458,7 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> with Single
           height: 100,
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceOf(context),
             borderRadius: BorderRadius.circular(14),
           ),
         ),

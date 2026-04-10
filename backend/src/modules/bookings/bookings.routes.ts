@@ -433,12 +433,17 @@ bookingsRouter.post("/:bookingId/complete", requireRole(["vendor"]), async (req:
 });
 
 // ── Customer confirms dummy payment → receives OTP to share with vendor ──
+// Supports two flows:
+//   1. Email link: paymentToken = actual token from email → hash-validated
+//   2. In-app confirm: paymentToken = 'app_confirm' → authenticated owner check only
 bookingsRouter.post("/:bookingId/pay", requireRole(["customer"]), async (req: AuthRequest, res) => {
-  const parsed = z.object({ paymentToken: z.string().min(10) }).safeParse(req.body);
+  const parsed = z.object({ paymentToken: z.string().min(1) }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, error: parsed.error.flatten() });
     return;
   }
+
+  const isAppConfirm = parsed.data.paymentToken === "app_confirm";
 
   const booking = await getBookingById(req.params.bookingId);
   if (!booking) {
@@ -457,18 +462,26 @@ bookingsRouter.post("/:bookingId/pay", requireRole(["customer"]), async (req: Au
     res.status(409).json({ success: false, error: "Payment already completed for this booking" });
     return;
   }
-  if (!booking.completionRequestedAt || !booking.paymentRequestTokenHash || !booking.paymentRequestExpires) {
+  if (!booking.completionRequestedAt) {
     res.status(400).json({ success: false, error: "No active payment request. Ask vendor to request again." });
     return;
   }
-  if (Date.now() > new Date(booking.paymentRequestExpires).getTime()) {
-    res.status(410).json({ success: false, error: "Payment link expired. Ask vendor to adjust amount and resend request." });
-    return;
-  }
-  const inputHash = crypto.createHash("sha256").update(parsed.data.paymentToken).digest("hex");
-  if (inputHash !== booking.paymentRequestTokenHash) {
-    res.status(403).json({ success: false, error: "Invalid payment link" });
-    return;
+
+  // Email-link flow: validate token hash + expiry
+  if (!isAppConfirm) {
+    if (!booking.paymentRequestTokenHash || !booking.paymentRequestExpires) {
+      res.status(400).json({ success: false, error: "No active payment request. Ask vendor to request again." });
+      return;
+    }
+    if (Date.now() > new Date(booking.paymentRequestExpires).getTime()) {
+      res.status(410).json({ success: false, error: "Payment link expired. Ask vendor to adjust amount and resend request." });
+      return;
+    }
+    const inputHash = crypto.createHash("sha256").update(parsed.data.paymentToken).digest("hex");
+    if (inputHash !== booking.paymentRequestTokenHash) {
+      res.status(403).json({ success: false, error: "Invalid payment link" });
+      return;
+    }
   }
 
   const token = `tok_${nanoid(8)}`;

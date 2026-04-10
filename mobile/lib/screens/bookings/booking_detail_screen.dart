@@ -44,7 +44,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (_booking == null) return;
     setState(() => _paying = true);
     try {
-      await _api.payBooking(_booking!['id'].toString(), 'manual');
+      await _api.payBooking(_booking!['id'].toString(), 'app_confirm');
       _loadBooking();
     } catch (e) {
       if (mounted) {
