@@ -34,10 +34,16 @@ analyticsRouter.get("/public", async (_req, res, next) => {
 
 analyticsRouter.get("/vendor", requireRole(["vendor"]), async (req: AuthRequest, res) => {
   const vendorId = req.actor!.id;
-  const [ownBookings, vendorRating] = await Promise.all([
+  const [ownBookings, vendorRating, earningsR] = await Promise.all([
     getVendorBookingStats(vendorId),
     getVendorRating(vendorId),
+    pool.query<{ total: string }>(
+      `SELECT COALESCE(SUM(final_amount), 0)::text AS total FROM bookings WHERE vendor_id = $1 AND status = 'completed'`,
+      [vendorId]
+    ),
   ]);
+
+  const earningsPaise = Number(earningsR.rows[0]?.total ?? 0);
 
   // Get vendor's top services
   const servicesR = await pool.query<{ name: string }>(
@@ -50,7 +56,7 @@ analyticsRouter.get("/vendor", requireRole(["vendor"]), async (req: AuthRequest,
     success: true,
     data: {
       bookings: ownBookings,
-      earningsEstimate: ownBookings * 1000,
+      earningsEstimate: Math.round(earningsPaise / 100),
       ratings: {
         average: parseFloat(vendorRating.averageRating) || 0,
         count: vendorRating.totalReviews || 0,
@@ -114,7 +120,7 @@ analyticsRouter.get("/admin", requireRole(["admin"]), async (_req, res, next) =>
     res.json({
       success: true,
       data: {
-        totalRevenue: Number(revenueR.rows[0]?.total ?? 0),
+        totalRevenue: Math.round(Number(revenueR.rows[0]?.total ?? 0) / 100),
         totalCustomers: totalCustomersR.rows[0]?.total ?? 0,
         totalVendors: totalVendorsR.rows[0]?.total ?? 0,
         activeZones,
@@ -124,7 +130,7 @@ analyticsRouter.get("/admin", requireRole(["admin"]), async (_req, res, next) =>
           vendorId: v.vendor_id,
           businessName: v.business_name,
           bookings: v.bookings,
-          revenue: Number(v.revenue),
+          revenue: Math.round(Number(v.revenue) / 100),
         })),
         customerGrowth: customerGrowthR.rows,
         vendorGrowth: vendorGrowthR.rows,

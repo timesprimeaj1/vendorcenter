@@ -287,6 +287,7 @@ export default function Explore() {
             <UserLocationMarker
               position={[location.latitude, location.longitude]}
               accuracy={location.accuracy}
+              isManual={location.accuracy === 0}
             />
           )}
           <VendorMarkers vendors={vendors.length <= 50 ? vendors : []} />

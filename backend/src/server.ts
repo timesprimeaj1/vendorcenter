@@ -95,9 +95,25 @@ async function bootstrap() {
     console.error("Database init failed, starting in degraded mode", error);
   }
 
-  app.listen(env.port, "0.0.0.0", () => {
+  const server = app.listen(env.port, "0.0.0.0", () => {
     console.log(`[${env.appName}] backend listening on port ${env.port}`);
   });
+
+  // Graceful shutdown for Railway/Docker SIGTERM
+  const shutdown = async (signal: string) => {
+    console.log(`[shutdown] ${signal} received, closing server...`);
+    server.close(() => {
+      console.log('[shutdown] HTTP server closed');
+      pool.end().then(() => {
+        console.log('[shutdown] DB pool drained');
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
+    // Force exit after 10s if graceful shutdown stalls
+    setTimeout(() => { console.error('[shutdown] forced exit'); process.exit(1); }, 10000);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   // Start embedded email worker
   if (dbState.connected) {

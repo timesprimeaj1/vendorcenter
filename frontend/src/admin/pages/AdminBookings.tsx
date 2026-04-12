@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, LogOut, ArrowLeft, Search, Calendar } from "lucide-react";
+import { Shield, LogOut, ArrowLeft, Search, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ interface Booking {
   customer_name: string | null;
   vendor_email: string;
   business_name: string | null;
+  service_pincode: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -40,6 +41,7 @@ const AdminBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [pincodeFilter, setPincodeFilter] = useState("");
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ const AdminBookings = () => {
 
   const filtered = bookings.filter(b => {
     if (statusFilter !== "all" && b.status !== statusFilter) return false;
+    if (pincodeFilter.trim() && b.service_pincode !== pincodeFilter.trim()) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
@@ -83,6 +86,8 @@ const AdminBookings = () => {
     }
     return true;
   });
+
+  const uniquePincodes = [...new Set(bookings.map(b => b.service_pincode).filter(Boolean))] as string[];
 
   const statuses = ["all", "pending", "confirmed", "in_progress", "completed", "cancelled"];
 
@@ -142,6 +147,19 @@ const AdminBookings = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search service, customer, vendor..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+          {uniquePincodes.length > 0 && (
+            <div className="relative max-w-[180px]">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <select
+                className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm"
+                value={pincodeFilter}
+                onChange={e => setPincodeFilter(e.target.value)}
+              >
+                <option value="">All Zones</option>
+                {uniquePincodes.sort().map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          )}
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">{filtered.length} booking{filtered.length !== 1 ? "s" : ""}</p>

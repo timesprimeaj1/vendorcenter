@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SavedAddress {
@@ -93,6 +94,28 @@ class LocationService extends ChangeNotifier {
       _lat = pos.latitude;
       _lng = pos.longitude;
       _locationLabel = 'Current Location';
+      // Reverse geocode to get place name
+      try {
+        final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse')
+            .replace(queryParameters: {
+          'lat': '${pos.latitude}',
+          'lon': '${pos.longitude}',
+          'format': 'json',
+          'addressdetails': '1',
+        });
+        final resp = await http.get(uri, headers: {'User-Agent': 'VendorCenter/1.0'});
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(resp.body);
+          final addr = data['address'] ?? {};
+          final city = addr['city'] ?? addr['town'] ?? addr['village'] ?? addr['suburb'] ?? '';
+          final area = addr['suburb'] ?? addr['neighbourhood'] ?? '';
+          if (city.isNotEmpty) {
+            _locationLabel = area.isNotEmpty && area != city ? '$area, $city' : city;
+          }
+        }
+      } catch (_) {
+        // Keep "Current Location" as fallback
+      }
       _loading = false;
       _persist();
       notifyListeners();

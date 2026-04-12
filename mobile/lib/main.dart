@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'dart:async';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, FlutterError, kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vendorcenter/app.dart';
@@ -52,7 +52,16 @@ void main() async {
   // Initialize push notifications
   await NotificationService().init();
 
-  // Run the app directly — native splash covers initialization time
+  // Global error handler — catches framework errors
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    if (!kDebugMode) {
+      debugPrint('[crash] ${details.exceptionAsString()}');
+    }
+  };
+
+  // Catch async errors not handled by Flutter framework
+  runZonedGuarded(() {
   runApp(
     MultiProvider(
       providers: [
@@ -65,6 +74,11 @@ void main() async {
       child: _AppEntry(showOnboarding: !seenOnboarding, prefs: prefs),
     ),
   );
+  }, (error, stack) {
+    if (!kDebugMode) {
+      debugPrint('[zone-error] $error');
+    }
+  });
 }
 
 class _AppEntry extends StatefulWidget {

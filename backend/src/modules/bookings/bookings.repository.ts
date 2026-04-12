@@ -123,8 +123,25 @@ export async function listBookingsByRole(role: "customer" | "vendor" | "admin" |
   }
 
   const result = await pool.query<DbBooking>(
-    `SELECT id, customer_id as "customerId", vendor_id as "vendorId", service_name as "serviceName", status, transaction_id as "transactionId", payment_status as "paymentStatus", scheduled_date as "scheduledDate", scheduled_time as "scheduledTime", notes, final_amount as "finalAmount", work_started_at as "workStartedAt", completion_requested_at as "completionRequestedAt", payment_request_token_hash as "paymentRequestTokenHash", payment_request_expires as "paymentRequestExpires", rejection_reason as "rejectionReason", created_at as "createdAt", updated_at as "updatedAt"
-     FROM bookings ORDER BY created_at DESC`
+    `SELECT b.id, b.customer_id as "customerId", b.vendor_id as "vendorId",
+            b.service_name as "serviceName", b.status,
+            b.transaction_id as "transactionId", b.payment_status as "paymentStatus",
+            b.scheduled_date as "scheduledDate", b.scheduled_time as "scheduledTime",
+            b.notes, b.final_amount as "finalAmount",
+            b.work_started_at as "workStartedAt",
+            b.completion_requested_at as "completionRequestedAt",
+            b.payment_request_token_hash as "paymentRequestTokenHash",
+            b.payment_request_expires as "paymentRequestExpires",
+            b.rejection_reason as "rejectionReason",
+            b.created_at as "createdAt", b.updated_at as "updatedAt",
+            b.service_pincode as "servicePincode",
+            u_c.email as "customerEmail", u_c.name as "customerName",
+            u_v.email as "vendorEmail", vp.business_name as "businessName"
+     FROM bookings b
+     LEFT JOIN users u_c ON u_c.id::text = b.customer_id
+     LEFT JOIN users u_v ON u_v.id::text = b.vendor_id
+     LEFT JOIN vendor_profiles vp ON vp.vendor_id = b.vendor_id
+     ORDER BY b.created_at DESC`
   );
   return result.rows;
 }

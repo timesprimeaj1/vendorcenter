@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:vendorcenter/config/theme.dart';
 import 'package:vendorcenter/services/location_service.dart';
@@ -23,17 +26,72 @@ class LocationPickerSheet extends StatefulWidget {
 class _LocationPickerSheetState extends State<LocationPickerSheet> {
   final _searchCtrl = TextEditingController();
   bool _showSearch = false;
+  List<Map<String, String>> _searchResults = [];
+  bool _searching = false;
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    final q = query.trim();
+    if (q.isEmpty) {
+      setState(() { _showSearch = false; _searchResults = []; _searching = false; });
+      return;
+    }
+    setState(() { _showSearch = true; _searching = true; });
+    // Check hardcoded list first
+    final local = _allCities.where((c) => c['name']!.toLowerCase().contains(q.toLowerCase())).toList();
+    if (local.isNotEmpty) {
+      setState(() { _searchResults = local; _searching = false; });
+      return;
+    }
+    // Debounce API call
+    _debounce = Timer(const Duration(milliseconds: 400), () => _searchNominatim(q));
+  }
+
+  Future<void> _searchNominatim(String query) async {
+    try {
+      final uri = Uri.parse('https://nominatim.openstreetmap.org/search')
+          .replace(queryParameters: {
+        'q': '$query, India',
+        'format': 'json',
+        'limit': '8',
+        'addressdetails': '1',
+        'countrycodes': 'in',
+      });
+      final resp = await http.get(uri, headers: {'User-Agent': 'VendorCenter/1.0'});
+      if (resp.statusCode == 200 && mounted) {
+        final List data = jsonDecode(resp.body);
+        final results = data.map<Map<String, String>>((item) {
+          final addr = item['address'] ?? {};
+          final state = addr['state'] ?? '';
+          final city = addr['city'] ?? addr['town'] ?? addr['village'] ?? addr['county'] ?? item['display_name']?.toString().split(',').first ?? query;
+          return {
+            'name': city,
+            'lat': item['lat']?.toString() ?? '0',
+            'lng': item['lon']?.toString() ?? '0',
+            'state': state,
+          };
+        }).toList();
+        // Deduplicate by name
+        final seen = <String>{};
+        results.retainWhere((r) => seen.add(r['name']!.toLowerCase()));
+        if (mounted) setState(() { _searchResults = results; _searching = false; });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
   List<Map<String, String>> get _filteredCities {
-    final q = _searchCtrl.text.toLowerCase().trim();
-    if (q.isEmpty) return _popularCities;
-    return _allCities.where((c) => c['name']!.toLowerCase().contains(q)).toList();
+    if (_showSearch) return _searchResults;
+    return _popularCities;
   }
 
   @override
@@ -90,7 +148,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               ),
               child: TextField(
                 controller: _searchCtrl,
-                onChanged: (_) => setState(() => _showSearch = _searchCtrl.text.isNotEmpty),
+                onChanged: _onSearchChanged,
                 decoration: InputDecoration(
                   hintText: 'Search by area, city, or pin code',
                   hintStyle: TextStyle(fontSize: 14, color: AppColors.textMutedOf(context)),
@@ -240,7 +298,12 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            if (_filteredCities.isEmpty)
+            if (_searching)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (_filteredCities.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text('No cities found', style: TextStyle(color: AppColors.textMutedOf(context))),

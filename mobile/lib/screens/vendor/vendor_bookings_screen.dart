@@ -192,7 +192,7 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> with Single
                     const Icon(Icons.currency_rupee, size: 16, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
-                      '₹${(num.tryParse(finalAmount.toString()) ?? 0) / 100}',
+                      '₹${((num.tryParse(finalAmount.toString()) ?? 0) / 100).round()}',
                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ],

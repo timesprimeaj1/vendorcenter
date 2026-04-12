@@ -53,6 +53,18 @@ const AdminAnalytics = () => {
 
   if (loading || !user) return null;
 
+  if (!hasPermission("analytics.view") && user.role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">You don't have permission to view analytics.</p>
+          <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
+        </div>
+      </div>
+    );
+  }
+
   const totalBookings = data ? Object.values(data.bookingsByStatus).reduce((a, b) => a + b, 0) : 0;
   const maxMonthly = data ? Math.max(...data.monthlyBookings.map(m => m.count), 1) : 1;
 

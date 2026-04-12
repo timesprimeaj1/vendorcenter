@@ -251,13 +251,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SliverToBoxAdapter(
             child: _buildLocationPrompt(),
           ),
-          if (_loadingMore)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ] else if (!_loading) ...[
+          // Location set but no vendors found → not serviceable
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceAltOf(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.location_off_rounded, size: 48, color: AppColors.warning),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Not available at your location',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textOf(context)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'We\'re not serving ${context.watch<LocationService>().locationLabel} yet. Try a different location or check back soon!',
+                      style: TextStyle(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => LocationPickerSheet.show(context),
+                        icon: const Icon(Icons.edit_location_alt_rounded, size: 18),
+                        label: const Text('Change Location'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          ),
         ],
 
         // Bottom spacing for FAB + nav bar

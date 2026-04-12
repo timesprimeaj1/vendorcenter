@@ -32,6 +32,8 @@ const AdminVendors = () => {
   const [filter, setFilter] = useState<string>("under_review");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [fetching, setFetching] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
@@ -50,9 +52,11 @@ const AdminVendors = () => {
 
   useEffect(() => {
     if (user) {
+      setFetching(true);
+      setVendors([]);
       adminApi.getVendorQueue(filter).then(res => {
         if (res.data) setVendors(res.data);
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setFetching(false));
     }
   }, [user, filter]);
 
@@ -135,7 +139,9 @@ const AdminVendors = () => {
         </div>
 
         {/* Vendor list */}
-        {vendors.length === 0 ? (
+        {fetching ? (
+          <p className="text-center text-muted-foreground py-12">Loading vendors...</p>
+        ) : vendors.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Store className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />

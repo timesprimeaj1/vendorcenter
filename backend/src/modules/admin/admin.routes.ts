@@ -33,7 +33,7 @@ adminRouter.get("/stats", requireRole(["admin", "employee"]), async (_req, res, 
         totalVendors: vendorsR.rows[0].total,
         totalBookings: bookingsR.rows[0].total,
         pendingApprovals: pendingR.rows[0].total,
-        totalRevenue: Number(revenueR.rows[0].total),
+        totalRevenue: Math.round(Number(revenueR.rows[0].total) / 100),
       },
     });
   } catch (err) { next(err); }
@@ -61,11 +61,12 @@ adminRouter.get("/bookings", requireRole(["admin", "employee"]), requirePermissi
     const result = await pool.query(`
       SELECT b.id, b.customer_id, b.vendor_id, b.service_name, b.status,
              b.scheduled_date, b.scheduled_time, b.final_amount, b.notes, b.created_at,
+             b.service_pincode,
              cu.email AS customer_email, cu.name AS customer_name,
              vu.email AS vendor_email, vp.business_name
       FROM bookings b
-      LEFT JOIN users cu ON cu.id = b.customer_id
-      LEFT JOIN users vu ON vu.id = b.vendor_id
+      LEFT JOIN users cu ON cu.id::text = b.customer_id
+      LEFT JOIN users vu ON vu.id::text = b.vendor_id
       LEFT JOIN vendor_profiles vp ON vp.vendor_id = b.vendor_id
       ORDER BY b.created_at DESC
       LIMIT 500
@@ -180,6 +181,13 @@ adminRouter.patch("/users/:id/suspend", requireRole(["admin"]), async (req: Auth
 
     if (targetId === req.actor?.id) {
       res.status(400).json({ success: false, error: "Cannot suspend your own account" });
+      return;
+    }
+
+    // Prevent suspending admin accounts
+    const targetR = await pool.query("SELECT role FROM users WHERE id = $1", [targetId]);
+    if (targetR.rows[0]?.role === 'admin' && req.actor?.role !== 'admin') {
+      res.status(403).json({ success: false, error: "Only admins can suspend admin accounts" });
       return;
     }
 

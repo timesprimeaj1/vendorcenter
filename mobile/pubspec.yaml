@@ -17,6 +17,7 @@ dependencies:
   provider: ^6.1.2
   # HTTP
   dio: ^5.7.0
+  http: ^1.2.2
   # Secure storage
   flutter_secure_storage: ^9.2.4
   # Firebase

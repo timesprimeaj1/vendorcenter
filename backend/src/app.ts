@@ -186,6 +186,19 @@ app.get("/health/firebase", async (_req: Request, res: Response) => {
   }
 });
 
+// App version check — mobile clients poll this to detect force-update
+app.get("/api/version", (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      currentVersion: "1.0.0",
+      minVersion: "1.0.0",
+      forceUpdate: false,
+      updateUrl: "https://play.google.com/store/apps/details?id=com.vendorcenter.customer",
+    },
+  });
+});
+
 // Root route for platform default health checks (some providers probe "/")
 app.get("/", (_req: Request, res: Response) => {
   res.json({

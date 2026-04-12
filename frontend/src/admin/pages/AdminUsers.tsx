@@ -450,13 +450,15 @@ const AdminUsers = () => {
                                       Edit Permissions
                                     </button>
                                   )}
-                                  <button
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
-                                    onClick={() => handleSuspend(u)}
-                                  >
-                                    <Ban className="w-3.5 h-3.5" />
-                                    {u.suspended ? "Unsuspend" : "Suspend"}
-                                  </button>
+                                  {(isAdmin || (u.role !== 'admin' && u.role !== 'employee')) && (
+                                    <button
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
+                                      onClick={() => handleSuspend(u)}
+                                    >
+                                      <Ban className="w-3.5 h-3.5" />
+                                      {u.suspended ? "Unsuspend" : "Suspend"}
+                                    </button>
+                                  )}
                                   {isAdmin && u.role !== "admin" && (
                                     <button
                                       className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"

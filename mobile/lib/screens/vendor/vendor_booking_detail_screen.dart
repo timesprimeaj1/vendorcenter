@@ -28,10 +28,14 @@ class _VendorBookingDetailScreenState extends State<VendorBookingDetailScreen> {
     setState(() => _loading = true);
     try {
       final bookings = await _api.getVendorBookings();
-      final match = bookings.firstWhere(
-        (b) => b['id']?.toString() == widget.bookingId,
-        orElse: () => null,
-      );
+      Map<String, dynamic>? match;
+      try {
+        match = Map<String, dynamic>.from(bookings.firstWhere(
+          (b) => b['id']?.toString() == widget.bookingId,
+        ));
+      } catch (_) {
+        match = null;
+      }
       if (mounted) setState(() { _booking = match; _loading = false; });
     } catch (e) {
       if (mounted) setState(() => _loading = false);
