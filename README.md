@@ -51,6 +51,7 @@ vendorcenter/
 ```
 
 ## Local Development
+dockerfile and local infrastructure scripts are available for development, but the stack can be run with minimal setup using the commands below. The project is optimized for fast iteration and low-friction local development, so you can focus on outcomes without getting bogged down in configuration.
 
 ### Prerequisites
 
