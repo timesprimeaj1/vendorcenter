@@ -1,0 +1,107 @@
+name: Build & Release APKs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-release.yml'
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' mobile/pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD=$(grep '^version:' mobile/pubspec.yaml | sed 's/.*+//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION+$BUILD"
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release $TAG already exists — skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Java 17
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        if: steps.check.outputs.exists == 'false'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.6'
+          channel: stable
+          cache: true
+
+      - name: Decode google-services.json (Firebase)
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_CUSTOMER }}" | base64 -d > mobile/android/app/src/customer/google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES_VENDOR }}" | base64 -d > mobile/android/app/src/vendor/google-services.json
+
+      - name: Get Flutter dependencies
+        if: steps.check.outputs.exists == 'false'
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build Customer APK
+        if: steps.check.outputs.exists == 'false'
+        working-directory: mobile
+        run: flutter build apk --release --flavor customer -t lib/main.dart
+
+      - name: Build Vendor APK
+        if: steps.check.outputs.exists == 'false'
+        working-directory: mobile
+        run: flutter build apk --release --flavor vendor -t lib/vendor_main.dart
+
+      - name: Rename APKs
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          cp mobile/build/app/outputs/flutter-apk/app-customer-release.apk vendorcenter-customer.apk
+          cp mobile/build/app/outputs/flutter-apk/app-vendor-release.apk vendorcenter-vendor.apk
+          ls -lh vendorcenter-*.apk
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: VendorCenter ${{ steps.version.outputs.tag }}
+          body: |
+            ## VendorCenter ${{ steps.version.outputs.tag }}
+
+            **Build:** ${{ steps.version.outputs.build }}
+            **Commit:** ${{ github.sha }}
+
+            ### Download
+            - **Customer App:** `vendorcenter-customer.apk`
+            - **Vendor App:** `vendorcenter-vendor.apk`
+          files: |
+            vendorcenter-customer.apk
+            vendorcenter-vendor.apk
+          draft: false
+          prerelease: false
