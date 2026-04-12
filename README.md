@@ -51,7 +51,7 @@ vendorcenter/
 ```
 
 ## Local Development
-
+ok
 ### Prerequisites
 
 - Node.js 20+
