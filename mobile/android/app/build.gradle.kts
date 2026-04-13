@@ -1,9 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+}
+
+// Load signing config from key.properties (local + CI)
+val keyPropsFile = rootProject.file("key.properties")
+val keyProps = Properties()
+if (keyPropsFile.exists()) {
+    keyProps.load(FileInputStream(keyPropsFile))
 }
 
 android {
@@ -18,7 +28,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -29,18 +39,13 @@ android {
         versionName = flutter.versionName
     }
 
-    // Load signing config from key.properties (local + CI)
-    val keyPropsFile = rootProject.file("key.properties")
-    val useReleaseKey = keyPropsFile.exists()
-
     signingConfigs {
-        if (useReleaseKey) {
-            val keyProps = java.util.Properties().apply { load(keyPropsFile.inputStream()) }
+        if (keyPropsFile.exists()) {
             create("release") {
-                keyAlias = keyProps["keyAlias"] as String
-                keyPassword = keyProps["keyPassword"] as String
-                storeFile = file(keyProps["storeFile"] as String)
-                storePassword = keyProps["storePassword"] as String
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
             }
         }
     }
@@ -62,7 +67,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (useReleaseKey)
+            signingConfig = if (keyPropsFile.exists())
                 signingConfigs.getByName("release")
             else
                 signingConfigs.getByName("debug")
