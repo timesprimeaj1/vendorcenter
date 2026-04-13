@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Download as DownloadIcon, Smartphone, Shield, RefreshCw, Monitor } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
 
@@ -24,8 +24,19 @@ const DownloadPage = () => {
 
   const customerApk = version?.customerApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-customer.apk";
   const vendorApk = version?.vendorApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-vendor.apk";
-  const currentVersion = version?.currentVersion || "1.1.0";
-  const changelog = version?.changelog || "Bug fixes and performance improvements";
+  const currentVersion = version?.currentVersion || "1.1.1";
+  const changelog = version?.changelog || "Firebase auth fix, service zones, vendor availability, bug fixes";
+
+  const triggerDownload = useCallback((url: string) => {
+    // Trigger download without navigating away — avoids blank GitHub page on mobile
+    const a = document.createElement('a');
+    a.href = url;
+    a.setAttribute('download', '');
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
 
   return (
     <Layout>
@@ -77,13 +88,13 @@ const DownloadPage = () => {
               <p className="text-muted-foreground mb-6">
                 Find trusted local service providers, book services, make payments, and track your bookings.
               </p>
-              <a
-                href={customerApk}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+              <button
+                onClick={() => triggerDownload(customerApk)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 <DownloadIcon className="w-5 h-5" />
                 Download Customer APK
-              </a>
+              </button>
             </motion.div>
 
             {/* Vendor App */}
@@ -99,13 +110,13 @@ const DownloadPage = () => {
               <p className="text-muted-foreground mb-6">
                 Manage your services, accept bookings, track payments, and grow your business.
               </p>
-              <a
-                href={vendorApk}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors"
+              <button
+                onClick={() => triggerDownload(vendorApk)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors cursor-pointer"
               >
                 <DownloadIcon className="w-5 h-5" />
                 Download Vendor APK
-              </a>
+              </button>
             </motion.div>
           </div>
 

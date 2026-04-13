@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,11 +45,12 @@ void main() async {
     );
   }
 
-  // Activate App Check — use debug provider for sideloaded/debug builds,
-  // Play Integrity for Play Store releases
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-  );
+  // App Check — DISABLED for sideloaded APKs.
+  // Play Integrity requires Play Store install; blocking App Check prevents
+  // phone auth reCAPTCHA fallback. Re-enable when published to Play Store.
+  // await FirebaseAppCheck.instance.activate(
+  //   androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+  // );
 
   // Firebase Crashlytics — disable in debug, enable in release
   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);

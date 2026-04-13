@@ -195,10 +195,10 @@ app.get("/api/version", (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
-      currentVersion: process.env.APP_CURRENT_VERSION || "1.1.0",
+      currentVersion: process.env.APP_CURRENT_VERSION || "1.1.1",
       minVersion: process.env.APP_MIN_VERSION || "1.0.0",
       forceUpdate: process.env.APP_FORCE_UPDATE === "true",
-      changelog: process.env.APP_CHANGELOG || "Crash reporting, analytics, performance improvements",
+      changelog: process.env.APP_CHANGELOG || "Firebase auth fix, service zones, vendor availability, bug fixes",
       customerApk: process.env.CUSTOMER_APK_URL || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-customer.apk",
       vendorApk: process.env.VENDOR_APK_URL || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-vendor.apk",
     },

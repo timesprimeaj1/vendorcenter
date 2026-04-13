@@ -9,7 +9,7 @@ export const reviewsRouter = Router();
 reviewsRouter.get("/public", async (req, res) => {
   const parsed = z
     .object({
-      limit: z.coerce.number().int().positive().max(12).default(3),
+      limit: z.coerce.number().int().positive().max(100).default(6),
       vendorId: z.string().optional(),
     })
     .safeParse(req.query);
