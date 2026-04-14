@@ -9,6 +9,9 @@ let preferredKeyIndex = 0;
 
 const CHAT_MODE_PATTERNS = /\b(hi|hello|hey|hii|hlo|yo|hola|namaste|ok|okay|good\s+(morning|afternoon|evening)|how are you|what'?s up|sup|thanks|thank you|bye|goodbye|who\s+are\s+you|tu\s+kon\s+hai|no|yes|ya|yep|nope|hmm|ohh?|great|nice|cool|awesome|sure|speak\s+in\s+(marathi|english)|marathi\s*bol|english\s*bol|नमस्कार|नमस्ते|धन्यवाद|हो|नाही|बरोबर|ठीक|चालेल|आभार|शुभ\s*(सकाळ|दुपार|संध्याकाळ)|कसे\s*आहात|बाय|हॅलो|अरे|तू\s*कोण|तुम्ही\s*कोण|मराठी(?:त)?\s*बोला|इंग्रजी(?:त)?\s*बोला|मराठी\s*बोल)\b/i;
 const MAX_HISTORY = 20;
+const SELF_HOSTED_MAX_HISTORY = 4;
+const SELF_HOSTED_HISTORY_TEXT_MAX_CHARS = 280;
+const SELF_HOSTED_USER_INPUT_MAX_CHARS = 900;
 const conversations = new Map<string, ConversationTurn[]>();
 const DEVANAGARI_PATTERN = /[\u0900-\u097F]/;
 const MARATHI_OUTPUT_PATTERNS = /\bmarathi\b|मराठी|मराठीत|मराठीत/i;
@@ -78,6 +81,12 @@ Rules:
 - If the user asks to switch language, comply immediately and continue in that language.
 - Language-switch requests like "marathi bol" or "मराठीत बोला" should be treated as GREETING with ACTION:NONE.
 - Support English, Hinglish, and Marathi. Be warm, use emojis sparingly. Never invent vendor data.`;
+
+const SELF_HOSTED_MINI_SYSTEM_PROMPT = `You are VendorCenter AI.
+Return exactly:
+[INTENT:X] [SERVICE:Y] [ACTION:Z] [CONFIDENCE:N.N]
+<friendly plain-text message>
+No JSON. No markdown.`;
 
 const VALID_INTENTS = new Set(["GREETING", "SERVICE_SEARCH", "RECOMMENDATION", "BOOKING", "MY_BOOKINGS", "AVAILABLE_SERVICES", "FAQ", "COMPLAINT", "RESCHEDULE", "CANCEL_BOOKING", "REFUND", "VENDOR_INFO", "LOCATION", "UNKNOWN"]);
 const VALID_ACTIONS = new Set(["SHOW_RESULTS", "GET_RECOMMENDATIONS", "BOOK_SERVICE", "SHOW_MY_BOOKINGS", "SHOW_CATEGORIES", "ASK_LOCATION", "ASK_DETAILS", "NAVIGATE", "NONE"]);
@@ -394,6 +403,28 @@ function mapHistoryForGroq(history: ConversationTurn[]): Array<{ role: "user" | 
   }));
 }
 
+function truncateText(value: string, maxChars: number): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= maxChars) return trimmed;
+  return `${trimmed.slice(0, maxChars)}...`;
+}
+
+function compactSelfHostedHistory(history: ConversationTurn[]): Array<{ role: "user" | "assistant"; content: string }> {
+  return mapHistoryForGroq(history.slice(-SELF_HOSTED_MAX_HISTORY)).map((turn) => ({
+    ...turn,
+    content: truncateText(turn.content, SELF_HOSTED_HISTORY_TEXT_MAX_CHARS),
+  }));
+}
+
+function stripContextTags(input: string): string {
+  // Remove bracketed context blocks injected by backend (profile/bookings/platform stats)
+  return input.replace(/\[[^\]]*\]\s*/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function isContextOverflowError(message: string): boolean {
+  return /context size has been exceeded|context length|maximum context|too many tokens|prompt too long/i.test(message);
+}
+
 export function getConversationHistory(sessionId: string): ConversationTurn[] {
   return conversations.get(sessionId) ?? [];
 }
@@ -531,19 +562,18 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
+  const post = async (
+    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+    signal: AbortSignal,
+  ) => {
     const response = await fetch(`${env.selfHostedLlmUrl.replace(/\/+$/, "")}/v1/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
+      signal,
       body: JSON.stringify({
         model: env.selfHostedLlmModel,
         temperature: 0.2,
-        messages: [
-          { role: "system", content: SELF_HOSTED_SYSTEM_PROMPT },
-          ...mapHistoryForGroq(history),
-          { role: "user", content: buildSelfHostedUserInstruction(userMessage, chatMode, lang) },
-        ],
+        messages,
       }),
     });
 
@@ -553,9 +583,50 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
       throw new Error(message);
     }
 
-    const text = typeof payload?.choices?.[0]?.message?.content === "string"
+    return typeof payload?.choices?.[0]?.message?.content === "string"
       ? payload.choices[0].message.content
       : "";
+  };
+
+  try {
+    const primaryMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      { role: "system", content: SELF_HOSTED_SYSTEM_PROMPT },
+      ...compactSelfHostedHistory(history),
+      {
+        role: "user",
+        content: buildSelfHostedUserInstruction(
+          truncateText(userMessage, SELF_HOSTED_USER_INPUT_MAX_CHARS),
+          chatMode,
+          lang,
+        ),
+      },
+    ];
+
+    let text: string;
+    try {
+      text = await post(primaryMessages, controller.signal);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!isContextOverflowError(message)) {
+        throw error;
+      }
+
+      // Retry once with ultra-compact payload (no history, stripped context tags)
+      const retryController = new AbortController();
+      const retryTimeout = setTimeout(() => retryController.abort(), Math.min(timeoutMs, 15_000));
+      try {
+        const compactInput = truncateText(stripContextTags(userMessage) || userMessage, 380);
+        text = await post(
+          [
+            { role: "system", content: SELF_HOSTED_MINI_SYSTEM_PROMPT },
+            { role: "user", content: buildSelfHostedUserInstruction(compactInput, chatMode, lang) },
+          ],
+          retryController.signal,
+        );
+      } finally {
+        clearTimeout(retryTimeout);
+      }
+    }
 
     selfHostedWarm = true;
     return text;

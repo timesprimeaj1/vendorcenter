@@ -247,6 +247,14 @@ const CATEGORY_MAP: Record<string, string> = {
   "जिम": "Fitness",
 };
 
+const MAX_HISTORY_TURN_TEXT = 400;
+
+function compactHistoryText(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= MAX_HISTORY_TURN_TEXT) return trimmed;
+  return `${trimmed.slice(0, MAX_HISTORY_TURN_TEXT)}...`;
+}
+
 function normalizeCategory(value: string): string | null {
   const lower = value.toLowerCase().trim();
   if (!lower) return null;
@@ -674,8 +682,8 @@ export async function processAssistantQuery(
         conversationId: sessionId,
       };
 
-      addToConversation(sessionId, { role: "user", parts: [{ text: message }] });
-      addToConversation(sessionId, { role: "model", parts: [{ text: response.message }] });
+      addToConversation(sessionId, { role: "user", parts: [{ text: compactHistoryText(message) }] });
+      addToConversation(sessionId, { role: "model", parts: [{ text: compactHistoryText(response.message) }] });
 
       // Log query asynchronously — never block the response
       logQuery(sessionId, userId, message, semantic.intent, semantic.service, "SHOW_RESULTS", "embedding", semantic.message, null, semantic.confidence, latencyMs, lang, lat, lng);
@@ -705,8 +713,8 @@ export async function processAssistantQuery(
     const latencyMs = Date.now() - queryStartTime;
     const resolved = await resolveDecision(decision, message, history, lat, lng, lang);
 
-    addToConversation(sessionId, { role: "user", parts: [{ text: message }] });
-    addToConversation(sessionId, { role: "model", parts: [{ text: resolved.message }] });
+    addToConversation(sessionId, { role: "user", parts: [{ text: compactHistoryText(message) }] });
+    addToConversation(sessionId, { role: "model", parts: [{ text: compactHistoryText(resolved.message) }] });
 
     // Log query asynchronously
     logQuery(sessionId, userId, message, decision.intent, decision.service, decision.action, decision.provider, resolved.message, decision, decision.confidence, latencyMs, lang, lat, lng);
