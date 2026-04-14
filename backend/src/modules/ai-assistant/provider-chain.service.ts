@@ -396,6 +396,24 @@ function normalizeResponse(rawText: string, provider: "gemini" | "groq" | "self-
   }
 }
 
+function shouldEscalateToFallback(decision: AssistantDecision, chatMode: boolean): boolean {
+  // In system mode we expect structured intent/action output. If a provider falls back
+  // to generic chat text, keep cascading to the next provider.
+  if (chatMode) return false;
+  if (decision.mode !== "CHAT") return false;
+  if (decision.provider === "static") return false;
+
+  const normalizedMsg = decision.message.toLowerCase();
+  const looksGeneric =
+    normalizedMsg.includes("how can i help")
+    || normalizedMsg.includes("what service")
+    || normalizedMsg.includes("please try again")
+    || normalizedMsg.includes("मदत")
+    || normalizedMsg.includes("कशी मदत");
+
+  return decision.intent === "GREETING" || looksGeneric;
+}
+
 function mapHistoryForGroq(history: ConversationTurn[]): Array<{ role: "user" | "assistant"; content: string }> {
   return history.map((turn) => ({
     role: turn.role === "model" ? "assistant" : "user",
@@ -682,11 +700,15 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     try {
       const rawText = await callSelfHostedProvider(userMessage, history, chatMode, lang);
       const decision = normalizeResponse(rawText, "self-hosted" as any, chatMode);
-      if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
+      if (shouldEscalateToFallback(decision, chatMode)) {
+        lastError = new Error("Self-hosted returned non-structured response for system mode");
+        console.warn("[assistant-ai] Self-hosted returned weak/system-invalid output; trying fallback provider.");
+      } else if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
         return decision;
+      } else {
+        lastError = new Error("Self-hosted response ignored Marathi language request");
+        console.warn("[assistant-ai] Self-hosted response ignored Marathi request; trying fallback provider.");
       }
-      lastError = new Error("Self-hosted response ignored Marathi language request");
-      console.warn("[assistant-ai] Self-hosted response ignored Marathi request; trying fallback provider.");
     } catch (error) {
       lastError = error;
       const msg = error instanceof Error ? error.message : String(error);
@@ -701,6 +723,11 @@ export async function callAssistantModel(userMessage: string, history: Conversat
       try {
         const rawText = await callGroqProvider(userMessage, history, chatMode, lang);
         const decision = normalizeResponse(rawText, "groq", chatMode);
+        if (shouldEscalateToFallback(decision, chatMode)) {
+          lastError = new Error("Groq returned non-structured response for system mode");
+          console.warn(`[assistant-ai] Groq attempt ${attempt + 1}/2 returned weak/system-invalid output; trying next provider.`);
+          continue;
+        }
         if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
           return decision;
         }
@@ -723,11 +750,15 @@ export async function callAssistantModel(userMessage: string, history: Conversat
     try {
       const rawText = await callGeminiProvider(userMessage, history, chatMode, lang);
       const decision = normalizeResponse(rawText, "gemini", chatMode);
-      if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
+      if (shouldEscalateToFallback(decision, chatMode)) {
+        lastError = new Error("Gemini returned non-structured response for system mode");
+        console.warn("[assistant-ai] Gemini returned weak/system-invalid output; using static fallback.");
+      } else if (responseMatchesRequestedLanguage(decision.message, userMessage, lang)) {
         return decision;
+      } else {
+        lastError = new Error("Gemini response ignored Marathi language request");
+        console.warn("[assistant-ai] Gemini response ignored Marathi request; using static fallback.");
       }
-      lastError = new Error("Gemini response ignored Marathi language request");
-      console.warn("[assistant-ai] Gemini response ignored Marathi request; using static fallback.");
     } catch (error) {
       lastError = error;
       console.warn("[assistant-ai] Gemini (fallback) also failed:", error instanceof Error ? error.message : error);
