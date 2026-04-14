@@ -12,6 +12,11 @@ const MAX_HISTORY = 20;
 const SELF_HOSTED_MAX_HISTORY = 4;
 const SELF_HOSTED_HISTORY_TEXT_MAX_CHARS = 280;
 const SELF_HOSTED_USER_INPUT_MAX_CHARS = 900;
+const SELF_HOSTED_TIMEOUT_WARM_MS = 75_000;
+const SELF_HOSTED_TIMEOUT_COLD_MS = 120_000;
+const SELF_HOSTED_COMPACT_RETRY_TIMEOUT_MS = 60_000;
+const SELF_HOSTED_MAX_TOKENS_CHAT = 14;
+const SELF_HOSTED_MAX_TOKENS_SYSTEM = 20;
 const conversations = new Map<string, ConversationTurn[]>();
 const DEVANAGARI_PATTERN = /[\u0900-\u097F]/;
 const MARATHI_OUTPUT_PATTERNS = /\bmarathi\b|मराठी|मराठीत|मराठीत/i;
@@ -572,9 +577,9 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
     throw new Error("Self-hosted LLM URL not configured");
   }
 
-  // If the space has been warm recently, use a shorter timeout.
-  // Otherwise allow up to 90s for HuggingFace Spaces cold-start wake-up.
-  const timeoutMs = selfHostedWarm ? 15_000 : 90_000;
+  // The current HF Space runs CPU inference and can be very slow; allow enough time
+  // for self-hosted completions to finish instead of timing out prematurely.
+  const timeoutMs = selfHostedWarm ? SELF_HOSTED_TIMEOUT_WARM_MS : SELF_HOSTED_TIMEOUT_COLD_MS;
   console.log(`[self-hosted] Calling model=${env.selfHostedLlmModel} history=${history.length} timeout=${timeoutMs}ms warm=${selfHostedWarm}`);
 
   const controller = new AbortController();
@@ -583,6 +588,7 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
   const post = async (
     messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
     signal: AbortSignal,
+    maxTokens: number,
   ) => {
     const response = await fetch(`${env.selfHostedLlmUrl.replace(/\/+$/, "")}/v1/chat/completions`, {
       method: "POST",
@@ -591,6 +597,7 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
       body: JSON.stringify({
         model: env.selfHostedLlmModel,
         temperature: 0.2,
+        max_tokens: maxTokens,
         messages,
       }),
     });
@@ -620,9 +627,11 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
       },
     ];
 
+    const maxTokens = chatMode ? SELF_HOSTED_MAX_TOKENS_CHAT : SELF_HOSTED_MAX_TOKENS_SYSTEM;
+
     let text: string;
     try {
-      text = await post(primaryMessages, controller.signal);
+      text = await post(primaryMessages, controller.signal, maxTokens);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!isContextOverflowError(message)) {
@@ -631,7 +640,7 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
 
       // Retry once with ultra-compact payload (no history, stripped context tags)
       const retryController = new AbortController();
-      const retryTimeout = setTimeout(() => retryController.abort(), Math.min(timeoutMs, 15_000));
+      const retryTimeout = setTimeout(() => retryController.abort(), Math.min(timeoutMs, SELF_HOSTED_COMPACT_RETRY_TIMEOUT_MS));
       try {
         const compactInput = truncateText(stripContextTags(userMessage) || userMessage, 380);
         text = await post(
@@ -640,6 +649,7 @@ async function callSelfHostedProvider(userMessage: string, history: Conversation
             { role: "user", content: buildSelfHostedUserInstruction(compactInput, chatMode, lang) },
           ],
           retryController.signal,
+          Math.min(maxTokens, 12),
         );
       } finally {
         clearTimeout(retryTimeout);

@@ -141,7 +141,7 @@ async function queryAssistant(
 
   const doFetch = async (): Promise<AssistantResponse> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20_000);
+    const timeoutId = setTimeout(() => controller.abort(), 130_000);
     const token = safeLocalGet("customer_accessToken");
 
     try {
