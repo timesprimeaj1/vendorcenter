@@ -208,7 +208,7 @@ export async function getVendorDetailForAI(vendorId: string) {
   const servicesResult = await pool.query(
     `SELECT name, price::float, availability
      FROM vendor_services
-     WHERE vendor_id = $1 AND is_active = true AND deleted_at IS NULL
+     WHERE vendor_id = $1 AND is_deleted = false AND deleted_at IS NULL
      ORDER BY price ASC`,
     [vendorId]
   );
@@ -251,7 +251,7 @@ export async function getVendorServicePriceRange(vendorId: string): Promise<stri
   const result = await pool.query(
     `SELECT MIN(price)::int AS min_price, MAX(price)::int AS max_price
      FROM vendor_services
-     WHERE vendor_id = $1 AND is_active = true AND deleted_at IS NULL`,
+     WHERE vendor_id = $1 AND is_deleted = false AND deleted_at IS NULL`,
     [vendorId]
   );
   const row = result.rows[0];
