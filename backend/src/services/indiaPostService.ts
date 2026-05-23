@@ -1,6 +1,7 @@
 /**
  * India Post PIN code lookup service.
- * Uses free public API: https://api.postalpincode.in/pincode/{pincode}
+ * Primary: https://api.postalpincode.in/pincode/{pincode}
+ * Fallback: https://api.zippopotam.us/in/{pincode}
  * No API key required. In-memory LRU cache with 24h TTL.
  */
 
@@ -24,6 +25,21 @@ interface IndiaPostResponse {
   PostOffice: PostOffice[] | null;
 }
 
+interface ZippopotamPlace {
+  "place name": string;
+  longitude: string;
+  state: string;
+  "state abbreviation": string;
+  latitude: string;
+}
+
+interface ZippopotamResponse {
+  "post code": string;
+  country: string;
+  "country abbreviation": string;
+  places: ZippopotamPlace[];
+}
+
 export interface PincodeLookupResult {
   valid: boolean;
   pincode: string;
@@ -44,6 +60,8 @@ const MAX_CACHE_SIZE = 2000;
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL_MS = 500;
 
+const USER_AGENT = "VendorCenter/1.1.3 (https://vendorcenter.in)";
+
 function cleanCache() {
   const now = Date.now();
   for (const [key, entry] of cache) {
@@ -56,6 +74,99 @@ function cleanCache() {
     const firstKey = cache.keys().next().value;
     if (firstKey) cache.delete(firstKey);
   }
+}
+
+/**
+ * Check if an error is a network-level error (worth retrying).
+ */
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  if (err instanceof Error && err.name === "AbortError") return true;
+  return false;
+}
+
+/**
+ * Attempt primary API fetch with User-Agent header.
+ * Returns the PincodeLookupResult on success, or throws on failure.
+ */
+async function fetchFromPrimary(pincode: string): Promise<PincodeLookupResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
+    signal: controller.signal,
+    headers: { "User-Agent": USER_AGENT },
+  });
+  clearTimeout(timeout);
+
+  if (!response.ok) {
+    throw new Error(`Primary API returned HTTP ${response.status}`);
+  }
+
+  const data: IndiaPostResponse[] = await response.json();
+  const result = data[0];
+
+  if (!result || result.Status !== "Success" || !result.PostOffice?.length) {
+    // Valid response but pincode not found — return not-found result (cacheable)
+    return { valid: false, pincode, state: "", district: "", region: "", block: "", country: "", postOffices: [] };
+  }
+
+  const firstPO = result.PostOffice[0];
+  return {
+    valid: true,
+    pincode,
+    state: firstPO.State,
+    district: firstPO.District,
+    region: firstPO.Region,
+    block: firstPO.Block,
+    country: firstPO.Country,
+    postOffices: result.PostOffice.map((po) => ({
+      name: po.Name,
+      branchType: po.BranchType,
+      deliveryStatus: po.DeliveryStatus,
+    })),
+  };
+}
+
+/**
+ * Fallback API: Zippopotam.us
+ * Maps response to PincodeLookupResult with reduced data.
+ */
+async function fetchFromFallback(pincode: string): Promise<PincodeLookupResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+
+  const response = await fetch(`https://api.zippopotam.us/in/${pincode}`, {
+    signal: controller.signal,
+    headers: { "User-Agent": USER_AGENT },
+  });
+  clearTimeout(timeout);
+
+  if (!response.ok) {
+    throw new Error(`Fallback API returned HTTP ${response.status}`);
+  }
+
+  const data: ZippopotamResponse = await response.json();
+
+  if (!data.places || data.places.length === 0) {
+    return { valid: false, pincode, state: "", district: "", region: "", block: "", country: "", postOffices: [] };
+  }
+
+  const firstPlace = data.places[0];
+  return {
+    valid: true,
+    pincode,
+    state: firstPlace.state,
+    district: firstPlace["place name"],
+    region: "",
+    block: "",
+    country: data.country,
+    postOffices: data.places.map((place) => ({
+      name: place["place name"],
+      branchType: "Unknown",
+      deliveryStatus: "Unknown",
+    })),
+  };
 }
 
 export async function lookupPincode(pincode: string): Promise<PincodeLookupResult> {
@@ -78,52 +189,43 @@ export async function lookupPincode(pincode: string): Promise<PincodeLookupResul
   }
   lastRequestTime = Date.now();
 
+  // Try primary API (with 1 retry on network errors)
+  let primaryErr: Error | null = null;
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      return { valid: false, pincode, state: "", district: "", region: "", block: "", country: "", postOffices: [] };
-    }
-
-    const data: IndiaPostResponse[] = await response.json();
-    const result = data[0];
-
-    if (!result || result.Status !== "Success" || !result.PostOffice?.length) {
-      const notFound: PincodeLookupResult = { valid: false, pincode, state: "", district: "", region: "", block: "", country: "", postOffices: [] };
-      // Cache unsuccessful lookups too (shorter TTL)
-      cache.set(pincode, { data: notFound, expiresAt: Date.now() + 60 * 60 * 1000 });
-      return notFound;
-    }
-
-    const firstPO = result.PostOffice[0];
-    const lookupResult: PincodeLookupResult = {
-      valid: true,
-      pincode,
-      state: firstPO.State,
-      district: firstPO.District,
-      region: firstPO.Region,
-      block: firstPO.Block,
-      country: firstPO.Country,
-      postOffices: result.PostOffice.map((po) => ({
-        name: po.Name,
-        branchType: po.BranchType,
-        deliveryStatus: po.DeliveryStatus,
-      })),
-    };
-
-    cache.set(pincode, { data: lookupResult, expiresAt: Date.now() + CACHE_TTL_MS });
+    const result = await fetchFromPrimary(pincode);
+    // Cache result (shorter TTL for not-found)
+    const ttl = result.valid ? CACHE_TTL_MS : 60 * 60 * 1000;
+    cache.set(pincode, { data: result, expiresAt: Date.now() + ttl });
     cleanCache();
-
-    return lookupResult;
+    return result;
   } catch (err) {
-    console.warn(`[india-post] API error for ${pincode}: ${(err as Error).message}`);
-    // Return invalid but don't cache — let next call retry
+    primaryErr = err as Error;
+    // Retry once on network errors only (TypeError/AbortError)
+    if (isNetworkError(err)) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        const result = await fetchFromPrimary(pincode);
+        const ttl = result.valid ? CACHE_TTL_MS : 60 * 60 * 1000;
+        cache.set(pincode, { data: result, expiresAt: Date.now() + ttl });
+        cleanCache();
+        return result;
+      } catch (retryErr) {
+        primaryErr = retryErr as Error;
+      }
+    }
+  }
+
+  // Primary failed — try Zippopotam fallback
+  try {
+    const result = await fetchFromFallback(pincode);
+    // Cache fallback results with same TTL strategy
+    const ttl = result.valid ? CACHE_TTL_MS : 60 * 60 * 1000;
+    cache.set(pincode, { data: result, expiresAt: Date.now() + ttl });
+    cleanCache();
+    return result;
+  } catch (fallbackErr) {
+    // Both APIs failed — log and return invalid without caching
+    console.warn(`[india-post] Both APIs failed for ${pincode}: primary=${primaryErr?.message}, fallback=${(fallbackErr as Error).message}`);
     return { valid: false, pincode, state: "", district: "", region: "", block: "", country: "", postOffices: [] };
   }
 }

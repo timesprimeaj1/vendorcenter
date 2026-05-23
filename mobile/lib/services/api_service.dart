@@ -6,6 +6,9 @@ class ApiService {
   static final ApiService _instance = ApiService._();
   factory ApiService() => _instance;
 
+  /// Called when token refresh fails — allows AuthService to clear user state
+  static Function? onSessionExpired;
+
   late final Dio _dio;
   Dio get dio => _dio;
   final _storage = const FlutterSecureStorage();
@@ -72,7 +75,11 @@ class ApiService {
   Future<bool> _refreshToken() async {
     try {
       final refresh = await _storage.read(key: _refreshKey);
-      if (refresh == null) return false;
+      if (refresh == null) {
+        await clearAll();
+        onSessionExpired?.call();
+        return false;
+      }
 
       final res = await Dio(BaseOptions(
         baseUrl: ApiConfig.baseUrl,
@@ -87,9 +94,11 @@ class ApiService {
         return true;
       }
       await clearAll();
+      onSessionExpired?.call();
       return false;
     } catch (_) {
       await clearAll();
+      onSessionExpired?.call();
       return false;
     }
   }

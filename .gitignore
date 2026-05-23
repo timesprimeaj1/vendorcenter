@@ -29,6 +29,7 @@ credentials.local.md
 .github/copilot-instructions.md
 .github/agents/
 AGENTS.md
+.kiro/
 docs/
 
 # MCP / Playwright local config

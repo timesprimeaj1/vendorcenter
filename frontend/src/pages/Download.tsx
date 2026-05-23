@@ -24,8 +24,8 @@ const DownloadPage = () => {
 
   const customerApk = version?.customerApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-customer.apk";
   const vendorApk = version?.vendorApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-vendor.apk";
-  const currentVersion = version?.currentVersion || "1.1.2";
-  const changelog = version?.changelog || "Phone auth fix, signing fix, resend payment/OTP, category location filter,booking service padding fix, and various bug fixes and performance improvements.";
+  const currentVersion = version?.currentVersion || "1.1.3";
+  const changelog = version?.changelog || "India Post API fallback, session expiry fix, resend payment/OTP, category location filter, and various bug fixes and performance improvements.";
 
   const triggerDownload = useCallback((url: string) => {
     // Trigger download without navigating away — avoids blank GitHub page on mobile

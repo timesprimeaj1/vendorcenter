@@ -20,6 +20,9 @@ class AuthService extends ChangeNotifier {
 
   /// Restore session from secure storage on app start
   Future<void> restoreSession() async {
+    // Register session expiry handler
+    ApiService.onSessionExpired = _handleSessionExpired;
+
     try {
       final stored = await _api.getUser();
       if (stored != null) {
@@ -32,6 +35,12 @@ class AuthService extends ChangeNotifier {
     if (_user != null) {
       NotificationService().registerTokenWithBackend();
     }
+  }
+
+  /// Called by ApiService when token refresh fails — triggers logout state
+  void _handleSessionExpired() {
+    _user = null;
+    notifyListeners();
   }
 
   /// Email + password login
