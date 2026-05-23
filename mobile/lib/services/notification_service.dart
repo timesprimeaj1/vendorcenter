@@ -105,6 +105,11 @@ class NotificationService {
       settings: const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: (details) {
         debugPrint('[Notification] Tapped local: ${details.payload}');
+        // Open URL if payload contains one
+        final payload = details.payload;
+        if (payload != null && payload.startsWith('http')) {
+          _openUrl(payload);
+        }
       },
     );
   }
@@ -150,7 +155,8 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@drawable/ic_notification',
-      color: const Color(0xFFF97316), // VendorCenter orange
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      color: const Color(0xFF2563EB), // VendorCenter blue
       styleInformation: BigTextStyleInformation(
         notification.body ?? '',
         contentTitle: notification.title,

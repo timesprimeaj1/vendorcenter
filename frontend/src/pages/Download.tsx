@@ -24,8 +24,8 @@ const DownloadPage = () => {
 
   const customerApk = version?.customerApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-customer.apk";
   const vendorApk = version?.vendorApk || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-vendor.apk";
-  const currentVersion = version?.currentVersion || "1.1.4";
-  const changelog = version?.changelog || "Extended login session to 30 days, push notification with deep link, India Post API fix, and various bug fixes.";
+  const currentVersion = version?.currentVersion || "1.1.5";
+  const changelog = version?.changelog || "Fixed notification tap redirect, proper app logo in notifications, extended login session to 30 days, and various bug fixes.";
 
   const triggerDownload = useCallback((url: string) => {
     // On mobile, <a download> doesn't work cross-origin (GitHub).
