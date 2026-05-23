@@ -227,7 +227,11 @@ notificationsRouter.post("/broadcast-push", requireRole(["admin"]), async (req: 
       const response = await messaging.sendEachForMulticast({
         tokens: batch,
         notification: { title: parsed.data.title, body: parsed.data.body },
-        data: parsed.data.data ?? {},
+        data: {
+          ...(parsed.data.data ?? {}),
+          channelId: "vendorcenter_updates",
+          url: "https://vendorcenter.in/download",
+        },
         android: {
           priority: "high",
           notification: {

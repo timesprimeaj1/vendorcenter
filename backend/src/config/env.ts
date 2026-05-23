@@ -19,8 +19,8 @@ export const env = {
 
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET ?? "change_me_access",
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET ?? "change_me_refresh",
-  jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES ?? "15m",
-  jwtRefreshExpires: process.env.JWT_REFRESH_EXPIRES ?? "7d",
+  jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES ?? "2h",
+  jwtRefreshExpires: process.env.JWT_REFRESH_EXPIRES ?? "30d",
 
   smtpHost: process.env.SMTP_HOST ?? "",
   smtpPort: Number(process.env.SMTP_PORT ?? 587),

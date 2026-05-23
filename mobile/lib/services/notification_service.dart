@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vendorcenter/services/api_service.dart';
 
 /// Android notification channel for booking-related push notifications.
@@ -9,6 +10,16 @@ const _bookingChannel = AndroidNotificationChannel(
   'vendorcenter_bookings',
   'Booking Notifications',
   description: 'Notifications for new bookings, status updates, and cancellations',
+  importance: Importance.high,
+  playSound: true,
+  enableVibration: true,
+);
+
+/// Android notification channel for app updates and announcements.
+const _updatesChannel = AndroidNotificationChannel(
+  'vendorcenter_updates',
+  'App Updates',
+  description: 'Notifications for app updates and announcements',
   importance: Importance.high,
   playSound: true,
   enableVibration: true,
@@ -51,6 +62,10 @@ class NotificationService {
     _token = await _messaging.getToken();
     debugPrint('[FCM] Token: $_token');
 
+    // Subscribe to broadcast topics for receiving announcements
+    await _messaging.subscribeToTopic('all');
+    debugPrint('[FCM] Subscribed to topic: all');
+
     // Listen for token refresh
     _messaging.onTokenRefresh.listen((newToken) {
       _token = newToken;
@@ -73,10 +88,11 @@ class NotificationService {
 
   /// Set up local notification channels and initialize the plugin.
   Future<void> _initLocalNotifications() async {
-    // Create the Android notification channel
+    // Create the Android notification channels
     final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(_bookingChannel);
+    await androidPlugin?.createNotificationChannel(_updatesChannel);
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
@@ -122,10 +138,15 @@ class NotificationService {
     final notification = message.notification;
     if (notification == null) return;
 
+    // Determine channel based on data payload
+    final channelId = message.data['channelId'] ?? _bookingChannel.id;
+    final isUpdate = channelId == 'vendorcenter_updates';
+    final channel = isUpdate ? _updatesChannel : _bookingChannel;
+
     final android = AndroidNotificationDetails(
-      _bookingChannel.id,
-      _bookingChannel.name,
-      channelDescription: _bookingChannel.description,
+      channel.id,
+      channel.name,
+      channelDescription: channel.description,
       importance: Importance.high,
       priority: Priority.high,
       icon: '@drawable/ic_notification',
@@ -147,12 +168,28 @@ class NotificationService {
       title: notification.title,
       body: notification.body,
       notificationDetails: NotificationDetails(android: android, iOS: ios),
-      payload: message.data['bookingId'],
+      payload: message.data['url'] ?? message.data['bookingId'],
     );
   }
 
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint('[FCM] Tapped: ${message.data}');
-    // In future: navigate to relevant screen based on message.data
+    final url = message.data['url'];
+    if (url != null && url.isNotEmpty) {
+      _openUrl(url);
+    }
+  }
+
+  /// Open a URL using url_launcher
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      // Use launchUrl from url_launcher if available, otherwise just log
+      debugPrint('[FCM] Opening URL: $url');
+      // Import is at top level — use url_launcher
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('[FCM] Failed to open URL: $e');
+    }
   }
 }

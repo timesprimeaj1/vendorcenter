@@ -129,7 +129,7 @@ authRouter.post("/login", async (req, res) => {
     await createSession({
       userId: user.id,
       refreshTokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       userAgent: req.header("user-agent") ?? undefined,
       ipAddress: req.ip
     });
@@ -181,7 +181,7 @@ authRouter.post("/refresh", async (req, res) => {
     await createSession({
       userId: payload.userId,
       refreshTokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       userAgent: req.header("user-agent") ?? undefined,
       ipAddress: req.ip
     });
@@ -590,7 +590,7 @@ authRouter.post("/phone-login", async (req, res) => {
     await createSession({
       userId: user.id,
       refreshTokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       userAgent: req.header("user-agent") ?? undefined,
       ipAddress: req.ip,
     });
