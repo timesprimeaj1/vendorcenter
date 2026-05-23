@@ -192,10 +192,10 @@ app.get("/api/version", (_req: Request, res: Response) => {
   res.json({
     success: true,
     data: {
-      currentVersion: process.env.APP_CURRENT_VERSION || "1.1.3",
+      currentVersion: process.env.APP_CURRENT_VERSION || "1.1.4",
       minVersion: process.env.APP_MIN_VERSION || "1.0.0",
       forceUpdate: process.env.APP_FORCE_UPDATE === "true",
-      changelog: process.env.APP_CHANGELOG || "India Post API fallback, session expiry fix, resend payment/OTP, category location filter, and various bug fixes",
+      changelog: process.env.APP_CHANGELOG || "Extended login session to 30 days, push notification with deep link, India Post API fix, and various bug fixes",
       customerApk: process.env.CUSTOMER_APK_URL || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-customer.apk",
       vendorApk: process.env.VENDOR_APK_URL || "https://github.com/timesprimeaj1/vendorcenter/releases/latest/download/vendorcenter-vendor.apk",
     },
