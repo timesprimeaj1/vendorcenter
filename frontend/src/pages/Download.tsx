@@ -28,15 +28,15 @@ const DownloadPage = () => {
   const changelog = version?.changelog || "India Post API fallback, session expiry fix, resend payment/OTP, category location filter, and various bug fixes and performance improvements.";
 
   const triggerDownload = useCallback((url: string) => {
-    // Trigger download without navigating away — avoids blank GitHub page on mobile
-    const a = document.createElement('a');
-    a.href = url;
-    a.setAttribute('download', '');
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, []);
+    // On mobile, <a download> doesn't work cross-origin (GitHub).
+    // Use window.location.href for direct download on mobile.
+    // On desktop, open in new tab to avoid navigating away.
+    if (isMobile) {
+      window.location.href = url;
+    } else {
+      window.open(url, '_blank');
+    }
+  }, [isMobile]);
 
   return (
     <Layout>

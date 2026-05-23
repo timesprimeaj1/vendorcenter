@@ -66,7 +66,7 @@ amazon-nav.md
 # OS/Editor
 .DS_Store
 Thumbs.db
-.vscode/*.log
+.vscode/
 
 # Logs
 logs/

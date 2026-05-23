@@ -3,7 +3,16 @@
  * Primary: https://api.postalpincode.in/pincode/{pincode}
  * Fallback: https://api.zippopotam.us/in/{pincode}
  * No API key required. In-memory LRU cache with 24h TTL.
+ *
+ * NOTE: The primary API (api.postalpincode.in) has an expired SSL certificate
+ * as of May 2026. We use a custom HTTPS agent that skips cert validation
+ * ONLY for this specific free public API (no sensitive data exchanged).
  */
+import https from "node:https";
+
+// Custom agent that skips SSL cert validation — ONLY for India Post API
+// Their SSL cert expired and they haven't renewed it.
+const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 interface PostOffice {
   Name: string;
@@ -87,24 +96,36 @@ function isNetworkError(err: unknown): boolean {
 
 /**
  * Attempt primary API fetch with User-Agent header.
+ * Uses node:https directly to support custom agent (SSL cert skip for expired cert).
  * Returns the PincodeLookupResult on success, or throws on failure.
  */
 async function fetchFromPrimary(pincode: string): Promise<PincodeLookupResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const data = await new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Primary API timeout (8s)"));
+    }, 8000);
 
-  const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
-    signal: controller.signal,
-    headers: { "User-Agent": USER_AGENT },
+    const req = https.get(
+      `https://api.postalpincode.in/pincode/${pincode}`,
+      { agent: insecureAgent, headers: { "User-Agent": USER_AGENT } },
+      (res) => {
+        if (res.statusCode && res.statusCode !== 200) {
+          clearTimeout(timeout);
+          reject(new Error(`Primary API returned HTTP ${res.statusCode}`));
+          res.resume();
+          return;
+        }
+        let body = "";
+        res.on("data", (chunk) => { body += chunk; });
+        res.on("end", () => { clearTimeout(timeout); resolve(body); });
+        res.on("error", (err) => { clearTimeout(timeout); reject(err); });
+      }
+    );
+    req.on("error", (err) => { clearTimeout(timeout); reject(err); });
   });
-  clearTimeout(timeout);
 
-  if (!response.ok) {
-    throw new Error(`Primary API returned HTTP ${response.status}`);
-  }
-
-  const data: IndiaPostResponse[] = await response.json();
-  const result = data[0];
+  const parsed: IndiaPostResponse[] = JSON.parse(data);
+  const result = parsed[0];
 
   if (!result || result.Status !== "Success" || !result.PostOffice?.length) {
     // Valid response but pincode not found — return not-found result (cacheable)
