@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { FileText, Shield, Users, Store, Globe } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "react-i18next";
 
@@ -19,6 +20,7 @@ const Terms = () => {
 
   return (
     <Layout>
+      <SEO title="Terms of Service" description="VendorCenter terms of service. Read our user agreement and platform usage guidelines." path="/terms" />
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">

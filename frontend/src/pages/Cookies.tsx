@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Cookie, Key, Settings, HardDrive } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +19,7 @@ const Cookies = () => {
 
   return (
     <Layout>
+      <SEO title="Cookie Policy" description="VendorCenter cookie policy. Understand how we use cookies to improve your experience." path="/cookies" />
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">

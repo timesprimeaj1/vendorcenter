@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Download as DownloadIcon, Smartphone, Shield, RefreshCw, Monitor } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useEffect, useState, useMemo } from "react";
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
@@ -29,6 +30,12 @@ const DownloadPage = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="Download VendorCenter App" 
+        description="Download VendorCenter for Android. Find and book trusted local service providers directly from your phone."
+        keywords="download VendorCenter, Android app, service booking app"
+        path="/download" 
+      />
       <section className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full bg-primary/15 blur-[100px] animate-float-slow" />

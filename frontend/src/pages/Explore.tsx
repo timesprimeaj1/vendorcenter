@@ -4,6 +4,7 @@ import type { VendorMapData, ZoneData } from "@/components/map";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { api } from "@/lib/api";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -160,6 +161,12 @@ export default function Explore() {
 
   return (
     <Layout>
+    <SEO 
+      title="Explore Services" 
+      description="Discover local service providers near you. Browse categories, compare vendors, and book services on VendorCenter."
+      keywords="explore services, find vendors, local services near me"
+      path="/explore" 
+    />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card relative z-20">

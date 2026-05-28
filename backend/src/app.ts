@@ -214,6 +214,54 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 
+// SEO: robots.txt
+app.get("/robots.txt", (_req: Request, res: Response) => {
+  res.type("text/plain").send(`User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /vendor
+Disallow: /company
+Disallow: /login
+Disallow: /register
+Disallow: /account
+Disallow: /pay/
+Disallow: /assets/
+Disallow: /forgot-password
+
+Sitemap: https://vendorcenter.in/sitemap.xml
+`);
+});
+
+// SEO: sitemap.xml
+app.get("/sitemap.xml", (_req: Request, res: Response) => {
+  const today = new Date().toISOString().split("T")[0];
+  const routes = [
+    { path: "/", priority: "1.0", changefreq: "daily" },
+    { path: "/services", priority: "0.8", changefreq: "weekly" },
+    { path: "/download", priority: "0.8", changefreq: "weekly" },
+    { path: "/explore", priority: "0.6", changefreq: "weekly" },
+    { path: "/about", priority: "0.6", changefreq: "weekly" },
+    { path: "/privacy", priority: "0.5", changefreq: "monthly" },
+    { path: "/terms", priority: "0.5", changefreq: "monthly" },
+    { path: "/cookies", priority: "0.5", changefreq: "monthly" },
+  ];
+
+  const urls = routes.map(r => `  <url>
+    <loc>https://vendorcenter.in${r.path}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${r.changefreq}</changefreq>
+    <priority>${r.priority}</priority>
+  </url>`).join("\n");
+
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`);
+});
+
+
 app.get("/api/status", (_req: Request, res: Response) => {
   res.json({
     status: "ok",

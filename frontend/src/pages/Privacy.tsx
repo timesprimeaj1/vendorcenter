@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Shield, Database, Lock, UserCheck, Mail } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 import { useTranslation } from "react-i18next";
 
@@ -19,6 +20,7 @@ const Privacy = () => {
 
   return (
     <Layout>
+      <SEO title="Privacy Policy" description="VendorCenter privacy policy. Learn how we collect, use, and protect your personal data." path="/privacy" />
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Shield, Users, MapPin, Sparkles, Target, Heart, ArrowRight } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
 import { useScrollReveal } from "@/hooks/useScrollAnimation";
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
@@ -14,6 +15,12 @@ const About = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="About Us" 
+        description="VendorCenter connects you with trusted local service providers in India. Learn about our mission to make home services accessible and reliable."
+        keywords="about VendorCenter, local services India, trusted marketplace"
+        path="/about" 
+      />
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">

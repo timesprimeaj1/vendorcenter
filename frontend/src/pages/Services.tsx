@@ -5,6 +5,8 @@ import { Search, SlidersHorizontal, MapPin, Star, BadgeCheck, X, Loader2, Sparkl
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import SEO from "@/components/SEO";
+import { JsonLd } from "@/components/JsonLd";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -131,6 +133,26 @@ const Services = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="Browse Services" 
+        description="Explore local home services near you. Find plumbers, electricians, cleaners, and more trusted vendors on VendorCenter."
+        keywords="home services, plumber near me, electrician, cleaning services, local vendors"
+        path="/services" 
+      />
+      <JsonLd schema={{
+        "@type": "ItemList",
+        "name": "Service Categories",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Plumbing" },
+          { "@type": "ListItem", "position": 2, "name": "Electrical" },
+          { "@type": "ListItem", "position": 3, "name": "Cleaning" },
+          { "@type": "ListItem", "position": 4, "name": "AC Repair" },
+          { "@type": "ListItem", "position": 5, "name": "Painting" },
+          { "@type": "ListItem", "position": 6, "name": "Carpentry" },
+          { "@type": "ListItem", "position": 7, "name": "Pest Control" },
+          { "@type": "ListItem", "position": 8, "name": "Appliance Repair" },
+        ]
+      }} />
       {/* Header */}
       <div className="bg-secondary/50 border-b border-border relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.06),transparent)]" />
